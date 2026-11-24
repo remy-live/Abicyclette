@@ -188,6 +188,10 @@
       #side-drawer.sheet-expanded #home-idle, #side-drawer.sheet-half #home-chips,
       #side-drawer.sheet-half #home-route, #side-drawer.sheet-half #home-idle { display: none !important; }
       #side-drawer.sheet-expanded #btn-sheet-close { display: flex !important; }
+      /* Tiroir réduit au minimum : poignée + puces */
+      #side-drawer.sheet-mini { transform: translateY(calc(100% - var(--mini, 84px))); }
+      #side-drawer.sheet-mini #home-shortcuts, #side-drawer.sheet-mini #home-route, #side-drawer.sheet-mini #home-idle,
+      #side-drawer.sheet-mini #sheet-tabs-row { visibility: hidden; }
       #side-drawer.sheet-expanded {
         transform: translateY(0%);
       }
@@ -234,6 +238,27 @@
     body.night-mode .sc-tile { color: #e6edf3; }
     body.contrast-1 .sc-tile, body.contrast-2 .sc-tile { font-size: 12px; font-weight: 800; }
     body.contrast-1 .sc-tile svg, body.contrast-2 .sc-tile svg { stroke-width: 2.8; }
+    .dp-title { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #64748b; }
+    .seg.sm { height: 38px; font-size: 12px; }
+    .theme-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #1e293b; padding: 6px 0; border-radius: 14px; border: 2px solid transparent; }
+    .theme-dot .sw { width: 34px; height: 34px; border-radius: 9999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+    .theme-dot.on { border-color: #059669; background: rgba(16,185,129,.1); }
+    .dp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; cursor: pointer; font-size: 14px; font-weight: 700; color: #0f172a; }
+    .dp-row small { display: block; font-size: 11px; font-weight: 500; color: #64748b; }
+    .dp-switch { appearance: none; -webkit-appearance: none; width: 46px; height: 28px; border-radius: 999px; background: #cbd5e1; position: relative; flex: none; transition: background .2s; }
+    .dp-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 999px; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+    .dp-switch:checked { background: #059669; }
+    .dp-switch:checked::after { transform: translateX(18px); }
+    .poi-tg { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 2px; border-radius: 14px; border: 2px solid #e2e8f0; font-size: 10.5px; font-weight: 700; color: #94a3b8; background: #fff; line-height: 1.15; text-align: center; }
+    .poi-tg svg { opacity: .45; }
+    .poi-tg.on { border-color: currentColor; color: var(--c); }
+    .poi-tg.on svg { opacity: 1; }
+    .poi-tg.on span { color: #0f172a; }
+    body.bw-mode .theme-dot.on, body.bw-mode .poi-tg.on { border-color: #000 !important; background: #fff !important; }
+    body.bw-mode .dp-switch:checked { background: #000; }
+    body.night-mode .poi-tg, body.night-mode .theme-dot { background: #161b22 !important; border-color: #2a3440 !important; }
+    body.night-mode .poi-tg.on { border-color: var(--c) !important; }
+    body.night-mode .poi-tg.on span, body.night-mode .dp-row, body.night-mode .theme-dot { color: #e6edf3 !important; }
     .home-alt { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border-radius: 16px; border: 2px solid #e2e8f0; background: rgba(255,255,255,.85); }
     .home-alt.on { border-color: #059669; background: rgba(16,185,129,.1); }
 
@@ -266,7 +291,7 @@
     /* Icônes « pures » : trait de couleur sur liseré */
     .poi-pure .h { stroke: #fff; stroke-width: 6.4; }
     .poi-pure .c { stroke: var(--c); stroke-width: 2.4; }
-    body.bw-mode .poi-pure .c { stroke: #000; }
+    body.bw-mode:not(.color-icons) .poi-pure .c { stroke: #000; }
     body.night-mode .poi-pure .h { stroke: #000; }
     body.contrast-1 .poi-pure .c, body.contrast-2 .poi-pure .c { stroke-width: 2.9; }
     body.contrast-1 .poi-pure .h, body.contrast-2 .poi-pure .h { stroke-width: 7.4; }
@@ -391,7 +416,7 @@
     body.noir-mode { background: #000; }
     body.noir-mode .leaflet-container { background: #000; }
     body.noir-mode #side-drawer, body.noir-mode #top-search-container, body.noir-mode #quick-controls,
-    body.noir-mode #display-panel, body.noir-mode #map-click-menu, body.noir-mode #toast-container,
+    body.noir-mode #display-panel > div.relative, body.noir-mode #map-click-menu, body.noir-mode #toast-container,
     body.noir-mode #guidance-hud > *, body.noir-mode #map-status, body.noir-mode #place-modal > div,
     body.noir-mode #offline-modal > div, body.noir-mode #shortcuts-modal > div, body.noir-mode .leaflet-popup,
     body.noir-mode .maplibregl-popup, body.noir-mode .leaflet-overlay-pane {
@@ -523,65 +548,78 @@
     </div>
   </div>
 
-  <!-- Panneau « Affichage » -->
-  <div id="display-panel" class="hidden fixed right-3 top-[84px] md:top-4 md:right-20 z-40 glass-panel rounded-3xl p-4 w-[min(330px,calc(100vw-24px))] space-y-4 max-h-[75vh] overflow-y-auto custom-scroll">
-    <div class="flex items-center justify-between">
-      <h2 class="text-base font-extrabold text-slate-900">Affichage</h2>
-      <button id="btn-close-display" aria-label="Fermer" class="w-9 h-9 rounded-xl hover:bg-slate-200/70 text-slate-500">✕</button>
-    </div>
-    <div>
-      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Vue</div>
-      <div class="grid grid-cols-2 gap-2">
-        <button id="view-2d" class="seg on">2D</button>
-        <button id="view-3d" class="seg"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg> 3D relief</button>
+  <!-- Panneau « Affichage » : feuille centrée en bas, fond assombri -->
+  <div id="display-panel" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center">
+    <div id="display-backdrop" class="absolute inset-0 bg-slate-950/40"></div>
+    <div class="relative glass-panel bg-white rounded-t-3xl md:rounded-3xl w-full max-w-md max-h-[86vh] overflow-y-auto custom-scroll p-5 space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-extrabold text-slate-900">Affichage</h2>
+        <button id="btn-close-display" aria-label="Fermer" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 text-lg font-bold">✕</button>
       </div>
-    </div>
-    <div>
-      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Style</div>
-      <div class="grid grid-cols-2 gap-2">
-        <button data-theme="normal" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#eef1ea 50%,#0b7a55 50%)"></span>Clair</button>
-        <button data-theme="sun" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#ff00b4 50%);outline:2px solid #000"></span>Soleil</button>
-        <button data-theme="bw" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#000000 50%);outline:2px solid #000"></span>Noir & blanc</button>
-        <button data-theme="noir" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#000000 50%,#ffffff 50%);outline:2px solid #000"></span>Noir</button>
-        <button data-theme="night" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#0b0f14 50%,#34d399 50%)"></span>Nuit</button>
+
+      <section class="space-y-2">
+        <h3 class="dp-title">Carte</h3>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-layer="vector" class="layer-option seg">Vectorielle</button>
+          <button id="layer-images" class="seg">Images</button>
+        </div>
+        <div id="raster-choices" class="hidden grid grid-cols-3 gap-2">
+          <button data-layer="cyclosm" class="layer-option seg sm">Vélo</button>
+          <button data-layer="osm" class="layer-option seg sm">Standard</button>
+          <button data-layer="opentopo" class="layer-option seg sm">Relief</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="view-2d" class="seg on">2D</button>
+          <button id="view-3d" class="seg">3D</button>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <h3 class="dp-title">Couleurs</h3>
+        <div class="grid grid-cols-5 gap-1">
+          <button data-theme="normal" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#eef1ea 50%,#0b7a55 50%)"></span>Clair</button>
+          <button data-theme="sun" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#ff00b4 50%)"></span>Soleil</button>
+          <button data-theme="bw" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#000000 50%)"></span>N&amp;B</button>
+          <button data-theme="noir" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#000000 50%,#ffffff 50%)"></span>Noir</button>
+          <button data-theme="night" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#0b0f14 50%,#34d399 50%)"></span>Nuit</button>
+        </div>
+        <h3 class="dp-title pt-1">Contraste</h3>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-contrast="0" class="contrast-btn seg sm on">Normal</button>
+          <button data-contrast="1" class="contrast-btn seg sm">Fort</button>
+          <button data-contrast="2" class="contrast-btn seg sm">Maximum</button>
+        </div>
+        <label class="dp-row">
+          <span>Icônes en couleur<small>même sur une carte noir et blanc</small></span>
+          <input id="toggle-color-icons" type="checkbox" class="dp-switch" />
+        </label>
+      </section>
+
+      <section class="space-y-2">
+        <h3 class="dp-title">Lieux affichés</h3>
+        <div id="poi-toggles" class="grid grid-cols-4 gap-1.5"></div>
+        <div class="flex gap-2">
+          <button id="btn-poi-fewer" class="flex-1 seg sm">Essentiels</button>
+          <button id="btn-poi-none" class="flex-1 seg sm">Aucun</button>
+        </div>
+      </section>
+
+      <section class="space-y-1">
+        <h3 class="dp-title">Vélo</h3>
+        <label class="dp-row">
+          <span>Véloroutes &amp; EuroVelo<small>itinéraires balisés par-dessus la carte</small></span>
+          <input id="toggle-bike-routes" type="checkbox" class="dp-switch" checked />
+        </label>
+        <label class="dp-row">
+          <span>Pistes cliquables<small>nom, réseau et revêtement au toucher</small></span>
+          <input id="toggle-cycleways-checkbox" type="checkbox" class="dp-switch" />
+        </label>
+      </section>
+
+      <div class="grid grid-cols-2 gap-2 pb-1">
+        <button id="btn-nearest-water" class="h-12 rounded-2xl bg-sky-600 text-white text-sm font-bold">Eau la plus proche</button>
+        <button id="btn-offline-modal" class="h-12 rounded-2xl bg-slate-900 text-white text-sm font-bold">Cartes hors ligne</button>
       </div>
-      <p class="text-[11px] text-slate-500 mt-1.5">Tous les styles sauf Clair économisent aussi la batterie.</p>
-    </div>
-    <div>
-      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Contraste</div>
-      <div class="grid grid-cols-3 gap-2">
-        <button data-contrast="0" class="contrast-btn seg on">Normal</button>
-        <button data-contrast="1" class="contrast-btn seg">Fort</button>
-        <button data-contrast="2" class="contrast-btn seg">Maximum</button>
-      </div>
-    </div>
-    <div>
-      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fond de carte</div>
-      <div class="grid grid-cols-2 gap-2">
-        <button data-layer="vector" class="layer-option seg on">Vectoriel net</button>
-        <button data-layer="cyclosm" class="layer-option seg">Vélo (images)</button>
-        <button data-layer="osm" class="layer-option seg">Standard (images)</button>
-        <button data-layer="opentopo" class="layer-option seg">Relief (images)</button>
-      </div>
-      <p class="text-[11px] text-slate-500 mt-1.5">Vectoriel : pistes cyclables surlignées, couleurs du style choisi. Hors ligne, la carte passe en images (zones téléchargées).</p>
-    </div>
-    <label class="flex items-center justify-between gap-3 cursor-pointer">
-      <span><span class="block text-sm font-bold text-slate-900">Véloroutes & EuroVelo</span><span class="block text-[11px] text-slate-500">Itinéraires vélo balisés par-dessus la carte</span></span>
-      <span class="relative inline-flex items-center">
-        <input id="toggle-bike-routes" type="checkbox" class="sr-only peer" checked />
-        <span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></span>
-      </span>
-    </label>
-    <label class="flex items-center justify-between gap-3 cursor-pointer">
-      <span><span class="block text-sm font-bold text-slate-900">Pistes cliquables</span><span class="block text-[11px] text-slate-500">Nom, réseau et revêtement au toucher</span></span>
-      <span class="relative inline-flex items-center">
-        <input id="toggle-cycleways-checkbox" type="checkbox" class="sr-only peer" />
-        <span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></span>
-      </span>
-    </label>
-    <div class="grid grid-cols-2 gap-2">
-      <button id="btn-nearest-water" class="py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold">Eau la plus proche</button>
-      <button id="btn-offline-modal" class="py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold">Cartes hors ligne</button>
     </div>
   </div>
 
@@ -626,7 +664,7 @@
         <button id="btn-home-places" class="h-12 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/></svg>Mes lieux</button>
       </div>
 
-      <div class="flex gap-2 items-stretch">
+      <div id="sheet-tabs-row" class="flex gap-2 items-stretch">
       <button id="btn-sheet-close" aria-label="Revenir à la carte" class="hidden shrink-0 px-3 rounded-xl bg-slate-900 text-white text-xs font-extrabold items-center gap-1">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Carte
       </button>
@@ -1457,6 +1495,8 @@
       base: 'vector',         // vector | cyclosm | osm | opentopo
       contrast: 0,            // 0 normal, 1 fort, 2 maximum
       showBikeRoutes: true,   // itinéraires vélo balisés (Waymarked Trails)
+      colorIcons: false,      // icônes en couleur même en N&B / Noir
+      lastRaster: 'cyclosm',
       map3d: null,
       map3dReady: false,
       // Mode soleil / économie batterie
@@ -1728,8 +1768,52 @@
     }
 
     function updateLayerButtons() {
-      const shown = AppState.glOn || isOfflineMode() ? AppState.base : AppState.base === 'vector' ? AppState.activeLayerId : AppState.base;
-      document.querySelectorAll('.layer-option').forEach((btn) => btn.classList.toggle('on', btn.dataset.layer === shown));
+      const isVec = AppState.base === 'vector';
+      if (!isVec) AppState.lastRaster = AppState.base;
+      document.querySelectorAll('.layer-option').forEach((btn) => btn.classList.toggle('on', btn.dataset.layer === AppState.base));
+      document.getElementById('layer-images').classList.toggle('on', !isVec);
+      document.getElementById('raster-choices').classList.toggle('hidden', isVec);
+    }
+
+    // Icônes en couleur même en noir & blanc / noir
+    function setColorIcons(on, silent = false) {
+      AppState.colorIcons = on;
+      document.body.classList.toggle('color-icons', on);
+      document.getElementById('toggle-color-icons').checked = on;
+      try {
+        localStorage.setItem('abicyclette.colorIcons', on ? '1' : '0');
+      } catch {}
+      if (AppState.glOn && !silent) Map3D.applyStyle();
+    }
+
+    // Choix des catégories de lieux affichées (panneau Affichage)
+    function renderPoiToggles() {
+      const box = document.getElementById('poi-toggles');
+      box.innerHTML = POI_CATEGORIES.map(
+        (c) => `<button data-tg="${c.id}" class="poi-tg ${AppState.poiEnabled.has(c.id) ? 'on' : ''}" style="--c:${c.color}" aria-pressed="${AppState.poiEnabled.has(c.id)}">${poiSvg(c.id, 22)}<span>${SHORT_LABEL[c.id] || c.label}</span></button>`
+      ).join('');
+      box.querySelectorAll('[data-tg]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const id = b.dataset.tg;
+          if (AppState.poiEnabled.has(id)) AppState.poiEnabled.delete(id);
+          else AppState.poiEnabled.add(id);
+          setPoiSet([...AppState.poiEnabled]);
+        })
+      );
+    }
+
+    function setPoiSet(ids) {
+      AppState.poiEnabled = new Set(ids);
+      try {
+        localStorage.setItem(LS_POI, JSON.stringify(ids));
+      } catch {}
+      // Les catégories retirées disparaissent tout de suite de la carte
+      AppState.poiPoints = AppState.poiPoints.filter((p) => AppState.poiEnabled.has(p.cat));
+      renderPOIs(AppState.poiPoints);
+      renderPoiToggles();
+      renderPOIChips();
+      syncHomeChips();
+      debouncedPOIReload();
     }
 
     function createWaterDropIcon() {
@@ -3443,7 +3527,7 @@ ${trkpts}
 
     function expandMobileSheetIfCollapsed() {
       const drawer = document.getElementById('side-drawer');
-      drawer.classList.remove('sheet-collapsed', 'sheet-half');
+      drawer.classList.remove('sheet-collapsed', 'sheet-half', 'sheet-mini');
       drawer.classList.add('sheet-expanded');
       if (window.innerWidth < 768) pushBackStep();
     }
@@ -3471,9 +3555,15 @@ ${trkpts}
       closeAllOverlays();
     });
 
+    function minimizeSheet() {
+      const drawer = document.getElementById('side-drawer');
+      drawer.classList.remove('sheet-half', 'sheet-expanded', 'sheet-collapsed');
+      drawer.classList.add('sheet-mini');
+    }
+
     function collapseMobileSheet() {
       const drawer = document.getElementById('side-drawer');
-      drawer.classList.remove('sheet-half', 'sheet-expanded');
+      drawer.classList.remove('sheet-half', 'sheet-expanded', 'sheet-mini');
       drawer.classList.add('sheet-collapsed');
       // Rien d'autre d'ouvert : on consomme l'étape « retour » ajoutée à l'ouverture
       const others = ['display-panel', 'place-modal', 'offline-modal'].some((id) => !document.getElementById(id).classList.contains('hidden'));
@@ -3489,13 +3579,18 @@ ${trkpts}
       const drawer = document.getElementById('side-drawer');
       const handle = document.getElementById('sheet-drag-handle');
       const cycle = () => {
-        if (drawer.classList.contains('sheet-collapsed')) expandMobileSheetIfCollapsed();
+        if (drawer.classList.contains('sheet-mini')) collapseMobileSheet();
+        else if (drawer.classList.contains('sheet-collapsed')) expandMobileSheetIfCollapsed();
         else collapseMobileSheet();
       };
       // Hauteur visible du panneau replié = poignée + accueil (puces, trajet, onglets)
       const home = document.getElementById('sheet-home');
       const setPeek = () => {
-        if (drawer.classList.contains('sheet-collapsed')) drawer.style.setProperty('--peek', `${handle.offsetHeight + home.offsetHeight}px`);
+        if (drawer.classList.contains('sheet-collapsed')) {
+          drawer.style.setProperty('--peek', `${handle.offsetHeight + home.offsetHeight}px`);
+          const chipsRow = home.firstElementChild;
+          drawer.style.setProperty('--mini', `${handle.offsetHeight + chipsRow.offsetHeight + 18}px`);
+        }
       };
       new MutationObserver(setPeek).observe(drawer, { attributes: true, attributeFilter: ['class'] });
       setPeek();
@@ -3505,6 +3600,7 @@ ${trkpts}
       let moved = false;
       handle.addEventListener('click', () => {
         if (!moved) cycle();
+        moved = false;
       });
       handle.addEventListener('touchstart', (e) => {
         moved = false;
@@ -3516,8 +3612,15 @@ ${trkpts}
         drawer.classList.remove('dragging');
         const deltaY = e.changedTouches[0].clientY - startY;
         moved = Math.abs(deltaY) > 10;
-        if (deltaY < -45) expandMobileSheetIfCollapsed(); // glissement vers le haut
-        else if (deltaY > 45) collapseMobileSheet(); // glissement vers le bas
+        if (deltaY < -45) {
+          // glissement vers le haut : mini → accueil → ouvert
+          if (drawer.classList.contains('sheet-mini')) collapseMobileSheet();
+          else expandMobileSheetIfCollapsed();
+        } else if (deltaY > 45) {
+          // glissement vers le bas : ouvert → accueil → mini (seulement les puces)
+          if (drawer.classList.contains('sheet-expanded') || drawer.classList.contains('sheet-half')) collapseMobileSheet();
+          else minimizeSheet();
+        }
       });
     }
 
@@ -3651,11 +3754,16 @@ ${trkpts}
         if (!displayPanel.classList.contains('hidden')) pushBackStep();
       });
       document.getElementById('btn-close-display').addEventListener('click', () => displayPanel.classList.add('hidden'));
+      document.getElementById('display-backdrop').addEventListener('click', () => displayPanel.classList.add('hidden'));
+      document.getElementById('layer-images').addEventListener('click', () => switchBaseLayer(AppState.lastRaster || 'cyclosm'));
+      document.getElementById('toggle-color-icons').addEventListener('change', (e) => setColorIcons(e.target.checked));
+      document.getElementById('btn-poi-fewer').addEventListener('click', () => setPoiSet(POI_DEFAULT));
+      document.getElementById('btn-poi-none').addEventListener('click', () => setPoiSet([]));
       document.getElementById('btn-sheet-close').addEventListener('click', collapseMobileSheet);
       document.querySelectorAll('.layer-option').forEach((btn) => btn.addEventListener('click', () => switchBaseLayer(btn.dataset.layer)));
       document.getElementById('view-2d').addEventListener('click', () => AppState.view3D && Map3D.set3D(false));
       document.getElementById('view-3d').addEventListener('click', () => !AppState.view3D && Map3D.set3D(true));
-      document.querySelectorAll('.theme-btn').forEach((btn) => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
+      document.querySelectorAll('.theme-btn, .theme-dot').forEach((btn) => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
       document.querySelectorAll('.contrast-btn').forEach((btn) => btn.addEventListener('click', () => setContrast(+btn.dataset.contrast)));
       document.getElementById('btn-contrast').addEventListener('click', () => setContrast((AppState.contrast + 1) % 3));
       document.getElementById('toggle-bike-routes').addEventListener('change', (e) => {
@@ -4006,7 +4114,8 @@ ${trkpts}
 
       // Fermer le panneau Affichage au clic extérieur
       document.addEventListener('click', (e) => {
-        if (!displayBtn.contains(e.target) && !displayPanel.contains(e.target)) displayPanel.classList.add('hidden');
+        // Le panneau a son propre fond (toucher dehors = fermer) : rien à faire ici
+        void e;
       });
     }
 
@@ -4823,6 +4932,7 @@ ${trkpts}
     }
     const debouncedPOIReload = debounce(() => {
       syncHomeChips();
+      renderPoiToggles();
       updateHideButton();
       loadPOIsForCurrentView();
     }, 600);
@@ -5425,8 +5535,14 @@ ${trkpts}
           { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.routeCasing, 'line-width': 13 * k } },
           { id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.route, 'line-width': 7 * k } },
           {
-            id: 'pts-icons', type: 'symbol', source: 'pts',
-            layout: { 'icon-image': ['get', 'icon'], 'icon-size': (AppState.contrast ? 1.15 : 1) * 1, 'icon-allow-overlap': true, 'icon-padding': 0 },
+            // Lieux : MapLibre masque ceux qui se chevauchent (les plus importants d'abord)
+            id: 'pts-icons', type: 'symbol', source: 'pts', filter: ['!', ['get', 'top']],
+            layout: { 'icon-image': ['get', 'icon'], 'icon-size': AppState.contrast ? 1.15 : 1, 'icon-allow-overlap': false, 'icon-padding': 3, 'symbol-sort-key': ['get', 'rank'] },
+          },
+          {
+            // Mes lieux : toujours visibles
+            id: 'pts-top', type: 'symbol', source: 'pts', filter: ['==', ['get', 'top'], true],
+            layout: { 'icon-image': ['get', 'icon'], 'icon-size': AppState.contrast ? 1.25 : 1.1, 'icon-allow-overlap': true },
           },
           {
             id: 'pts-label', type: 'symbol', source: 'pts', minzoom: 15,
@@ -5441,6 +5557,7 @@ ${trkpts}
       // ----- Icônes « pures » (trait + liseré), dessinées pour le style courant -----
       function iconColors(color) {
         const t = AppState.theme;
+        if (AppState.colorIcons && t !== 'night') return { c: color, h: t === 'noir' ? '#000000' : '#ffffff' };
         if (t === 'bw') return { c: '#000000', h: '#ffffff' };
         if (t === 'noir') return { c: '#ffffff', h: '#000000' };
         if (t === 'night') return { c: color, h: '#000000' };
@@ -5466,7 +5583,7 @@ ${trkpts}
       }
 
       async function ensureIcons() {
-        const key = `${AppState.theme}|${AppState.contrast}`;
+        const key = `${AppState.theme}|${AppState.contrast}|${AppState.colorIcons}`;
         if (key === iconKey) return;
         const jobs = POI_CATEGORIES.map(async (c) => (iconImages['ico-' + c.id] = await drawIcon(POI_ICONS[c.id], c.color)));
         jobs.push((async () => (iconImages['ico-water'] = await drawIcon(PURE_EXTRA.water, '#0284c7')))());
@@ -5496,13 +5613,15 @@ ${trkpts}
           if (idx != null) selectAlternative(Number(idx), true);
           e.preventDefault();
         });
-        m.on('click', 'pts-icons', (e) => {
-          const f = e.features?.[0];
-          if (!f) return;
-          e.preventDefault();
-          openPointPopup(f);
-        });
-        ['pts-icons', 'alts-line'].forEach((id) => {
+        ['pts-icons', 'pts-top'].forEach((layer) =>
+          m.on('click', layer, (e) => {
+            const f = e.features?.[0];
+            if (!f || e.defaultPrevented) return;
+            e.preventDefault();
+            openPointPopup(f);
+          })
+        );
+        ['pts-icons', 'pts-top', 'alts-line'].forEach((id) => {
           m.on('mouseenter', id, () => (m.getCanvas().style.cursor = 'pointer'));
           m.on('mouseleave', id, () => (m.getCanvas().style.cursor = ''));
         });
@@ -5595,12 +5714,15 @@ ${trkpts}
         const feats = [];
         (AppState.showWater ? AppState.waterPoints : []).forEach((p) => {
           feats.push(point(p.lat, p.lon, {
-            icon: 'ico-water', name: p.name,
+            icon: 'ico-water', name: p.name, rank: 1,
             html: `<div class="p-3"><div class="text-xs font-bold mb-2">${escapeHtml(p.name)}</div><button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-1.5 rounded-lg bg-sky-600 text-white text-[11px] font-bold">Y aller à vélo</button></div>`,
           }));
         });
-        AppState.poiPoints.forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id })));
-        visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p) })));
+        const RANK = { visit: 2, eat: 3, service: 4 };
+        AppState.poiPoints
+          .filter((p) => AppState.poiEnabled.has(p.cat) || p.cat === AppState.poiCatFilter)
+          .forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id, rank: p.cat === 'parking' ? 6 : RANK[POI_BY_ID[p.cat]?.group] ?? 5 })));
+        visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p), top: true, rank: 0 })));
         m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
 
         htmlMarkers.forEach((mk) => mk.remove());
@@ -5771,7 +5893,9 @@ ${trkpts}
 
     // Choix du moteur : MapLibre (vectoriel, ou tuiles en 3D) sauf hors ligne → Leaflet + cache
     async function applyEngine() {
-      const wantGL = !isOfflineMode() && (AppState.base === 'vector' || AppState.view3D);
+      // MapLibre partout en ligne (vectoriel ou images, 2D ou 3D) : icônes sans chevauchement, une seule carte.
+      // Leaflet ne s'affiche que hors ligne, avec les tuiles téléchargées.
+      const wantGL = !isOfflineMode();
       if (wantGL && !AppState.glOn) {
         const ok = await Map3D.show();
         if (!ok && AppState.base === 'vector') updateLayerButtons(); // repli sur les tuiles
@@ -5824,7 +5948,7 @@ ${trkpts}
       document.body.classList.toggle('bw-mode', theme === 'bw' || theme === 'noir');
       document.body.classList.toggle('noir-mode', theme === 'noir');
       document.body.classList.toggle('night-mode', theme === 'night');
-      document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('on', b.dataset.theme === theme));
+      document.querySelectorAll('.theme-btn, .theme-dot').forEach((b) => b.classList.toggle('on', b.dataset.theme === theme));
       const badge = document.getElementById('eco-badge');
       badge.classList.toggle('hidden', theme === 'normal');
       badge.textContent = { sun: 'SOLEIL', bw: 'N&B', noir: 'NOIR', night: 'NUIT' }[theme] || '';
@@ -6766,6 +6890,8 @@ ${trkpts}
       AppState.view3D = localStorage.getItem('abicyclette.view3d') === '1';
       AppState.showBikeRoutes = localStorage.getItem('abicyclette.bikeRoutes') !== '0';
       document.getElementById('toggle-bike-routes').checked = AppState.showBikeRoutes;
+      if (localStorage.getItem('abicyclette.colorIcons') === '1') setColorIcons(true, true);
+      renderPoiToggles();
       const savedContrast = +(localStorage.getItem('abicyclette.contrast') || 0);
       if (savedContrast) setContrast(savedContrast, true);
       updateLayerButtons();
@@ -6774,7 +6900,7 @@ ${trkpts}
       AppState.preferCycleways = localStorage.getItem('abicyclette.preferCycleways') !== '0';
       document.getElementById('toggle-prefer-cycleways').checked = AppState.preferCycleways;
       if (localStorage.getItem('abicyclette.showWater') === '0') setShowWater(false);
-      document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('on', b.dataset.theme === AppState.theme));
+      document.querySelectorAll('.theme-btn, .theme-dot').forEach((b) => b.classList.toggle('on', b.dataset.theme === AppState.theme));
       try {
         const sc = JSON.parse(localStorage.getItem('abicyclette.shortcuts') || 'null');
         if (Array.isArray(sc)) AppState.shortcuts = sc;
