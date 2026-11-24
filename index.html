@@ -225,8 +225,9 @@
       #side-drawer.sheet-collapsed #home-dist { font-size: 12px; }
       #side-drawer.sheet-collapsed .home-alt { padding: 5px 8px; border-radius: 13px; border-width: 1.5px; }
       #side-drawer.sheet-collapsed .home-alt .text-lg { font-size: 15px; }
-      #side-drawer.sheet-collapsed #btn-go, #side-drawer.sheet-collapsed #btn-home-clear { height: 46px; font-size: 17px; }
-      #side-drawer.sheet-collapsed #btn-home-clear { width: 46px; }
+      #side-drawer.sheet-collapsed #btn-go, #side-drawer.sheet-collapsed #btn-home-clear, #side-drawer.sheet-collapsed #btn-take-trip { height: 46px; font-size: 17px; }
+      #side-drawer.sheet-collapsed #btn-home-clear, #side-drawer.sheet-collapsed #btn-take-trip { width: 46px; }
+      #side-drawer.sheet-collapsed #btn-take-trip { font-size: 13px; }
       #side-drawer.sheet-collapsed .sc-tile { padding: 5px 0; }
       /* Crédits de la carte : au-dessus de la pilule, pas dessous */
       body:not(.guiding) .maplibregl-ctrl-bottom-right, body:not(.guiding) .leaflet-bottom.leaflet-right { bottom: calc(96px + env(safe-area-inset-bottom)); }
@@ -332,6 +333,9 @@
     body.bw-mode .nb-row .nb-add, body.bw-mode .nb-chip.on { background: #000; color: #fff; }
     body.noir-mode .nb-pill, body.noir-mode #nearby-sheet { filter: invert(1); }
     body:not(.guiding) #hud-nearby, body:not(.guiding) #nearby-sheet { display: none !important; }
+    .photo-pin { width: 40px; height: 40px; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); background-size: cover; background-position: center; cursor: pointer; }
+    #photo-strip img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; opacity: .6; }
+    #photo-strip img.on { opacity: 1; outline: 3px solid #fff; }
     .dp-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 700; color: #0f172a; }
     .dp-seg { display: flex; gap: 4px; }
     .dp-seg .seg { height: 38px; padding: 0 14px; }
@@ -612,6 +616,7 @@
     <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col items-end gap-2">
       <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="hidden">3D</button>
       <button id="btn-hud-display" aria-label="Affichage : style de carte, contraste, 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+      <button id="btn-hud-photo" aria-label="Prendre une photo" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button id="btn-hud-onroute" aria-label="Chercher sur mon trajet" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
       <button id="btn-hud-recenter" aria-label="Recentrer sur ma position" class="hidden h-14 px-4 rounded-2xl bg-sky-600 text-white text-sm font-extrabold items-center gap-2 shadow-lg"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>Recentrer</button>
       <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="hidden glass-panel w-14 h-14 rounded-2xl items-center justify-center text-slate-400">
@@ -675,6 +680,7 @@
   <!-- Deux boutons flottants : ma position, affichage -->
   <div id="quick-controls" class="fixed right-3 top-[84px] md:top-4 z-20 flex flex-col gap-2.5">
     <button id="btn-locate-me" aria-label="Ma position" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-800 active:scale-95 transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
+    <button id="btn-photo" aria-label="Prendre une photo" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-800 active:scale-95 transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
     <button id="btn-display" aria-label="Affichage : 3D, style, fond de carte" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-800 active:scale-95 transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
     <div class="hidden md:flex flex-col glass-panel rounded-2xl overflow-hidden">
       <button id="btn-zoom-in" aria-label="Zoom avant" class="w-12 h-11 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 border-b border-slate-200/60 font-bold text-lg">+</button>
@@ -758,6 +764,7 @@
         </div>
         <div id="poi-toggles" class="grid grid-cols-4 gap-1.5"></div>
         <button id="btn-dp-shortcuts" class="dp-link">Choisir les icônes du bas<span>›</span></button>
+        <button id="btn-dp-photos" class="dp-link"><span id="dp-photos-label" style="transform:none">Mes photos</span><span>›</span></button>
       </section>
 
       <details class="dp-adv">
@@ -827,6 +834,7 @@
         <p id="home-weather" class="hidden text-[12px] font-semibold text-slate-600"></p>
         <div class="flex gap-2">
           <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Démarrer</button>
+          <button id="btn-take-trip" aria-label="Emporter ce trajet : le télécharger pour rouler sans réseau" class="w-14 h-14 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-extrabold flex items-center justify-center"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button>
           <button id="btn-home-clear" aria-label="Effacer le trajet" class="w-14 h-14 rounded-2xl bg-slate-200/70 text-slate-600 text-lg font-bold">✕</button>
         </div>
       </div>
@@ -1298,6 +1306,22 @@
   </div>
 
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
+  <!-- Photos : prise directe, rangées dans le téléphone, épinglées sur la carte -->
+  <input id="photo-input" type="file" accept="image/*" capture="environment" class="hidden" />
+  <div id="photo-viewer" class="hidden fixed inset-0 z-[60] bg-black flex flex-col">
+    <div class="flex items-center justify-between p-3 text-white">
+      <div id="photo-info" class="text-sm font-bold"></div>
+      <button id="btn-photo-close" aria-label="Fermer" class="w-11 h-11 rounded-full bg-white/15 text-white text-lg font-bold">✕</button>
+    </div>
+    <div class="flex-1 min-h-0 flex items-center justify-center"><img id="photo-img" alt="Photo prise pendant la sortie" style="max-width:100%;max-height:100%;object-fit:contain" /></div>
+    <div id="photo-strip" class="flex gap-2 overflow-x-auto no-scrollbar px-3 py-2"></div>
+    <div class="flex gap-2 p-3" style="padding-bottom:calc(12px + env(safe-area-inset-bottom))">
+      <button id="btn-photo-share" class="flex-1 h-12 rounded-2xl bg-emerald-600 text-white text-sm font-extrabold">Partager</button>
+      <button id="btn-photo-share-all" class="flex-1 h-12 rounded-2xl bg-white/15 text-white text-sm font-extrabold">Tout partager</button>
+      <button id="btn-photo-delete" aria-label="Supprimer cette photo" class="w-12 h-12 rounded-2xl bg-rose-600 text-white text-lg font-bold">🗑</button>
+    </div>
+  </div>
+
   <!-- Fiche d'un lieu : demi-tiroir, la carte reste visible -->
   <div id="poi-sheet" class="hidden glass-panel"></div>
 
@@ -1440,7 +1464,7 @@
     // -------------------------------------------------------------------------
     const OfflineDB = (() => {
       const DB_NAME = 'CycloLibreOfflineDB';
-      const DB_VERSION = 2;
+      const DB_VERSION = 3;
       let dbInstance = null;
 
       function open() {
@@ -1457,6 +1481,10 @@
             }
             if (!db.objectStoreNames.contains('cycleways')) {
               db.createObjectStore('cycleways', { keyPath: 'id' });
+            }
+            // v3 : photos prises pendant les sorties
+            if (!db.objectStoreNames.contains('photos')) {
+              db.createObjectStore('photos', { keyPath: 'id' });
             }
             // v2 : points d'intérêt (services vélo, lieux à visiter)
             if (!db.objectStoreNames.contains('poi')) {
@@ -1611,7 +1639,24 @@
         });
       }
 
-      return { open, getTile, putTile, putPOIs, getAllPOIs, putCycleways, getAllCycleways, putExtraPOIs, getAllExtraPOIs, getStats, clearAll };
+      async function photoOp(mode, fn) {
+        try {
+          const db = await open();
+          return await new Promise((resolve) => {
+            const tx = db.transaction('photos', mode);
+            const req = fn(tx.objectStore('photos'));
+            tx.oncomplete = () => resolve(req ? req.result : true);
+            tx.onerror = () => resolve(null);
+          });
+        } catch {
+          return null;
+        }
+      }
+      const putPhoto = (ph) => photoOp('readwrite', (st) => st.put(ph));
+      const getPhotos = async () => (await photoOp('readonly', (st) => st.getAll())) || [];
+      const deletePhoto = (id) => photoOp('readwrite', (st) => st.delete(id));
+
+      return { putPhoto, getPhotos, deletePhoto, open, getTile, putTile, putPOIs, getAllPOIs, putCycleways, getAllCycleways, putExtraPOIs, getAllExtraPOIs, getStats, clearAll };
     })();
 
     // -------------------------------------------------------------------------
@@ -2878,6 +2923,7 @@
       drawAlternativePolylines();
       renderAlternativesList();
       if (AppState.glOn) Map3D.refreshOverlays();
+      Trip.save();
     }
 
     function drawAlternativePolylines() {
@@ -2933,6 +2979,156 @@
       list.querySelectorAll('.alt-card').forEach((b) =>
         b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.alt, 10), true))
       );
+    }
+
+    // Le trajet en cours est gardé dans le téléphone (et synchronisé) : il revient à la réouverture, même hors ligne
+    const Trip = (() => {
+      const KEY = 'abicyclette.trip';
+      let restoring = false;
+      let syncTimer = null;
+      const r5 = (v) => Math.round(v * 1e5) / 1e5;
+      const slim = (r) => ({
+        coords: r.coords.map((c) => [r5(c[0]), r5(c[1]), Math.round(c[2] || 0)]),
+        distance: r.distance, duration: r.duration, ascent: r.ascent, descent: r.descent, steps: r.steps,
+        altIdx: r.altIdx, source: r.source, cycleShare: r.cycleShare ?? null, name: r.name, tags: r.tags || [],
+      });
+      const read = () => {
+        try {
+          return JSON.parse(localStorage.getItem(KEY) || 'null');
+        } catch {
+          return null;
+        }
+      };
+      function write(obj) {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(obj));
+        } catch {
+          // Trop gros : on ne garde que le trajet choisi
+          try {
+            if (obj.routes) localStorage.setItem(KEY, JSON.stringify({ ...obj, routes: [obj.routes[obj.sel] || obj.routes[0]], sel: 0 }));
+          } catch {}
+        }
+        clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => CloudSync.sync(true), 6000);
+      }
+      function save() {
+        if (restoring || !AppState.currentRoute || !AppState.origin || !AppState.dest) return;
+        write({ at: Date.now(), origin: AppState.origin, dest: AppState.dest, vias: AppState.vias, sel: AppState.selectedAltIdx || 0, routes: AppState.alternatives.map(slim) });
+      }
+      function clear() {
+        if (restoring) return;
+        write({ at: Date.now(), cleared: true });
+      }
+      function apply(t, fit = true) {
+        if (!t || t.cleared || !t.routes?.length || !t.origin || !t.dest) return false;
+        restoring = true;
+        try {
+          setRouteOrigin(t.origin.lat, t.origin.lon, t.origin.label);
+          setRouteDestination(t.dest.lat, t.dest.lon, t.dest.label);
+          AppState.vias = t.vias || [];
+          renderVias();
+          setAlternatives(t.routes.map((r) => ({ ...r })), !fit);
+          if (t.sel) selectAlternative(Math.min(t.sel, t.routes.length - 1), true);
+        } finally {
+          restoring = false;
+        }
+        return true;
+      }
+      const restore = () => apply(read());
+      // Pour le cloud : seulement le trajet choisi (léger)
+      function forCloud() {
+        const t = read();
+        if (!t) return null;
+        if (t.cleared) return { at: t.at, cleared: true };
+        return { ...t, routes: [t.routes[t.sel] || t.routes[0]], sel: 0 };
+      }
+      function fromCloud(remote) {
+        const local = read();
+        if (!remote || (local && local.at >= remote.at) || AppState.isGuiding) return;
+        try {
+          localStorage.setItem(KEY, JSON.stringify(remote));
+        } catch {}
+        if (remote.cleared) {
+          if (AppState.currentRoute) {
+            restoring = true;
+            document.getElementById('btn-clear-route').click();
+            restoring = false;
+          }
+        } else if (apply(remote, false)) showToast('Trajet récupéré depuis le cloud.', 'info', 3000);
+      }
+      return { save, clear, restore, forCloud, fromCloud };
+    })();
+
+    // Tuiles vectorielles à garder : liste [z, x, y] sans doublon
+    function tilesForBBox(bbox, zooms) {
+      const out = [];
+      zooms.forEach((z) => {
+        const a = TileSource.tileXY(bbox.north, bbox.west, z);
+        const c = TileSource.tileXY(bbox.south, bbox.east, z);
+        for (let x = a.x; x <= c.x; x++) for (let y = a.y; y <= c.y; y++) out.push([z, x, y]);
+      });
+      return out;
+    }
+    function tilesForRoute(route) {
+      const keys = new Map();
+      for (let z = 7; z <= 14; z++) {
+        let acc = Infinity;
+        for (let i = 0; i < route.coords.length; i++) {
+          if (i) acc += route.cumDist[i] - route.cumDist[i - 1];
+          if (acc < 250 && i !== route.coords.length - 1) continue;
+          acc = 0;
+          const t = TileSource.tileXY(route.coords[i][0], route.coords[i][1], z);
+          const pad = z >= 13 ? 1 : 0; // les voisines aux zooms détaillés, pour voir autour du tracé
+          for (let dx = -pad; dx <= pad; dx++) for (let dy = -pad; dy <= pad; dy++) keys.set(`${z}/${t.x + dx}/${t.y + dy}`, [z, t.x + dx, t.y + dy]);
+        }
+      }
+      return [...keys.values()];
+    }
+    async function storeVectorTiles(list, onProgress) {
+      let done = 0;
+      let ok = 0;
+      for (let i = 0; i < list.length; i += 8) {
+        if (AppState.cancelDownloadFlag) break;
+        await Promise.all(
+          list.slice(i, i + 8).map(async ([z, x, y]) => {
+            try {
+              await TileSource.fetchTile(z, x, y, true);
+              ok++;
+            } catch {}
+            done++;
+          })
+        );
+        onProgress?.(done, list.length);
+      }
+      await Map3D.storeGlyphs().catch(() => null);
+      if (ok) localStorage.setItem('abicyclette.offVector', '1');
+      return ok;
+    }
+
+    // « Emporter ce trajet » : carte, polices et lieux le long du parcours, pour rouler sans réseau
+    async function takeTripOffline() {
+      const route = AppState.currentRoute;
+      const btn = document.getElementById('btn-take-trip');
+      if (!route || btn.dataset.busy) return;
+      if (isOfflineMode()) return showToast('Il faut du réseau pour télécharger le trajet.', 'warning');
+      btn.dataset.busy = '1';
+      const label = btn.innerHTML;
+      try {
+        AppState.cancelDownloadFlag = false;
+        const list = tilesForRoute(route);
+        const ok = await storeVectorTiles(list, (d, n) => (btn.textContent = `${Math.round((100 * d) / n)} %`));
+        btn.textContent = '…';
+        await loadCompanion(route);
+        const comp = route._comp;
+        if (comp?._rawWater?.length) await OfflineDB.putPOIs(comp._rawWater);
+        if (comp?._rawPois?.length) await OfflineDB.putExtraPOIs(comp._rawPois);
+        Trip.save();
+        refreshOfflineStatsUI();
+        showToast(ok ? `Trajet emporté : carte et ${comp?.pois.length || 0} lieux disponibles sans réseau.` : 'Téléchargement impossible (réseau ?).', ok ? 'success' : 'warning', 5000);
+      } finally {
+        delete btn.dataset.busy;
+        btn.innerHTML = label;
+      }
     }
 
     function clearAlternativeLayers() {
@@ -3364,6 +3560,11 @@
         return;
       }
 
+      if (AppState.offRouteCount >= 3 && isOfflineMode() && Date.now() - AppState.lastRerouteAt > 60000) {
+        AppState.lastRerouteAt = Date.now();
+        showToast('Hors du tracé — pas de recalcul sans réseau, rejoignez la ligne.', 'warning', 5000);
+      }
+
       // --- Prochaine manœuvre : première étape devant nous le long du tracé ---
       let idx = Math.max(1, AppState.guidanceStepIdx);
       while (idx < route.steps.length - 1 && route._stepsAlong[idx] < snap.along + 8) idx++;
@@ -3603,6 +3804,7 @@ ${trkpts}
         }
       });
 
+      if (AppState.base === 'vector') tileJobs.length = 0; // fond vectoriel : pas besoin des images
       AppState.isDownloadingZone = true;
       AppState.cancelDownloadFlag = false;
 
@@ -3616,6 +3818,14 @@ ${trkpts}
       progressBox.classList.remove('hidden');
       btnStart.classList.add('hidden');
       btnCancel.classList.remove('hidden');
+
+      // 1) Carte vectorielle de la zone : légère, garde les styles et la 3D hors ligne
+      await storeVectorTiles(tilesForBBox(bbox, [6, 8, 10, 11, 12, 13, 14]), (d, n) => {
+        const pct = Math.round((d / n) * 100);
+        progressBar.style.width = `${pct}%`;
+        progressPct.textContent = `${pct}%`;
+        progressLabel.textContent = `Carte vectorielle : ${d} / ${n}`;
+      });
 
       let completed = 0;
       const total = tileJobs.length;
@@ -4196,7 +4406,9 @@ ${trkpts}
         clearAlternativeLayers();
         ['route-weather', 'route-weather-advice', 'home-weather'].forEach((id) => document.getElementById(id).classList.add('hidden'));
         if (AppState.glOn) Map3D.refreshOverlays();
+        Trip.clear();
       });
+      document.getElementById('btn-take-trip').addEventListener('click', takeTripOffline);
 
       // Profils BRouter
       document.querySelectorAll('.profile-btn').forEach((btn) => {
@@ -4745,16 +4957,36 @@ ${trkpts}
         return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)) };
       }
 
+      // Tuile vectorielle brute : réseau, sinon copie hors ligne. store = on la garde pour le hors ligne.
+      async function fetchTile(z, x, y, store = false) {
+        const key = `omt_${z}_${x}_${y}`;
+        if (!isOfflineMode()) {
+          try {
+            if (store && (await OfflineDB.getTile(key))) return new ArrayBuffer(0);
+            const url = (await getTemplate()).replace('{z}', z).replace('{x}', x).replace('{y}', y);
+            const res = await fetch(url);
+            if (res.status === 204 || res.status === 404) {
+              if (store) await OfflineDB.putTile(key, 'omt', z, x, y, new Blob([]));
+              return new ArrayBuffer(0); // tuile vide (mer, désert…)
+            }
+            if (res.ok) {
+              const buf = await res.arrayBuffer();
+              if (store) await OfflineDB.putTile(key, 'omt', z, x, y, new Blob([buf]));
+              return buf;
+            }
+          } catch {
+            /* réseau en panne : on tente la copie locale */
+          }
+        }
+        const blob = await OfflineDB.getTile(key);
+        if (blob) return await blob.arrayBuffer();
+        throw new Error('tuile absente');
+      }
+
       async function tile(z, x, y) {
         const key = `${z}/${x}/${y}`;
         if (!cache.has(key)) {
-          const pr = (async () => {
-            const url = (await getTemplate()).replace('{z}', z).replace('{x}', x).replace('{y}', y);
-            const res = await fetch(url);
-            if (res.status === 204 || res.status === 404) return []; // tuile vide (mer, désert…)
-            if (!res.ok) throw new Error('tuile ' + res.status);
-            return decodePOIs(await res.arrayBuffer(), z, x, y);
-          })();
+          const pr = (async () => decodePOIs(await fetchTile(z, x, y), z, x, y))();
           pr.catch(() => cache.delete(key));
           cache.set(key, pr);
           if (cache.size > 400) cache.delete(cache.keys().next().value);
@@ -4782,7 +5014,7 @@ ${trkpts}
           .filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
       }
 
-      return { rawInBounds };
+      return { rawInBounds, fetchTile, tileXY };
     })();
 
     // Classe / sous-classe OpenMapTiles -> nos catégories
@@ -5592,6 +5824,7 @@ ${trkpts}
     const CloudSync = (() => {
       const FILE = 'abicyclette-lieux.json';
       const RIDES_FILE = 'abicyclette-sorties.json';
+      const TRIP_FILE = 'abicyclette-trajet.json';
       const K_TOKEN = 'abicyclette.gh.token';
       const K_GIST = 'abicyclette.gh.gist';
       let busy = false;
@@ -5710,6 +5943,17 @@ ${trkpts}
           if (JSON.stringify(mergedRides) !== JSON.stringify(remoteRides) && mergedRides.length) {
             files[RIDES_FILE] = { content: JSON.stringify({ version: 1, updatedAt: Date.now(), rides: mergedRides }) };
           }
+          // Trajet en cours : le plus récent des deux gagne
+          let remoteTrip = null;
+          try {
+            const tf = gist.files?.[TRIP_FILE];
+            let txt = tf?.content || 'null';
+            if (tf?.truncated && tf.raw_url) txt = await (await fetch(tf.raw_url)).text();
+            remoteTrip = JSON.parse(txt);
+          } catch {}
+          const localTrip = Trip.forCloud();
+          if (localTrip && (!remoteTrip || localTrip.at > remoteTrip.at)) files[TRIP_FILE] = { content: JSON.stringify(localTrip) };
+          else if (remoteTrip) Trip.fromCloud(remoteTrip);
           if (Object.keys(files).length) {
             await gh(`/gists/${id}`, { method: 'PATCH', body: JSON.stringify({ files }) });
           }
@@ -5777,6 +6021,36 @@ ${trkpts}
       const iconImages = {}; // id -> ImageData (thème courant)
       let iconKey = '';
 
+      // Protocole « abc:// » : tuiles et polices lues dans le téléphone quand il n'y a pas de réseau
+      let protoDone = false;
+      function registerProtocol() {
+        if (protoDone || !window.maplibregl) return;
+        protoDone = true;
+        maplibregl.addProtocol('abc', async (params) => {
+          const parts = params.url.slice('abc://'.length).split('/');
+          if (parts[0] === 'omt') return { data: await TileSource.fetchTile(+parts[1], +parts[2], +parts[3]) };
+          const blob = await OfflineDB.getTile(`glyph_${decodeURIComponent(parts[1])}_${parts[2]}`);
+          if (!blob) throw new Error('police absente');
+          return { data: await blob.arrayBuffer() };
+        });
+      }
+      // Polices des noms, à garder pour le hors ligne
+      async function storeGlyphs() {
+        const L = await getLiberty();
+        const jobs = [];
+        [...new Set([L.fontR, L.fontB])].forEach((font) =>
+          ['0-255', '256-511', '8192-8447'].forEach((range) => jobs.push([font, range]))
+        );
+        await Promise.allSettled(
+          jobs.map(async ([font, range]) => {
+            const key = `glyph_${font}_${range}`;
+            if (await OfflineDB.getTile(key)) return;
+            const res = await fetch(L.glyphs.replace('{fontstack}', encodeURIComponent(font)).replace('{range}', range));
+            if (res.ok) await OfflineDB.putTile(key, 'glyph', 0, 0, 0, await res.blob());
+          })
+        );
+      }
+
       function loadLib() {
         if (window.maplibregl) return Promise.resolve();
         if (libPromise) return libPromise;
@@ -5804,7 +6078,18 @@ ${trkpts}
           const saved = JSON.parse(localStorage.getItem('abicyclette.liberty') || 'null');
           if (saved && Date.now() - saved.at < 86400000 * 3) return (liberty = saved);
         } catch {}
-        const st = await (await fetch('https://tiles.openfreemap.org/styles/liberty')).json();
+        let st;
+        try {
+          if (isOfflineMode()) throw new Error('hors ligne');
+          st = await (await fetch('https://tiles.openfreemap.org/styles/liberty')).json();
+        } catch (e) {
+          // Hors ligne : les réglages déjà connus restent valables
+          try {
+            const old = JSON.parse(localStorage.getItem('abicyclette.liberty') || 'null');
+            if (old) return (liberty = old);
+          } catch {}
+          throw e;
+        }
         const fonts = st.layers.flatMap((l) => l.layout?.['text-font'] || []).filter((f) => typeof f === 'string');
         liberty = {
           at: Date.now(),
@@ -5896,11 +6181,14 @@ ${trkpts}
           else P.cycDash = theme === 'noir' ? '#000000' : '#ffffff';
         }
         const k = [1, 1.3, 1.6][AppState.contrast] || 1;
-        const base = AppState.base;
-        const threeD = AppState.view3D;
+        const off = isOfflineMode();
+        const base = off ? 'vector' : AppState.base; // hors ligne : toujours la carte vectorielle enregistrée
+        const threeD = AppState.view3D && !off; // pas de relief sans réseau
         const dem = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Relief © Mapzen / AWS Open Data' };
         const sources = {
-          omt: { type: 'vector', url: L.omt, attribution: '© OpenStreetMap · OpenFreeMap' },
+          omt: off
+            ? { type: 'vector', tiles: ['abc://omt/{z}/{x}/{y}'], minzoom: 0, maxzoom: 14, attribution: '© OpenStreetMap · OpenFreeMap (hors ligne)' }
+            : { type: 'vector', url: L.omt, attribution: '© OpenStreetMap · OpenFreeMap' },
           alts: { type: 'geojson', data: emptyFC() },
           route: { type: 'geojson', data: emptyFC() },
           ride: { type: 'geojson', data: emptyFC() },
@@ -5958,7 +6246,7 @@ ${trkpts}
           }
         );
         // Le relief est activé après le chargement du style (setTerrain), plus stable que dans le style
-        return { version: 8, glyphs: L.glyphs, sources, layers };
+        return { version: 8, glyphs: off ? 'abc://glyph/{fontstack}/{range}' : L.glyphs, sources, layers };
       }
 
       // ----- Icônes « pures » (trait + liseré), dessinées pour le style courant -----
@@ -6212,6 +6500,7 @@ ${trkpts}
           showToast('Impossible de charger le moteur de carte vectoriel : tuiles images à la place.', 'warning');
           return false;
         }
+        registerProtocol();
         const probe = document.createElement('canvas');
         if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) {
           showToast('WebGL indisponible : carte en tuiles images.', 'warning');
@@ -6371,18 +6660,146 @@ ${trkpts}
       }
 
       return {
-        show, hide, applyStyle, set3D, openPoi, refreshOverlays, follow, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
+        storeGlyphs, show, hide, applyStyle, set3D, openPoi, refreshOverlays, follow, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
         enable: () => set3D(true),
         disable: () => set3D(false),
         toggle: () => set3D(!AppState.view3D),
       };
     })();
 
+    // -------------------------------------------------------------------------
+    // PHOTOS : appareil photo direct, photos gardées dans le téléphone et épinglées sur la carte
+    // -------------------------------------------------------------------------
+    const Photos = (() => {
+      let list = [];
+      let current = null;
+      let url = null;
+      let lMarkers = [];
+      let gMarkers = [];
+      const input = () => document.getElementById('photo-input');
+
+      async function shrink(file, max, q) {
+        let bmp;
+        try {
+          bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        } catch {
+          bmp = await new Promise((res, rej) => {
+            const im = new Image();
+            im.onload = () => res(im);
+            im.onerror = rej;
+            im.src = URL.createObjectURL(file);
+          });
+        }
+        const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(bmp.width * k);
+        cv.height = Math.round(bmp.height * k);
+        cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+        return cv;
+      }
+      async function onFile(file) {
+        if (!file) return;
+        try {
+          const big = await shrink(file, 2000, 0.88);
+          const blob = await new Promise((res) => big.toBlob(res, 'image/jpeg', 0.88));
+          const thumb = (await shrink(file, 160, 0.7)).toDataURL('image/jpeg', 0.7);
+          const u = AppState.userLocation;
+          const c = AppState.map.getCenter();
+          const ph = { id: 'ph' + Date.now(), at: Date.now(), lat: u ? u.lat : c.lat, lon: u ? u.lon : c.lng, located: !!u, blob, thumb };
+          if ((await OfflineDB.putPhoto(ph)) === null) throw new Error('stockage');
+          list.push(ph);
+          renderPins();
+          showToast('Photo gardée dans l’appli, épinglée sur la carte.', 'success', 2500);
+        } catch {
+          showToast('Photo non enregistrée (mémoire du téléphone ?).', 'warning', 4000);
+        }
+        input().value = '';
+      }
+      function renderPins() {
+        document.getElementById('dp-photos-label').textContent = list.length ? `Mes photos (${list.length})` : 'Mes photos';
+        lMarkers.forEach((m) => AppState.map.removeLayer(m));
+        gMarkers.forEach((m) => m.remove());
+        lMarkers = [];
+        gMarkers = [];
+        list.forEach((ph) => {
+          const html = `<div class="photo-pin" style="background-image:url(${ph.thumb})"></div>`;
+          const lm = L.marker([ph.lat, ph.lon], { icon: L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }), zIndexOffset: 500 }).addTo(AppState.map);
+          lm.on('click', () => open(ph.id));
+          lMarkers.push(lm);
+          if (AppState.map3d && window.maplibregl) {
+            const el = document.createElement('div');
+            el.className = 'photo-pin';
+            el.style.backgroundImage = `url(${ph.thumb})`;
+            el.addEventListener('click', (e) => {
+              e.stopPropagation();
+              open(ph.id);
+            });
+            gMarkers.push(new maplibregl.Marker({ element: el }).setLngLat([ph.lon, ph.lat]).addTo(AppState.map3d));
+          }
+        });
+      }
+      function open(id) {
+        if (!list.length) return showToast('Aucune photo pour l’instant : touchez l’appareil photo.', 'info', 3000);
+        current = list.find((p) => p.id === id) || list[list.length - 1];
+        if (url) URL.revokeObjectURL(url);
+        url = URL.createObjectURL(current.blob);
+        document.getElementById('photo-img').src = url;
+        document.getElementById('photo-info').textContent = new Date(current.at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        const strip = document.getElementById('photo-strip');
+        strip.innerHTML = list.map((p) => `<img data-ph="${p.id}" class="${p.id === current.id ? 'on' : ''}" src="${p.thumb}" alt="">`).join('');
+        strip.querySelectorAll('[data-ph]').forEach((im) => im.addEventListener('click', () => open(im.dataset.ph)));
+        strip.querySelector('.on')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+        document.getElementById('btn-photo-share-all').classList.toggle('hidden', list.length < 2);
+        document.getElementById('photo-viewer').classList.remove('hidden');
+      }
+      const close = () => document.getElementById('photo-viewer').classList.add('hidden');
+      const fileOf = (p) => new File([p.blob], `a-bicyclette-${new Date(p.at).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.jpg`, { type: 'image/jpeg' });
+      async function share(items) {
+        const files = items.map(fileOf);
+        try {
+          if (navigator.canShare && navigator.canShare({ files })) return await navigator.share({ files, title: 'À bicyclette' });
+        } catch (e) {
+          if (e && e.name === 'AbortError') return;
+        }
+        // Pas de partage sur cet appareil : téléchargement
+        files.forEach((f) => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(f);
+          a.download = f.name;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+        });
+      }
+      async function remove() {
+        if (!current || !confirm('Supprimer cette photo ?')) return;
+        await OfflineDB.deletePhoto(current.id);
+        list = list.filter((p) => p.id !== current.id);
+        renderPins();
+        if (list.length) open(list[list.length - 1].id);
+        else close();
+      }
+      async function init() {
+        list = (await OfflineDB.getPhotos()).sort((a, b) => a.at - b.at);
+        input().addEventListener('change', (e) => onFile(e.target.files[0]));
+        ['btn-photo', 'btn-hud-photo'].forEach((id) => document.getElementById(id).addEventListener('click', () => input().click()));
+        document.getElementById('btn-photo-close').addEventListener('click', close);
+        document.getElementById('btn-photo-share').addEventListener('click', () => current && share([current]));
+        document.getElementById('btn-photo-share-all').addEventListener('click', () => share(list));
+        document.getElementById('btn-photo-delete').addEventListener('click', remove);
+        document.getElementById('btn-dp-photos').addEventListener('click', () => {
+          document.getElementById('display-panel').classList.add('hidden');
+          open();
+        });
+        renderPins();
+      }
+      return { init, renderPins, count: () => list.length };
+    })();
+
     // Choix du moteur : MapLibre (vectoriel, ou tuiles en 3D) sauf hors ligne → Leaflet + cache
     async function applyEngine() {
       // MapLibre partout en ligne (vectoriel ou images, 2D ou 3D) : icônes sans chevauchement, une seule carte.
       // Leaflet ne s'affiche que hors ligne, avec les tuiles téléchargées.
-      const wantGL = !isOfflineMode();
+      const wantGL = !isOfflineMode() || localStorage.getItem('abicyclette.offVector') === '1';
       if (wantGL && !AppState.glOn) {
         const ok = await Map3D.show();
         if (!ok && AppState.base === 'vector') updateLayerButtons(); // repli sur les tuiles
@@ -6392,6 +6809,7 @@ ${trkpts}
         await Map3D.applyStyle();
       }
       applyLeafletFilters();
+      Photos.renderPins();
     }
 
     // Véloroutes (Waymarked Trails) aussi sur la carte Leaflet
@@ -7003,6 +7421,7 @@ ${trkpts}
 
       let water = (await OfflineDB.getAllPOIs()).filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
       let visits = (await OfflineDB.getAllExtraPOIs()).filter((p) => POI_BY_ID[p.cat]?.group === 'visit' && p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
+      if (isOfflineMode()) allPois = (await OfflineDB.getAllExtraPOIs()).filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
       if (!isOfflineMode()) {
         try {
           // Tuiles z14 traversées par le tracé (points tous les ~300 m), au plus 60
@@ -7050,6 +7469,8 @@ ${trkpts}
         }
         }
       }
+      comp._rawWater = water;
+      comp._rawPois = allPois.concat(visits);
       const seen = new Set();
       water.forEach((p) => {
         if (seen.has(p.id)) return;
@@ -7642,7 +8063,6 @@ ${trkpts}
       Rides.render();
       loadPOIsForCurrentView();
       CloudSync.refreshInfo();
-      CloudSync.sync(true);
       const savedTheme = localStorage.getItem(LS_THEME) || (localStorage.getItem('abicyclette.sunmode') === '1' ? 'sun' : 'normal');
       if (savedTheme !== 'normal') setTheme(savedTheme, true);
       AppState.base = localStorage.getItem('abicyclette.base') || 'vector';
@@ -7679,6 +8099,9 @@ ${trkpts}
       renderShortcuts();
       syncHomeChips();
       updateHome();
+      Trip.restore();
+      CloudSync.sync(true);
+      Photos.init();
 
       // Ma position au démarrage, sans redemander l'autorisation si elle est déjà donnée
       try {
