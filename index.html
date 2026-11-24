@@ -287,6 +287,27 @@
     .theme-dot.on { border-color: #059669 !important; }
     body.night-mode .theme-dot.on { border-color: #34d399 !important; }
     body.noir-mode .theme-dot.on, body.bw-mode .theme-dot.on { border-width: 3px !important; }
+    #poi-sheet { position: fixed; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 45; border-radius: 22px; padding: 14px 16px 14px; background: #fff; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; max-height: 70vh; overflow-y: auto; }
+    @media (min-width: 768px) { #poi-sheet { left: 432px; right: auto; width: 400px; bottom: 16px; } }
+    #poi-sheet .ps-hours { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; background: #f8fafc; font-size: 13.5px; font-weight: 600; color: #475569; }
+    #poi-sheet .ps-hours div { display: flex; justify-content: space-between; gap: 12px; }
+    #poi-sheet .ps-hours div.today { font-weight: 800; color: #0f172a; }
+    #poi-sheet .ps-btn { height: 50px; border-radius: 16px; background: #f1f5f9; color: #0f172a; font-size: 15px; font-weight: 800; padding: 0 14px; }
+    #poi-sheet .ps-go { flex: 1; background: #059669; color: #fff; font-size: 17px; }
+    #poi-sheet a { color: #0369a1; font-weight: 700; font-size: 13.5px; text-decoration: none; }
+    body.night-mode #poi-sheet { background: #0d1117; color: #e6edf3; }
+    body.night-mode #poi-sheet .ps-hours, body.night-mode #poi-sheet .ps-btn:not(.ps-go) { background: #161b22; color: #e6edf3; }
+    body.night-mode #poi-sheet .ps-hours div.today, body.night-mode #poi-sheet .text-slate-900 { color: #fff !important; }
+    body.bw-mode #poi-sheet { border: 3px solid #000; }
+    body.bw-mode #poi-sheet .ps-go { background: #000; }
+    body.bw-mode #poi-sheet .ps-btn:not(.ps-go), body.bw-mode #poi-sheet .ps-hours { background: #fff; border: 2px solid #000; color: #000; }
+    body.noir-mode #poi-sheet { filter: invert(1); }
+    body.guiding #poi-sheet { display: none !important; }
+    @media (max-width: 767px) { body.poi-open #side-drawer.sheet-collapsed, body.poi-open #side-drawer.sheet-mini { display: none; } }
+    #hud-icon { width: 76px; height: 76px; }
+    #hud-icon svg { width: 48px !important; height: 48px !important; }
+    #hud-step-dist { font-size: 46px; line-height: 1; }
+    #hud-instruction { font-size: 20px; font-weight: 800; line-height: 1.15; }
     .dp-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 700; color: #0f172a; }
     .dp-seg { display: flex; gap: 4px; }
     .dp-seg .seg { height: 38px; padding: 0 14px; }
@@ -550,19 +571,20 @@
   <!-- GUIDAGE : bandeau de manœuvre en haut, infos en bas -->
   <div id="guidance-hud" class="hidden">
     <div id="hud-band" class="glass-dark fixed top-3 left-3 right-3 md:left-auto md:right-4 md:w-[460px] z-40 text-white rounded-3xl p-4 flex items-center gap-4">
-      <div id="hud-icon" class="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300">
+      <div id="hud-icon" class="w-20 h-20 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300">
         <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       </div>
       <div class="min-w-0 flex-1">
-        <div id="hud-step-dist" class="text-4xl font-extrabold leading-none tracking-tight text-emerald-400">-- m</div>
-        <p id="hud-instruction" class="text-lg font-bold leading-tight mt-1">Suivez la piste cyclable</p>
+        <div id="hud-step-dist" class="text-5xl font-extrabold leading-none tracking-tight text-emerald-400">-- m</div>
+        <p id="hud-instruction" class="text-xl font-extrabold leading-tight mt-1">Suivez la piste cyclable</p>
         <p id="hud-extra" class="hidden text-xs font-semibold text-slate-300 mt-1.5"></p>
       </div>
     </div>
 
-    <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col gap-2">
+    <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col items-end gap-2">
       <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-extrabold text-slate-800">3D</button>
-      <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-400">
+      <button id="btn-hud-recenter" aria-label="Recentrer sur ma position" class="hidden h-14 px-4 rounded-2xl bg-sky-600 text-white text-sm font-extrabold items-center gap-2 shadow-lg"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>Recentrer</button>
+      <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="hidden glass-panel w-14 h-14 rounded-2xl items-center justify-center text-slate-400">
         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path id="hud-visits-slash" d="M3 3l18 18"/></svg>
       </button>
       <button id="btn-toggle-voice" aria-label="Activer ou couper la voix" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800">
@@ -1232,6 +1254,9 @@
   </div>
 
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
+  <!-- Fiche d'un lieu : demi-tiroir, la carte reste visible -->
+  <div id="poi-sheet" class="hidden glass-panel"></div>
+
   <div id="place-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-950/45">
     <div class="glass-panel bg-white/95 rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-3">
       <div class="flex items-center justify-between">
@@ -3172,6 +3197,10 @@
 
     function stopLiveGuidance() {
       AppState.isGuiding = false;
+      AppState.followPaused = false;
+      clearTimeout(followResumeTimer);
+      document.getElementById('btn-hud-recenter').classList.add('hidden');
+      document.getElementById('btn-hud-recenter').classList.remove('flex');
       if (AppState.watchId !== null) {
         navigator.geolocation.clearWatch(AppState.watchId);
         AppState.watchId = null;
@@ -3306,7 +3335,30 @@
       return computeBearing(a[0], a[1], b[0], b[1]);
     }
 
+    let followResumeTimer = null;
+    function pauseFollow() {
+      if (!AppState.isGuiding) return;
+      AppState.followPaused = true;
+      const b = document.getElementById('btn-hud-recenter');
+      b.classList.remove('hidden');
+      b.classList.add('flex');
+      clearTimeout(followResumeTimer);
+      followResumeTimer = setTimeout(resumeFollow, 20000); // comme en voiture : retour automatique
+    }
+    function resumeFollow() {
+      clearTimeout(followResumeTimer);
+      AppState.followPaused = false;
+      const b = document.getElementById('btn-hud-recenter');
+      b.classList.add('hidden');
+      b.classList.remove('flex');
+      if (AppState.glOn) Map3D.resetCamera();
+      const u = AppState.userLocation;
+      if (AppState.isGuiding && u && AppState.currentRoute) followCamera(u.lat, u.lon, AppState.currentRoute, AppState.lastSnap || null);
+    }
+
     function followCamera(lat, lon, route, snap) {
+      if (AppState.followPaused) return;
+      AppState.lastSnap = snap;
       if (AppState.glOn && AppState.map3dReady) {
         const bearing = AppState.lastHeading ?? routeBearingAhead(route, snap);
         Map3D.follow(lat, lon, bearing);
@@ -3317,7 +3369,7 @@
 
     function updateGuidanceHUD(instruction, stepDist, remDist, remSeconds, speedKmh, turnType = 'straight') {
       const iconBox = document.getElementById('hud-icon');
-      iconBox.innerHTML = getTurnSvgIcon(turnType).replace('w-4 h-4', 'w-7 h-7').replace(/text-(emerald|rose|slate)-\d+/, 'text-current');
+      iconBox.innerHTML = getTurnSvgIcon(turnType).replace('w-4 h-4', 'w-11 h-11').replace(/text-(emerald|rose|slate)-\d+/, 'text-current');
       document.getElementById('hud-step-dist').textContent = formatDistance(stepDist);
       document.getElementById('hud-instruction').textContent = instruction;
       document.getElementById('hud-rem-dist').textContent = formatDistance(remDist);
@@ -3704,6 +3756,7 @@ ${trkpts}
       ['display-panel', 'place-modal', 'offline-modal', 'shortcuts-modal', 'map-click-menu', 'global-search-results'].forEach((id) =>
         document.getElementById(id)?.classList.add('hidden')
       );
+      closePoiSheet();
     }
     window.addEventListener('popstate', () => {
       backStepPushed = false;
@@ -3928,6 +3981,8 @@ ${trkpts}
         })
       );
       // Pendant le guidage : bouton œil = annonces des lieux à voir oui/non
+      document.getElementById('btn-hud-recenter').addEventListener('click', resumeFollow);
+      AppState.map.on('dragstart', pauseFollow);
       document.getElementById('btn-hud-visits').addEventListener('click', () => {
         const t = document.getElementById('toggle-announce-visits');
         t.checked = !t.checked;
@@ -4973,6 +5028,77 @@ ${trkpts}
       }
     }
 
+    // Fiche d'un lieu en bas de l'écran : état, horaires sur 3 jours, Y aller / Étape / Garder
+    let poiSheetId = null;
+    function hoursNextDays(str, n = 3, now = new Date()) {
+      const week = parseOpeningHours(str);
+      if (!week) return null;
+      const fmt = (m) => `${Math.floor((m % 1440) / 60)}h${String(m % 60).padStart(2, '0')}`.replace(/h00$/, 'h');
+      const d0 = (now.getDay() + 6) % 7;
+      return Array.from({ length: n }, (_, k) => {
+        const day = (d0 + k) % 7;
+        const spans = [...week[day]].sort((a, b) => a[0] - b[0]);
+        const name = OH_FR[day][0].toUpperCase() + OH_FR[day].slice(1);
+        return {
+          today: k === 0,
+          label: k === 0 ? `${name} (aujourd’hui)` : name,
+          text: !spans.length ? 'Fermé' : spans.some(([a, b]) => a === 0 && b >= 1440) ? '24h/24' : spans.map(([a, b]) => `${fmt(a)} – ${fmt(b)}`).join(', '),
+        };
+      });
+    }
+    function renderPoiSheet(p) {
+      const c = POI_BY_ID[p.cat];
+      const name = escapeJsString(p.name);
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      const dist = haversineDistance(ref.lat, ref.lon, p.lat, p.lon);
+      const mins = Math.max(1, Math.round(dist / 250));
+      const st = p.hours ? hoursStatus(p.hours) : null;
+      const days = p.hours ? hoursNextDays(p.hours) : null;
+      const loading = !p.hours && p.osmId && !osmDetailsCache.has(p.id);
+      const stHtml = st
+        ? `<div class="text-[15px] font-extrabold ${st.open === true ? 'text-emerald-700' : st.open === false ? 'text-rose-700' : 'text-slate-600'}">${escapeHtml(st.text)}</div>`
+        : `<div class="text-[13px] font-semibold text-slate-400">${loading ? 'Horaires…' : 'Horaires non renseignés'}</div>`;
+      const links = [
+        `<a href="${reviewsUrl(p)}" target="_blank" rel="noopener">Avis et photos ›</a>`,
+        p.phone ? `<a href="tel:${escapeHtml(p.phone.replace(/\s/g, ''))}">Appeler</a>` : '',
+        p.website ? `<a href="${escapeHtml(p.website)}" target="_blank" rel="noopener">Site web</a>` : '',
+        p.wikipedia ? `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':')[1] || p.wikipedia)}" target="_blank" rel="noopener">Wikipédia</a>` : '',
+      ].filter(Boolean).join('');
+      document.getElementById('poi-sheet').innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:${c.color}1f;color:${c.color}">${poiSvg(p.cat, 28)}</div>
+          <div class="min-w-0 flex-1">
+            <div class="text-[19px] leading-tight font-extrabold text-slate-900 truncate">${escapeHtml(p.name)}</div>
+            <div class="text-[13px] font-bold text-slate-500">${SHORT_LABEL[p.cat] || c.label} · ${formatDistance(dist)} · ${mins} min</div>
+          </div>
+          <button onclick="closePoiSheet()" aria-label="Fermer" class="w-10 h-10 rounded-full bg-slate-200/70 text-slate-700 text-base font-bold shrink-0">✕</button>
+        </div>
+        <div class="mt-2.5">${stHtml}</div>
+        ${days ? `<div class="ps-hours mt-2">${days.map((d) => `<div class="${d.today ? 'today' : ''}"><span>${d.label}</span><span>${d.text}</span></div>`).join('')}</div>` : ''}
+        ${p.description ? `<div class="text-[13px] text-slate-600 mt-2">${escapeHtml(p.description)}</div>` : ''}
+        <div class="flex gap-2 mt-3">
+          <button onclick="closePoiSheet(); routeToPoint(${p.lat}, ${p.lon}, '${name}')" class="ps-btn ps-go">Y aller</button>
+          <button onclick="closePoiSheet(); viaToPoint(${p.lat}, ${p.lon}, '${name}')" class="ps-btn">+ Étape</button>
+          <button onclick="closePoiSheet(); savePointAsPlace(${p.lat}, ${p.lon}, '${name}', '${p.cat}')" aria-label="Garder dans mes lieux" class="ps-btn" style="width:50px;padding:0">★</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px">${links}</div>`;
+    }
+    function openPoiSheet(p) {
+      AppState.map.closePopup();
+      Map3D.closePopups();
+      poiSheetId = p.id;
+      renderPoiSheet(p);
+      document.getElementById('poi-sheet').classList.remove('hidden');
+      document.body.classList.add('poi-open');
+      pushBackStep();
+      if (p.osmId) fetchOSMDetails([p]).then(() => poiSheetId === p.id && renderPoiSheet(p));
+    }
+    window.closePoiSheet = function () {
+      poiSheetId = null;
+      document.getElementById('poi-sheet').classList.add('hidden');
+      document.body.classList.remove('poi-open');
+    };
+
     function poiPopupHtml(p) {
       const c = POI_BY_ID[p.cat];
       const name = escapeJsString(p.name);
@@ -5015,13 +5141,7 @@ ${trkpts}
         const m = L.marker([p.lat, p.lon], { icon: createPOIIcon(p.cat) });
         m._poi = p;
         poiMarkers.set(p.id, m);
-        m.bindPopup(() => poiPopupHtml(m._poi));
-        m.on('popupopen', async () => {
-          if (m._poi.osmId) {
-            await fetchOSMDetails([m._poi]);
-            m.setPopupContent(poiPopupHtml(m._poi));
-          }
-        });
+        m.on('click', () => openPoiSheet(m._poi));
         AppState.poiLayer.addLayer(m);
       });
       renderPOIList(points);
@@ -5070,17 +5190,11 @@ ${trkpts}
       const p = AppState.poiPoints.find((x) => x.id === id);
       if (!p) return;
       flyToActive(p.lat, p.lon, 17);
-      if (AppState.glOn) {
-        collapseMobileSheet();
-        Map3D.openPoi(p);
-        return;
-      }
-      if (!AppState.glOn) {
-        AppState.poiLayer.eachLayer((m) => {
-          const ll = m.getLatLng();
-          if (Math.abs(ll.lat - p.lat) < 1e-7 && Math.abs(ll.lng - p.lon) < 1e-7) setTimeout(() => m.openPopup(), 600);
-        });
-      }
+      // Panneau ouvert : on le replie sans toucher à l'historique (l'étape « retour » sert à la fiche)
+      const drawer = document.getElementById('side-drawer');
+      drawer.classList.remove('sheet-expanded', 'sheet-half');
+      if (!drawer.classList.contains('sheet-mini')) drawer.classList.add('sheet-collapsed');
+      openPoiSheet(p);
     };
 
     window.routeToPoint = function (lat, lon, label) {
@@ -5921,6 +6035,8 @@ ${trkpts}
         closePopups();
         const m = AppState.map3d;
         const p = f.properties;
+        const sheetPoi = p.poiId && AppState.poiPoints.find((x) => x.id === p.poiId);
+        if (sheetPoi) return openPoiSheet(sheetPoi);
         popup = new maplibregl.Popup({ offset: 14, maxWidth: '270px' }).setLngLat(f.geometry.coordinates).setHTML(p.html).addTo(m);
         // Lieu : horaires à l'ouverture de la fiche
         const poi = p.poiId && AppState.poiPoints.find((x) => x.id === p.poiId);
@@ -6037,6 +6153,7 @@ ${trkpts}
             attributionControl: { compact: true }, dragRotate: true,
           });
           AppState.map3d = m;
+          m.on('dragstart', (e) => e.originalEvent && pauseFollow());
           bindEvents(m);
         } else {
           AppState.map3d.resize();
