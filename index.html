@@ -351,6 +351,8 @@
     .sc-tile.on .sc-ico { background: rgba(16,185,129,.14); border-radius: 12px; padding: 0 8px; }
     .sc-tile.on { color: #065f46; }
     body.bw-mode .sc-tile.on .sc-ico { background: #000 !important; color: #fff !important; }
+    .res-star { display: flex; align-items: center; justify-content: center; font-size: 16px; text-decoration: none; }
+    #side-drawer.sheet-collapsed .res-card .res-star { height: 34px; width: 38px; }
     .res-card { flex: none; width: 230px; text-align: left; padding: 10px 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: #fff; display: flex; flex-direction: column; gap: 6px; }
     body.night-mode .res-card { background: #161b22; border-color: #2a3440; }
     body.bw-mode .res-card { border-color: #000; }
@@ -6812,6 +6814,14 @@ ${trkpts}
 
     function renderHomeResults(cat, found, ref) {
       const label = SHORT_LABEL[cat] || POI_BY_ID[cat].label;
+      const rank = (p) => {
+        const o = hoursStatus(p.hours)?.open;
+        return o === true ? 0 : o === false ? 2 : 1;
+      };
+      found = found
+        .map((p, i) => ({ p, i }))
+        .sort((a, b) => rank(a.p) - rank(b.p) || a.i - b.i)
+        .map((x) => x.p);
       const open = found.filter((p) => hoursStatus(p.hours)?.open === true).length;
       document.getElementById('home-results-title').textContent = found.length
         ? `${label} · ${found.length} autour${open ? ` · ${open} ouvert(s)` : ''}`
@@ -6827,6 +6837,7 @@ ${trkpts}
             <div class="flex gap-1.5">
               <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="flex-1 h-10 rounded-xl bg-emerald-600 text-white text-sm font-extrabold">Y aller</button>
               <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" aria-label="Ajouter en étape" class="w-11 h-10 rounded-xl bg-slate-200/70 text-slate-800 text-lg font-bold">+</button>
+              <a href="${reviewsUrl(p)}" target="_blank" rel="noopener" aria-label="Avis et photos" class="res-star w-11 h-10 rounded-xl bg-slate-200/70 text-slate-800">★</a>
             </div>
           </div>`
         )
