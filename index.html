@@ -170,8 +170,8 @@
         bottom: 0;
         top: auto;
         width: 100%;
-        max-height: 90vh;
-        height: 90vh;
+        max-height: 82vh;
+        height: 82vh;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         border-top-left-radius: 24px;
@@ -187,6 +187,7 @@
       #side-drawer.sheet-expanded #home-chips, #side-drawer.sheet-expanded #home-route,
       #side-drawer.sheet-expanded #home-idle, #side-drawer.sheet-half #home-chips,
       #side-drawer.sheet-half #home-route, #side-drawer.sheet-half #home-idle { display: none !important; }
+      #side-drawer.sheet-expanded #btn-sheet-close { display: flex !important; }
       #side-drawer.sheet-expanded {
         transform: translateY(0%);
       }
@@ -255,8 +256,9 @@
     }
     .chip.on { background: #0f172a; color: #fff; border-color: #0f172a; }
 
+    .custom-poi-icon { cursor: pointer; }
     .poi-icon {
-      width: 28px; height: 28px; margin-left: -14px; margin-top: -14px;
+      width: 30px; height: 30px;
       border-radius: 9999px; border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
       font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
     }
@@ -300,41 +302,74 @@
     body.sun-mode .hud-label { display: none !important; }
 
     /* =====================================================================
-       MODE NOIR & BLANC CONTRASTÉ (s'ajoute au mode soleil)
+       MODE NOIR & BLANC CONTRASTÉ : noir, blanc et deux gris seulement.
+       Règle : fond clair => texte noir ; fond noir => texte blanc.
        ===================================================================== */
-    body.bw-mode .leaflet-tile-pane { filter: grayscale(1) contrast(1.7) brightness(1.08); }
-    body.bw-mode .leaflet-marker-pane, body.bw-mode #map3d .maplibregl-marker { filter: grayscale(1) contrast(1.5); }
-    body.bw-mode #map3d canvas { filter: grayscale(1) contrast(1.35); }
-    body.bw-mode .glass-panel, body.bw-mode .leaflet-popup-content-wrapper { border: 3px solid #000 !important; border-radius: 6px !important; }
-    body.bw-mode .glass-dark { border: 3px solid #fff !important; outline: 3px solid #000; border-radius: 6px !important; }
-    body.bw-mode #hud-step-dist { color: #fff !important; }
-    body.bw-mode #hud-icon { background: #fff !important; color: #000 !important; border-color: #fff !important; }
-    body.bw-mode [class*="bg-emerald-5"], body.bw-mode [class*="bg-emerald-6"], body.bw-mode [class*="bg-sky-5"],
-    body.bw-mode [class*="bg-sky-6"], body.bw-mode [class*="bg-rose-5"], body.bw-mode [class*="bg-rose-6"],
-    body.bw-mode [class*="bg-indigo-6"], body.bw-mode [class*="bg-amber-5"], body.bw-mode [class*="bg-slate-9"],
-    body.bw-mode [class*="bg-red-5"], body.bw-mode .chip.on, body.bw-mode .poi-icon {
-      background: #000 !important; color: #fff !important; border-color: #000 !important;
+    body.bw-mode .leaflet-tile-pane { filter: grayscale(1) contrast(1.35) brightness(1.04); }
+    body.bw-mode .leaflet-marker-pane, body.bw-mode #map3d .maplibregl-marker { filter: grayscale(1) contrast(1.4); }
+    body.bw-mode #map3d canvas { filter: grayscale(1) contrast(1.3); }
+    body.bw-mode .glass-panel, body.bw-mode .leaflet-popup-content-wrapper, body.bw-mode .leaflet-popup-tip {
+      background: #fff !important; border: 3px solid #000 !important; color: #000 !important; box-shadow: none !important;
     }
-    body.bw-mode [class*="/10"], body.bw-mode [class*="/15"], body.bw-mode [class*="/20"], body.bw-mode [class*="/25"],
-    body.bw-mode [class*="bg-white/"], body.bw-mode [class*="bg-slate-1"], body.bw-mode [class*="bg-slate-2"] {
+    body.bw-mode .glass-panel, body.bw-mode .leaflet-popup-content-wrapper { border-radius: 10px !important; }
+    body.bw-mode .glass-dark { background: #000 !important; border: 3px solid #fff !important; outline: 3px solid #000; border-radius: 10px !important; }
+
+    /* Textes : noir sur clair, gris foncé pour le secondaire */
+    body.bw-mode [class*="text-"] { color: #000 !important; }
+    body.bw-mode [class~="text-slate-400"], body.bw-mode [class~="text-slate-500"], body.bw-mode [class~="text-slate-600"] { color: #3f3f3f !important; }
+    body.bw-mode input::placeholder, body.bw-mode textarea::placeholder { color: #3f3f3f !important; }
+
+    /* Surfaces claires teintées -> blanc cerclé de noir ; gris clair pour les fonds secondaires */
+    body.bw-mode [class~="bg-emerald-500/10"], body.bw-mode [class~="bg-emerald-500/15"], body.bw-mode [class~="bg-sky-500/10"],
+    body.bw-mode [class~="bg-sky-500/15"], body.bw-mode [class~="bg-amber-500/10"], body.bw-mode [class~="bg-amber-500/15"],
+    body.bw-mode [class~="bg-rose-500/10"], body.bw-mode [class~="bg-rose-500/15"], body.bw-mode [class~="bg-indigo-500/10"],
+    body.bw-mode [class~="bg-red-500/10"], body.bw-mode [class~="bg-indigo-50/60"], body.bw-mode [class~="bg-rose-50"],
+    body.bw-mode [class~="bg-white/50"], body.bw-mode [class~="bg-white/60"], body.bw-mode [class~="bg-white/70"],
+    body.bw-mode [class~="bg-white/75"], body.bw-mode [class~="bg-white/80"], body.bw-mode [class~="bg-white/85"], body.bw-mode [class~="bg-white"] {
       background: #fff !important; border: 2px solid #000 !important;
     }
-    body.bw-mode [class*="text-emerald"], body.bw-mode [class*="text-sky"], body.bw-mode [class*="text-rose"],
-    body.bw-mode [class*="text-amber"], body.bw-mode [class*="text-indigo"], body.bw-mode [class*="text-teal"],
-    body.bw-mode [class*="text-red"], body.bw-mode [class*="text-slate"] { color: #000 !important; }
-    body.bw-mode [class*="bg-emerald-5"] [class*="text-"], body.bw-mode [class*="bg-slate-9"] [class*="text-"],
-    body.bw-mode .glass-dark [class*="text-"], body.bw-mode .glass-dark { color: #fff !important; }
-    body.bw-mode .glass-dark [class*="bg-white/"] { background: #000 !important; border-color: #fff !important; }
-    body.bw-mode #btn-sun-mode { background: #000 !important; color: #fff !important; }
-    body.bw-mode .chip { border: 2px solid #000; color: #000; background: #fff; }
-    body.bw-mode #hud-icon svg { color: #000 !important; }
-    body.bw-mode .glass-dark [class*="/10"] { background: transparent !important; border-color: #fff !important; }
-    body.bw-mode #btn-stop-guidance { background: #fff !important; color: #000 !important; }
-    body.bw-mode #quick-controls button, body.bw-mode #quick-controls .glass-panel {
-      background: #fff !important; color: #000 !important; border: 3px solid #000 !important;
+    body.bw-mode [class~="bg-slate-100"], body.bw-mode [class~="bg-slate-100/80"], body.bw-mode [class~="bg-slate-100/90"],
+    body.bw-mode [class~="bg-slate-200/60"], body.bw-mode [class~="bg-slate-200/70"], body.bw-mode [class~="bg-rose-100/80"] {
+      background: #dcdcdc !important; border-color: #000 !important;
     }
-    body.bw-mode #quick-controls #btn-sun-mode { background: #000 !important; color: #fff !important; }
-    body.bw-mode #quick-controls button span { background: #000 !important; color: #fff !important; }
+    body.bw-mode input, body.bw-mode textarea { background: #fff !important; border: 2px solid #000 !important; color: #000 !important; }
+    body.bw-mode #global-search-input { border: 0 !important; }
+
+    /* Surfaces foncées (boutons principaux) -> noir, texte blanc */
+    body.bw-mode [class~="bg-emerald-500"], body.bw-mode [class~="bg-emerald-600"], body.bw-mode [class~="bg-sky-500"],
+    body.bw-mode [class~="bg-sky-600"], body.bw-mode [class~="bg-rose-500"], body.bw-mode [class~="bg-rose-600"],
+    body.bw-mode [class~="bg-rose-500/90"], body.bw-mode [class~="bg-indigo-600"], body.bw-mode [class~="bg-amber-400"],
+    body.bw-mode [class~="bg-amber-500"], body.bw-mode [class~="bg-slate-900"], body.bw-mode [class~="bg-slate-800"],
+    body.bw-mode [class~="bg-yellow-400"], body.bw-mode [class~="bg-black"], body.bw-mode .poi-icon, body.bw-mode .glass-dark,
+    body.bw-mode #toast-container > div {
+      background: #000 !important; color: #fff !important; border-color: #fff !important;
+    }
+    body.bw-mode [class~="bg-emerald-500"] *, body.bw-mode [class~="bg-emerald-600"] *, body.bw-mode [class~="bg-sky-600"] *,
+    body.bw-mode [class~="bg-rose-600"] *, body.bw-mode [class~="bg-slate-900"] *, body.bw-mode [class~="bg-amber-500"] *,
+    body.bw-mode [class~="bg-amber-400"] *, body.bw-mode [class~="bg-indigo-600"] *, body.bw-mode .glass-dark *, body.bw-mode .poi-icon * {
+      color: #fff !important;
+    }
+    body.bw-mode #toast-container > div { outline: 2px solid #000; border: 2px solid #fff !important; }
+
+    /* Puces, boutons segmentés, cartes de variantes : blanc ; choisi = noir */
+    body.bw-mode .chip, body.bw-mode .seg, body.bw-mode .theme-btn, body.bw-mode .home-alt, body.bw-mode .pg-btn {
+      background: #fff !important; color: #000 !important; border: 2px solid #000 !important;
+    }
+    body.bw-mode .chip.on, body.bw-mode .seg.on, body.bw-mode .theme-btn.on, body.bw-mode .home-alt.on, body.bw-mode .pg-btn.on,
+    body.bw-mode.sun-mode .seg.on, body.bw-mode.sun-mode .theme-btn.on, body.bw-mode.sun-mode .home-alt.on, body.bw-mode.sun-mode .pg-btn.on {
+      background: #000 !important; color: #fff !important; border: 2px solid #000 !important;
+    }
+    body.bw-mode .chip.on *, body.bw-mode .seg.on *, body.bw-mode .theme-btn.on *, body.bw-mode .home-alt.on *, body.bw-mode .pg-btn.on * { color: #fff !important; }
+    body.bw-mode .sw { outline: 2px solid #000; }
+    body.bw-mode input[type="checkbox"] { accent-color: #000; }
+
+    /* Guidage */
+    body.bw-mode #hud-step-dist { color: #fff !important; }
+    body.bw-mode #hud-icon { background: #fff !important; border-color: #fff !important; }
+    body.bw-mode #hud-icon, body.bw-mode #hud-icon * { color: #000 !important; }
+    body.bw-mode .glass-dark [class~="bg-emerald-500/20"] { background: #fff !important; }
+    body.bw-mode #btn-stop-guidance { background: #000 !important; color: #fff !important; border: 2px solid #000 !important; }
+    body.bw-mode #quick-controls button, body.bw-mode #hud-side button { background: #fff !important; color: #000 !important; border: 3px solid #000 !important; }
 
     body.sun-mode .seg.on, body.sun-mode .theme-btn.on, body.sun-mode .home-alt.on { border: 3px solid #000 !important; background: #facc15 !important; color: #000 !important; }
     body.sun-mode .home-alt, body.sun-mode .seg, body.sun-mode .theme-btn { border: 2px solid #000; }
@@ -530,10 +565,15 @@
         <button id="btn-home-places" class="h-12 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/></svg>Mes lieux</button>
       </div>
 
-      <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
+      <div class="flex gap-2 items-stretch">
+      <button id="btn-sheet-close" aria-label="Revenir à la carte" class="hidden shrink-0 px-3 rounded-xl bg-slate-900 text-white text-xs font-extrabold items-center gap-1">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Carte
+      </button>
+      <div class="flex-1 grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
         <button data-tab="route" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Trajet</button>
         <button data-tab="places" class="tab-btn py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">Lieux</button>
         <button data-tab="gpx" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Plus</button>
+      </div>
       </div>
     </div>
 
@@ -1514,6 +1554,9 @@
     // 5. INITIALISATION DE LA CARTE LEAFLET & ICÔNES SVG
     // -------------------------------------------------------------------------
     function initMap() {
+      // Les bulles d'info ne doivent pas passer sous la barre de recherche ni sous le panneau du bas
+      L.Popup.prototype.options.autoPanPaddingTopLeft = L.point(12, 96);
+      L.Popup.prototype.options.autoPanPaddingBottomRight = L.point(12, window.innerWidth < 768 ? 260 : 24);
       // Vue initiale centrée sur la vallée de l'Oise / Compiègne [49.417, 2.826], zoom 13
       const map = L.map('map', {
         center: [49.417, 2.826],
@@ -1619,14 +1662,31 @@
     const OVERPASS_ENDPOINTS = [
       'https://overpass-api.de/api/interpreter',
       'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter',
     ];
 
-    async function fetchOverpassWithFallback(query) {
+    // Les serveurs Overpass refusent les requêtes simultanées d'un même appareil (erreur 429) :
+    // on les fait passer une par une. Avec une « clé », seule la dernière demande de ce type part
+    // (inutile de charger une vue de carte qu'on a déjà quittée) ; les autres renvoient null.
+    let overpassChain = Promise.resolve();
+    const overpassLatest = {};
+    function fetchOverpassWithFallback(query, key = null) {
+      const token = Symbol();
+      if (key) overpassLatest[key] = token;
+      const run = overpassChain.then(() => {
+        if (key && overpassLatest[key] !== token) return null;
+        return fetchOverpassNow(query);
+      });
+      overpassChain = run.catch(() => {});
+      return run;
+    }
+
+    async function fetchOverpassNow(query) {
       let lastError = null;
       for (const endpoint of OVERPASS_ENDPOINTS) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 14000);
+          const timeoutId = setTimeout(() => controller.abort(), 25000);
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
@@ -1635,7 +1695,10 @@
           });
           clearTimeout(timeoutId);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return await response.json();
+          const json = await response.json();
+          // Overpass peut répondre 200 avec une erreur de délai dans « remark »
+          if (!json.elements?.length && /timed out|runtime error|rate_limited/i.test(json.remark || '')) throw new Error(json.remark);
+          return json;
         } catch (err) {
           lastError = err;
         }
@@ -1703,7 +1766,8 @@
         out center;`;
 
       try {
-        const data = await fetchOverpassWithFallback(query);
+        const data = await fetchOverpassWithFallback(query, 'water');
+        if (!data) return; // une vue plus récente a été demandée
         const points = (data.elements || []).map(parseWaterElement).filter(Boolean);
         AppState.waterPoints = points;
         OfflineDB.putPOIs(points);
@@ -1884,7 +1948,8 @@
         out geom;`;
 
       try {
-        const data = await fetchOverpassWithFallback(query);
+        const data = await fetchOverpassWithFallback(query, 'cycleways');
+        if (!data) return;
         const ways = [];
 
         (data.elements || []).forEach((el) => {
@@ -1971,6 +2036,11 @@
 
     // Toucher simple : ferme ce qui est ouvert ; une seule fois, on explique l'appui long
     function onPlainMapTap() {
+      const drawer = document.getElementById('side-drawer');
+      if (drawer.classList.contains('sheet-expanded') && window.innerWidth < 768) {
+        collapseMobileSheet();
+        return;
+      }
       const menu = document.getElementById('map-click-menu');
       if (!menu.classList.contains('hidden')) {
         menu.classList.add('hidden');
@@ -3246,12 +3316,44 @@ ${trkpts}
       const drawer = document.getElementById('side-drawer');
       drawer.classList.remove('sheet-collapsed', 'sheet-half');
       drawer.classList.add('sheet-expanded');
+      if (window.innerWidth < 768) pushBackStep();
     }
+
+    // Le bouton / geste « retour » du téléphone ferme ce qui recouvre la carte
+    // (panneau ouvert, panneau Affichage, fenêtres) au lieu de quitter l'appli.
+    let backStepPushed = false;
+    function pushBackStep() {
+      if (backStepPushed) return;
+      backStepPushed = true;
+      try {
+        history.pushState({ abicyclette: 'overlay' }, '');
+      } catch {}
+    }
+    function closeAllOverlays() {
+      const drawer = document.getElementById('side-drawer');
+      drawer.classList.remove('sheet-half', 'sheet-expanded');
+      drawer.classList.add('sheet-collapsed');
+      ['display-panel', 'place-modal', 'offline-modal', 'map-click-menu', 'global-search-results'].forEach((id) =>
+        document.getElementById(id)?.classList.add('hidden')
+      );
+    }
+    window.addEventListener('popstate', () => {
+      backStepPushed = false;
+      closeAllOverlays();
+    });
 
     function collapseMobileSheet() {
       const drawer = document.getElementById('side-drawer');
       drawer.classList.remove('sheet-half', 'sheet-expanded');
       drawer.classList.add('sheet-collapsed');
+      // Rien d'autre d'ouvert : on consomme l'étape « retour » ajoutée à l'ouverture
+      const others = ['display-panel', 'place-modal', 'offline-modal'].some((id) => !document.getElementById(id).classList.contains('hidden'));
+      if (backStepPushed && !others) {
+        backStepPushed = false;
+        try {
+          history.back();
+        } catch {}
+      }
     }
 
     function initMobileBottomSheetGestures() {
@@ -3417,8 +3519,10 @@ ${trkpts}
       displayBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         displayPanel.classList.toggle('hidden');
+        if (!displayPanel.classList.contains('hidden')) pushBackStep();
       });
       document.getElementById('btn-close-display').addEventListener('click', () => displayPanel.classList.add('hidden'));
+      document.getElementById('btn-sheet-close').addEventListener('click', collapseMobileSheet);
       document.querySelectorAll('.layer-option').forEach((btn) => btn.addEventListener('click', () => switchBaseLayer(btn.dataset.layer)));
       document.getElementById('view-2d').addEventListener('click', () => AppState.is3D && Map3D.disable());
       document.getElementById('view-3d').addEventListener('click', () => !AppState.is3D && Map3D.enable());
@@ -3859,6 +3963,32 @@ ${trkpts}
       },
     ];
     const POI_BY_ID = Object.fromEntries(POI_CATEGORIES.map((c) => [c.id, c]));
+
+    // Petites icônes (traits) par catégorie : lisibles même en noir & blanc
+    const POI_ICONS = {
+      heritage: '<path d="M4 21V9l2-1V5h2v2h2V5h4v2h2V5h2v3l2 1v12z"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/>',
+      viewpoint: '<circle cx="6.5" cy="15.5" r="3.5"/><circle cx="17.5" cy="15.5" r="3.5"/><path d="M10 15h4M4 12l2.5-7h2.5l1 7M20 12l-2.5-7H15l-1 7"/>',
+      museum: '<path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>',
+      attraction: '<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>',
+      worship: '<path d="M12 2v5M9.5 4.5h5M5 21V12l7-5 7 5v9M10 21v-5h4v5"/>',
+      nature: '<path d="M12 21v-5"/><path d="M12 3l6 8h-3l4 5H5l4-5H6z"/>',
+      repair: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+      parking: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M9.5 17V7h3.5a3 3 0 0 1 0 6H9.5"/>',
+      charging: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+      toilets: '<circle cx="7" cy="4.5" r="1.8"/><circle cx="17" cy="4.5" r="1.8"/><path d="M5.5 21v-6H4.5l1-6.5h3l1 6.5h-1v6M15.5 21v-7.5l-1-5h5l-1 5V21M12 3v18"/>',
+      shelter: '<path d="M2 12l10-8 10 8M5 10v10M19 10v10M9 20v-5h6v5"/>',
+      picnic: '<path d="M4 9h16M8 9l-3 11M16 9l3 11M5.5 15h13"/>',
+      bakery: '<path d="M5 19c-2-2-1-6 3-10s8-5 10-3-1 6-5 10-6 5-8 3z"/><path d="M9 11l2 2M12 8l2 2M7 14l2 2"/>',
+      restaurant: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-3 4-3 7h3v11"/>',
+      cafe: '<path d="M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2 2 0 0 1 0 4H16M8 2v3M12 2v3"/>',
+      grocery: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h11l2-8H6.5"/>',
+      pharmacy: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+      camp: '<path d="M3 20L12 4l9 16zM12 20l-3-6M12 20l3-6"/>',
+      station: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M8 21l2-4M16 21l-2-4"/>',
+    };
+    function poiSvg(cat, size = 16, color = 'currentColor') {
+      return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${POI_ICONS[cat] || POI_ICONS.attraction}</svg>`;
+    }
     const POI_DEFAULT = ['heritage', 'viewpoint', 'museum', 'attraction', 'bakery', 'repair'];
     const LS_POI = 'abicyclette.poi.enabled';
     let poiRequestSeq = 0;
@@ -3904,11 +4034,12 @@ ${trkpts}
     }
 
     function createPOIIcon(cat) {
-      const c = POI_BY_ID[cat] || { color: '#334155', emoji: '•' };
+      const c = POI_BY_ID[cat] || { color: '#334155' };
       return L.divIcon({
-        html: `<div class="poi-icon" style="background:${c.color}">${c.emoji}</div>`,
+        html: `<div class="poi-icon" style="background:${c.color};color:#fff">${poiSvg(cat, 15, '#fff')}</div>`,
         className: 'custom-poi-icon',
-        iconSize: [0, 0],
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
         popupAnchor: [0, -14],
       });
     }
@@ -3933,8 +4064,8 @@ ${trkpts}
         statusEl.textContent = `${cached.length} lieu(x) (cache hors ligne)`;
         return;
       }
-      if (map.getZoom() < 12) {
-        statusEl.textContent = 'Zoomez pour afficher les lieux';
+      if (map.getZoom() < 13) {
+        statusEl.textContent = 'Zoomez un peu pour afficher les lieux';
         return;
       }
 
@@ -3942,8 +4073,8 @@ ${trkpts}
       statusEl.textContent = 'Recherche des lieux…';
       try {
         const q = buildPOIQuery(b.getSouth().toFixed(4), b.getWest().toFixed(4), b.getNorth().toFixed(4), b.getEast().toFixed(4));
-        const data = await fetchOverpassWithFallback(q);
-        if (seq !== poiRequestSeq) return; // une requête plus récente est partie
+        const data = await fetchOverpassWithFallback(q, 'poi');
+        if (!data || seq !== poiRequestSeq) return; // une requête plus récente est partie
         const pts = parsePOIElements(data.elements || [], enabled);
         AppState.poiPoints = pts;
         OfflineDB.putExtraPOIs(pts);
@@ -3954,7 +4085,7 @@ ${trkpts}
         const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => inBounds(p) && AppState.poiEnabled.has(p.cat));
         AppState.poiPoints = cached;
         renderPOIs(cached);
-        statusEl.textContent = cached.length ? `${cached.length} lieu(x) (secours local)` : 'Serveur occupé — réessayez';
+        statusEl.textContent = cached.length ? `${cached.length} lieu(x) (secours local)` : 'Serveur des lieux occupé — touchez ↻ dans un instant';
       }
     }
 
@@ -3967,7 +4098,7 @@ ${trkpts}
         : '';
       return `
         <div class="p-3.5 font-sans">
-          <div class="text-[11px] font-bold uppercase tracking-wider mb-0.5" style="color:${c.color}">${c.emoji} ${c.label}</div>
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5" style="color:${c.color}">${poiSvg(p.cat, 14)} ${c.label}</div>
           <div class="text-sm font-bold text-slate-900 mb-1">${escapeHtml(p.name)}</div>
           ${p.hours ? `<div class="text-[11px] text-slate-500 mb-1">🕒 ${escapeHtml(p.hours)}</div>` : ''}
           ${p.description ? `<div class="text-[11px] text-slate-600 mb-1">${escapeHtml(p.description)}</div>` : ''}
@@ -4011,7 +4142,7 @@ ${trkpts}
             const c = POI_BY_ID[p.cat];
             return `
             <div class="flex items-center gap-2 p-2.5 rounded-2xl bg-white/75 hover:bg-white border border-slate-200/70">
-              <span class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-sm" style="background:${c.color}22">${c.emoji}</span>
+              <span class="poi-icon shrink-0" style="background:${c.color};color:#fff;width:32px;height:32px">${poiSvg(p.cat, 16, '#fff')}</span>
               <div class="min-w-0 flex-1 cursor-pointer" onclick="focusPOI('${p.id}')">
                 <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
                 <div class="text-[11px] text-slate-500">${c.label} • <span class="font-semibold">${formatDistance(p.distance)}</span></div>
@@ -4063,7 +4194,7 @@ ${trkpts}
       [AppState.placesGroup === 'water' ? 'visit' : AppState.placesGroup].forEach((group) => {
         const box = document.getElementById('poi-chips-group');
         box.innerHTML = POI_CATEGORIES.filter((c) => c.group === group)
-          .map((c) => `<button data-poi="${c.id}" class="chip ${AppState.poiEnabled.has(c.id) ? 'on' : ''}">${c.emoji} ${c.label}</button>`)
+          .map((c) => `<button data-poi="${c.id}" class="chip ${AppState.poiEnabled.has(c.id) ? 'on' : ''}">${poiSvg(c.id, 14)} ${c.label}</button>`)
           .join('');
         box.querySelectorAll('button').forEach((b) =>
           b.addEventListener('click', () => {
@@ -4124,7 +4255,7 @@ ${trkpts}
             const c = POI_BY_ID[p.cat];
             return `
             <div class="flex items-center gap-2 p-2 rounded-xl bg-white/80 border border-amber-200/70">
-              <span class="text-sm shrink-0">${c.emoji}</span>
+              <span class="shrink-0" style="color:${c.color}">${poiSvg(p.cat, 18)}</span>
               <div class="min-w-0 flex-1 cursor-pointer" onclick="flyToActive(${p.lat}, ${p.lon}, 16)">
                 <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
                 <div class="text-[10px] text-slate-500">Au km ${(p.snap.along / 1000).toFixed(1)} • à ${Math.round(p.snap.dist)} m du tracé</div>
@@ -4937,7 +5068,7 @@ ${trkpts}
           .map(
             (p) => `
           <div class="flex items-center gap-2 px-3 py-2.5">
-            <span class="text-base shrink-0">${POI_BY_ID[p.cat].emoji}</span>
+            <span class="shrink-0" style="color:${POI_BY_ID[p.cat].color}">${poiSvg(p.cat, 18)}</span>
             <button type="button" onclick="focusSearchResult(${p.lat}, ${p.lon})" class="min-w-0 flex-1 text-left">
               <div class="text-xs font-bold text-slate-900 truncate">${escapeHtml(p.name)}</div>
               <div class="text-[11px] text-slate-500 truncate">${formatDistance(p.distance)}${p.hours ? ' · ' + escapeHtml(p.hours) : ''}</div>
@@ -5268,7 +5399,7 @@ ${trkpts}
       if (v) {
         comp.announced.add(v.id);
         if (stepDist > 80) speakFrench(`À voir : ${v.name}`);
-        showToast(`${POI_BY_ID[v.cat]?.emoji || '⭐'} À voir : ${v.name}`, 'info', 5000);
+        showToast(`À voir : ${v.name}`, 'info', 5000);
       }
       extra.textContent = txt;
       extra.classList.toggle('hidden', !txt);
