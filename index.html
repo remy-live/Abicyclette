@@ -282,7 +282,21 @@
     .dp-title { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #64748b; }
     .seg.sm { height: 38px; font-size: 12px; }
     .theme-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #1e293b; padding: 6px 0; border-radius: 14px; border: 2px solid transparent; }
-    .theme-dot .sw { width: 34px; height: 34px; border-radius: 9999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+    .theme-dot { padding: 4px 4px 5px !important; }
+    .theme-dot svg { width: 100%; height: auto; border-radius: 9px; box-shadow: 0 0 0 1px rgba(0,0,0,.18); display: block; }
+    .theme-dot.on { border-color: #059669 !important; }
+    body.night-mode .theme-dot.on { border-color: #34d399 !important; }
+    body.noir-mode .theme-dot.on, body.bw-mode .theme-dot.on { border-width: 3px !important; }
+    .dp-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 700; color: #0f172a; }
+    .dp-seg { display: flex; gap: 4px; }
+    .dp-seg .seg { height: 38px; padding: 0 14px; }
+    .dp-mini { height: 30px; padding: 0 10px; border-radius: 999px; background: rgba(241,245,249,.9); font-size: 11px; font-weight: 800; color: #334155; }
+    .dp-link, .dp-adv summary { width: 100%; height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-radius: 14px; background: rgba(241,245,249,.9); font-size: 14px; font-weight: 700; color: #0f172a; cursor: pointer; list-style: none; }
+    .dp-adv summary::-webkit-details-marker { display: none; }
+    .dp-adv[open] summary span { transform: rotate(90deg); }
+    body.night-mode .dp-line { color: #e6edf3; }
+    body.night-mode .dp-link, body.night-mode .dp-adv summary, body.night-mode .dp-mini { background: #161b22; color: #e6edf3; }
+    body.bw-mode .dp-link, body.bw-mode .dp-adv summary, body.bw-mode .dp-mini { background: #fff; color: #000; border: 2px solid #000; }
     .theme-dot.on { border-color: #059669; background: rgba(16,185,129,.1); }
     .dp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; cursor: pointer; font-size: 14px; font-weight: 700; color: #0f172a; }
     .dp-row small { display: block; font-size: 11px; font-weight: 500; color: #64748b; }
@@ -626,61 +640,43 @@
       </div>
 
       <section class="space-y-2">
-        <h3 class="dp-title">Carte</h3>
-        <div class="grid grid-cols-2 gap-2">
-          <button data-layer="vector" class="layer-option seg">Vectorielle</button>
-          <button id="layer-images" class="seg">Images</button>
-        </div>
-        <div id="raster-choices" class="hidden grid grid-cols-3 gap-2">
-          <button data-layer="cyclosm" class="layer-option seg sm">Vélo</button>
-          <button data-layer="osm" class="layer-option seg sm">Standard</button>
-          <button data-layer="opentopo" class="layer-option seg sm">Relief</button>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button id="view-2d" class="seg on">2D</button>
-          <button id="view-3d" class="seg">3D</button>
-        </div>
+        <h3 class="dp-title">Style de carte</h3>
+        <div class="grid grid-cols-5 gap-1.5"><button data-theme="normal" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#eef1ea"/><path d="M0 26l18 3 4 11H0z" fill="#d5e6cc"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#bcdcf0"/><path d="M-2 32L60 24" stroke="#d6d3cc" stroke-width="5"/><path d="M-2 32L60 24" stroke="#fff" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#0f9f8f" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#0b7a55" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clair</span></button><button data-theme="sun" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#fbfaf3"/><path d="M0 26l18 3 4 11H0z" fill="#bfe0a8"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#7cc3f0"/><path d="M-2 32L60 24" stroke="#5b5b5b" stroke-width="5"/><path d="M-2 32L60 24" stroke="#fff" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#0057d9" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#ff00b4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Soleil</span></button><button data-theme="bw" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#fff"/><path d="M0 26l18 3 4 11H0z" fill="#e5e5e5"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#cfcfcf"/><path d="M-2 32L60 24" stroke="#000" stroke-width="5"/><path d="M-2 32L60 24" stroke="#fff" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#0f9f8f" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>N&amp;B</span></button><button data-theme="noir" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#000"/><path d="M0 26l18 3 4 11H0z" fill="#1a1a1a"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#262626"/><path d="M-2 32L60 24" stroke="#bdbdbd" stroke-width="5"/><path d="M-2 32L60 24" stroke="#000" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Noir</span></button><button data-theme="night" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#000"/><path d="M0 26l18 3 4 11H0z" fill="#0c1a10"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#0b1d2e"/><path d="M-2 32L60 24" stroke="#000" stroke-width="5"/><path d="M-2 32L60 24" stroke="#1c2430" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#2b7a6f" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nuit</span></button></div>
       </section>
 
       <section class="space-y-2">
-        <h3 class="dp-title">Couleurs</h3>
-        <div class="grid grid-cols-5 gap-1">
-          <button data-theme="normal" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#eef1ea 50%,#0b7a55 50%)"></span>Clair</button>
-          <button data-theme="sun" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#ff00b4 50%)"></span>Soleil</button>
-          <button data-theme="bw" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#000000 50%)"></span>N&amp;B</button>
-          <button data-theme="noir" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#000000 50%,#ffffff 50%)"></span>Noir</button>
-          <button data-theme="night" class="theme-dot"><span class="sw" style="background:linear-gradient(135deg,#0b0f14 50%,#34d399 50%)"></span>Nuit</button>
+        <div class="dp-line"><span>Vue</span>
+          <div class="dp-seg"><button id="view-2d" class="seg sm on">2D</button><button id="view-3d" class="seg sm">3D</button></div>
         </div>
-        <h3 class="dp-title pt-1">Contraste</h3>
-        <div class="grid grid-cols-3 gap-2">
-          <button data-contrast="0" class="contrast-btn seg sm on">Normal</button>
-          <button data-contrast="1" class="contrast-btn seg sm">Fort</button>
-          <button data-contrast="2" class="contrast-btn seg sm">Maximum</button>
+        <div class="dp-line"><span>Contraste</span>
+          <div class="dp-seg"><button data-contrast="0" class="contrast-btn seg sm on">Normal</button><button data-contrast="1" class="contrast-btn seg sm">Fort</button><button data-contrast="2" class="contrast-btn seg sm">Max</button></div>
         </div>
+      </section>
+
+      <section>
+        <h3 class="dp-title">Vélo</h3>
         <label class="dp-row">
-          <span>Pistes cyclables en couleur<small>sur les cartes Noir &amp; blanc et Noir</small></span>
+          <span>Privilégier les pistes cyclables<small>pour calculer les trajets</small></span>
+          <input id="dp-prefer-cycleways" type="checkbox" class="dp-switch" checked />
+        </label>
+        <label class="dp-row">
+          <span>Pistes en couleur sur la carte</span>
           <input id="toggle-color-cycleways" type="checkbox" class="dp-switch" checked />
         </label>
         <label class="dp-row">
-          <span>Icônes en couleur<small>sur les cartes Noir &amp; blanc et Noir</small></span>
-          <input id="toggle-color-icons" type="checkbox" class="dp-switch" />
+          <span>Véloroutes &amp; EuroVelo</span>
+          <input id="toggle-bike-routes" type="checkbox" class="dp-switch" checked />
         </label>
       </section>
 
-      <section class="space-y-2">
-        <h3 class="dp-title">Lieux affichés</h3>
-        <div id="poi-toggles" class="grid grid-cols-4 gap-1.5"></div>
-        <button id="btn-dp-shortcuts" class="w-full seg sm">Choisir les icônes du bas</button>
-        <div class="flex gap-2">
-          <button id="btn-poi-fewer" class="flex-1 seg sm">Essentiels</button>
-          <button id="btn-poi-none" class="flex-1 seg sm">Aucun</button>
-        </div>
-      </section>
-
-      <section class="space-y-1">
+      <section>
         <h3 class="dp-title">Guidage</h3>
         <label class="dp-row">
-          <span>Annoncer les lieux à voir<small>« À voir : château de… » quand on passe à côté</small></span>
+          <span>Voix</span>
+          <input id="dp-voice" type="checkbox" class="dp-switch" checked />
+        </label>
+        <label class="dp-row">
+          <span>Annoncer les lieux à voir</span>
           <input id="toggle-announce-visits" type="checkbox" class="dp-switch" />
         </label>
         <label class="dp-row">
@@ -689,22 +685,38 @@
         </label>
       </section>
 
-      <section class="space-y-1">
-        <h3 class="dp-title">Vélo</h3>
-        <label class="dp-row">
-          <span>Véloroutes &amp; EuroVelo<small>itinéraires balisés par-dessus la carte</small></span>
-          <input id="toggle-bike-routes" type="checkbox" class="dp-switch" checked />
-        </label>
-        <label class="dp-row">
-          <span>Pistes cliquables<small>nom, réseau et revêtement au toucher</small></span>
-          <input id="toggle-cycleways-checkbox" type="checkbox" class="dp-switch" />
-        </label>
+      <section class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="dp-title">Lieux sur la carte</h3>
+          <div class="flex gap-1.5"><button id="btn-poi-fewer" class="dp-mini">Essentiels</button><button id="btn-poi-none" class="dp-mini">Aucun</button></div>
+        </div>
+        <div id="poi-toggles" class="grid grid-cols-4 gap-1.5"></div>
+        <button id="btn-dp-shortcuts" class="dp-link">Choisir les icônes du bas<span>›</span></button>
       </section>
 
-      <div class="grid grid-cols-2 gap-2 pb-1">
-        <button id="btn-nearest-water" class="h-12 rounded-2xl bg-sky-600 text-white text-sm font-bold">Eau la plus proche</button>
-        <button id="btn-offline-modal" class="h-12 rounded-2xl bg-slate-900 text-white text-sm font-bold">Cartes hors ligne</button>
-      </div>
+      <details class="dp-adv">
+        <summary>Avancé<span>›</span></summary>
+        <div class="space-y-2 pt-2">
+          <div class="dp-line"><span>Fond de carte</span>
+            <div class="dp-seg"><button data-layer="vector" class="layer-option seg sm">Vectoriel</button><button id="layer-images" class="seg sm">Images</button></div>
+          </div>
+          <div id="raster-choices" class="hidden grid grid-cols-3 gap-2">
+            <button data-layer="cyclosm" class="layer-option seg sm">Vélo</button>
+            <button data-layer="osm" class="layer-option seg sm">Standard</button>
+            <button data-layer="opentopo" class="layer-option seg sm">Relief</button>
+          </div>
+          <label class="dp-row">
+            <span>Icônes en couleur<small>sur les cartes N&amp;B et Noir</small></span>
+            <input id="toggle-color-icons" type="checkbox" class="dp-switch" />
+          </label>
+          <label class="dp-row">
+            <span>Pistes cliquables<small>nom, réseau et revêtement au toucher</small></span>
+            <input id="toggle-cycleways-checkbox" type="checkbox" class="dp-switch" />
+          </label>
+          <button id="btn-offline-modal" class="dp-link">Cartes hors ligne<span>›</span></button>
+          <button id="btn-nearest-water" class="dp-link">Eau la plus proche<span>›</span></button>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -4068,8 +4080,13 @@ ${trkpts}
       // Guidage GPS & Voix
       document.getElementById('btn-start-guidance').addEventListener('click', startLiveGuidance);
       document.getElementById('btn-stop-guidance').addEventListener('click', stopLiveGuidance);
+      document.getElementById('dp-voice').addEventListener('change', (e) => {
+        if (AppState.voiceEnabled !== e.target.checked) document.getElementById('btn-toggle-voice').click();
+      });
+      document.getElementById('dp-prefer-cycleways').addEventListener('change', (e) => setPreferCycleways(e.target.checked));
       document.getElementById('btn-toggle-voice').addEventListener('click', () => {
         AppState.voiceEnabled = !AppState.voiceEnabled;
+        document.getElementById('dp-voice').checked = AppState.voiceEnabled;
         document.getElementById('icon-voice-on').classList.toggle('hidden', !AppState.voiceEnabled);
         document.getElementById('icon-voice-off').classList.toggle('hidden', AppState.voiceEnabled);
         showToast(AppState.voiceEnabled ? 'Synthèse vocale activée.' : 'Synthèse vocale coupée.', 'info', 2000);
@@ -6546,6 +6563,7 @@ ${trkpts}
         el.setAttribute('aria-pressed', on ? 'true' : 'false');
       };
       set('chip-pistes', AppState.preferCycleways);
+      document.getElementById('dp-prefer-cycleways').checked = AppState.preferCycleways;
       set('chip-visit', groupEnabled('visit'));
       set('chip-eat', groupEnabled('eat'));
       set('chip-water', AppState.showWater);
