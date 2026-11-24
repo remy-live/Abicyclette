@@ -5572,18 +5572,25 @@ ${trkpts}
           { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.routeCasing, 'line-width': 13 * k } },
           { id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.route, 'line-width': 7 * k } },
           {
-            // Lieux : MapLibre masque ceux qui se chevauchent (les plus importants d'abord)
+            // Lieux : icône prioritaire, nom en option (supprimé s'il gêne). Les lieux qui se chevauchent
+            // sont masqués, les plus importants d'abord.
             id: 'pts-icons', type: 'symbol', source: 'pts', filter: ['!=', ['get', 'top'], true],
-            layout: { 'icon-image': ['get', 'icon'], 'icon-size': AppState.contrast ? 1.15 : 1, 'icon-allow-overlap': false, 'icon-padding': 3, 'symbol-sort-key': ['get', 'rank'] },
+            layout: {
+              'icon-image': ['get', 'icon'], 'icon-size': AppState.contrast ? 1.15 : 1, 'icon-allow-overlap': false, 'icon-padding': 3,
+              'symbol-sort-key': ['get', 'rank'],
+              'text-field': ['step', ['zoom'], '', 15, ['get', 'name']], 'text-optional': true,
+              'text-font': [L.fontB], 'text-size': 11.5 * (1 + (k - 1) * 0.6), 'text-offset': [0, 1.4], 'text-anchor': 'top', 'text-max-width': 9,
+            },
+            paint: { 'text-color': P.text, 'text-halo-color': P.halo, 'text-halo-width': 1.8 * k },
           },
           {
             // Mes lieux : toujours visibles
             id: 'pts-top', type: 'symbol', source: 'pts', filter: ['==', ['get', 'top'], true],
-            layout: { 'icon-image': ['get', 'icon'], 'icon-size': AppState.contrast ? 1.25 : 1.1, 'icon-allow-overlap': true },
-          },
-          {
-            id: 'pts-label', type: 'symbol', source: 'pts', minzoom: 15,
-            layout: { 'text-field': ['get', 'name'], 'text-font': [L.fontB], 'text-size': 11.5 * (1 + (k - 1) * 0.6), 'text-offset': [0, 1.5], 'text-anchor': 'top', 'text-optional': true, 'text-max-width': 9 },
+            layout: {
+              'icon-image': ['get', 'icon'], 'icon-size': AppState.contrast ? 1.25 : 1.1, 'icon-allow-overlap': true,
+              'text-field': ['step', ['zoom'], '', 14, ['get', 'name']], 'text-optional': true,
+              'text-font': [L.fontB], 'text-size': 12 * (1 + (k - 1) * 0.6), 'text-offset': [0, 1.5], 'text-anchor': 'top', 'text-max-width': 9,
+            },
             paint: { 'text-color': P.text, 'text-halo-color': P.halo, 'text-halo-width': 1.8 * k },
           }
         );
