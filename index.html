@@ -207,6 +207,8 @@
       #side-drawer.sheet-collapsed .sc-tile > span:last-child, #side-drawer.sheet-mini .sc-tile > span:last-child { display: none; }
       #side-drawer.sheet-collapsed .sc-tile, #side-drawer.sheet-mini .sc-tile { flex: 1 0 42px; padding: 8px 0; }
       #side-drawer.sheet-collapsed .sc-edit, #side-drawer.sheet-mini .sc-edit { display: none; }
+      /* Tiroir rabaissé pendant un trajet : on garde au moins les icônes (jamais de pilule vide) */
+      #side-drawer.sheet-mini #home-shortcuts.hidden { display: flex !important; }
       #side-drawer:not(.sheet-collapsed):not(.sheet-mini) .sc-more { display: none; }
       #side-drawer.sheet-collapsed #home-results { padding: 2px 2px 0; }
       #side-drawer.sheet-collapsed #home-results > * + * { margin-top: 4px; }
@@ -579,6 +581,10 @@
     }
     body.noir-mode .leaflet-marker-pane { filter: grayscale(1) invert(1); }
     body.noir-mode .sw, body.noir-mode .poi-tg.on svg, body.noir-mode .sc-ico svg { filter: invert(1); } /* couleurs d'origine */
+    /* Raccourcis du bas en Noir : l'icône n'est pas inversée deux fois → blanc net (ou sa couleur si « Icônes en couleur ») */
+    body.noir-mode .sc-tile .sc-ico { color: #fff !important; }
+    body.noir-mode.color-icons .sc-tile .sc-ico { color: var(--c) !important; }
+    body.noir-mode .sc-tile.on .sc-ico { background: #000 !important; color: #000 !important; }
 
     /* =====================================================================
        CONTRASTE RENFORCÉ (bouton ◐) : textes plus épais et plus sombres
