@@ -46,4 +46,4 @@ Le Gist (`abicyclette-lieux.json`) est retrouvé automatiquement sur les autres 
 
 ## Données et services
 
-OpenStreetMap (Overpass, Nominatim), CyclOSM, OpenTopoMap, BRouter, OSRM, Open-Meteo (altitude), OpenFreeMap (vue 3D), relief Terrarium (AWS Open Data).
+OpenStreetMap (tuiles vectorielles OpenFreeMap pour les lieux et l’eau, API OSM pour les horaires, Overpass en secours, Nominatim), CyclOSM, OpenTopoMap, BRouter, OSRM, Open-Meteo (altitude), OpenFreeMap (vue 3D), relief Terrarium (AWS Open Data).

@@ -477,6 +477,9 @@
     </div>
   </div>
 
+  <!-- Pastille d'état des lieux, visible sur la carte -->
+  <button id="map-status" class="hidden fixed top-[82px] left-1/2 -translate-x-1/2 z-20 glass-panel rounded-full px-4 h-10 text-xs font-bold text-slate-800 whitespace-nowrap flex items-center gap-2 md:top-4"></button>
+
   <!-- Deux boutons flottants : ma position, affichage -->
   <div id="quick-controls" class="fixed right-3 top-[84px] md:top-4 z-20 flex flex-col gap-2.5">
     <button id="btn-locate-me" aria-label="Ma position" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-800 active:scale-95 transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
@@ -546,6 +549,8 @@
         <button id="chip-eat" class="chip big" aria-pressed="false"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-3 4-3 7h3v11"/></svg>Manger</button>
         <button id="chip-water" class="chip big on" aria-pressed="true"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg>Eau</button>
       </div>
+
+      <div id="home-shortcuts" class="flex gap-1.5 overflow-x-auto no-scrollbar -mt-1"></div>
 
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
@@ -784,7 +789,10 @@
               </div>
             </div>
             <div id="poi-chips-group" class="flex flex-wrap gap-1.5"></div>
-            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Autour (<span id="poi-count">0</span>)</div>
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Autour (<span id="poi-count">0</span>)</div>
+              <button id="btn-clear-filter" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-bold">✕ Toutes les catégories</button>
+            </div>
             <div id="poi-list" class="space-y-2">
               <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
             </div>
@@ -1009,6 +1017,18 @@
     <button id="ctx-close" class="w-full text-left px-3 py-1.5 rounded-xl text-[11px] text-slate-400 hover:text-slate-600 mt-0.5">
       Fermer
     </button>
+  </div>
+
+  <!-- MODALE : CHOISIR SES RACCOURCIS -->
+  <div id="shortcuts-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-950/45">
+    <div class="glass-panel bg-white/95 rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-3 max-h-[80vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-slate-900">Mes raccourcis</h2>
+        <button id="btn-close-shortcuts" aria-label="Fermer" class="w-9 h-9 rounded-xl hover:bg-slate-200/70 text-slate-500">✕</button>
+      </div>
+      <p class="text-[11px] text-slate-500">Choisissez les boutons affichés sous les puces de l'accueil.</p>
+      <div id="shortcuts-choices" class="flex flex-wrap gap-1.5"></div>
+    </div>
   </div>
 
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
@@ -1392,6 +1412,8 @@
       pendingPlaceLatLng: null,
       pendingPlaceCat: 'favori',
       placesGroup: 'visit',
+      poiCatFilter: null,
+      shortcuts: ['bakery', 'cafe', 'restaurant', 'grocery', 'toilets', 'repair'],
       // Préférences
       preferCycleways: true,
       pickViaMode: false,
@@ -1558,9 +1580,14 @@
       L.Popup.prototype.options.autoPanPaddingTopLeft = L.point(12, 96);
       L.Popup.prototype.options.autoPanPaddingBottomRight = L.point(12, window.innerWidth < 768 ? 260 : 24);
       // Vue initiale centrée sur la vallée de l'Oise / Compiègne [49.417, 2.826], zoom 13
+      let startView = { lat: 49.417, lng: 2.826, z: 14 };
+      try {
+        const v = JSON.parse(localStorage.getItem('abicyclette.view') || 'null');
+        if (v && Number.isFinite(v.lat)) startView = v;
+      } catch {}
       const map = L.map('map', {
-        center: [49.417, 2.826],
-        zoom: 13,
+        center: [startView.lat, startView.lng],
+        zoom: startView.z,
         zoomControl: false,
         tapHold: true, // appui long = « clic droit » sur mobile
       });
@@ -1598,7 +1625,12 @@
       let moveTimer = null;
       map.on('moveend', () => {
         clearTimeout(moveTimer);
+        try {
+          const c = map.getCenter();
+          localStorage.setItem('abicyclette.view', JSON.stringify({ lat: c.lat, lng: c.lng, z: map.getZoom() }));
+        } catch {}
         if (AppState.isGuiding && AppState.sunMode) return; // pendant le guidage éco : pas de rechargement continu
+        if (map._popup && map.hasLayer(map._popup)) return; // une fiche est ouverte : on ne touche à rien
         moveTimer = setTimeout(() => {
           loadWaterPointsForCurrentView();
           loadPOIsForCurrentView();
@@ -1755,7 +1787,19 @@
         return;
       }
 
-      statusEl.textContent = 'Recherche via Overpass...';
+      statusEl.textContent = 'Recherche des points d’eau…';
+      const waterSeq = (loadWaterPointsForCurrentView.seq = (loadWaterPointsForCurrentView.seq || 0) + 1);
+      try {
+        const { water } = await tilePlaces(+s, +w, +n, +e, Math.round(map.getZoom()), 16);
+        if (waterSeq !== loadWaterPointsForCurrentView.seq) return;
+        AppState.waterPoints = water;
+        OfflineDB.putPOIs(water);
+        renderWaterPoints(water);
+        statusEl.textContent = `${water.length} point(s) d'eau détecté(s)`;
+        if (water.length || map.getZoom() < 13) return; // rien sur les tuiles : on vérifie auprès d'Overpass
+      } catch {
+        /* tuiles indisponibles : on tente Overpass */
+      }
       const query = `[out:json][timeout:12];
         (
           node["amenity"="drinking_water"](${s},${w},${n},${e});
@@ -3256,7 +3300,7 @@ ${trkpts}
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
           updateUserGPSMarker(latitude, longitude, accuracy);
-          flyToActive(latitude, longitude, 15);
+          flyToActive(latitude, longitude, Math.max(15, AppState.map.getZoom()));
         },
         (err) => {
           showToast('Impossible d’obtenir votre position GPS : ' + err.message, 'warning');
@@ -3333,7 +3377,7 @@ ${trkpts}
       const drawer = document.getElementById('side-drawer');
       drawer.classList.remove('sheet-half', 'sheet-expanded');
       drawer.classList.add('sheet-collapsed');
-      ['display-panel', 'place-modal', 'offline-modal', 'map-click-menu', 'global-search-results'].forEach((id) =>
+      ['display-panel', 'place-modal', 'offline-modal', 'shortcuts-modal', 'map-click-menu', 'global-search-results'].forEach((id) =>
         document.getElementById(id)?.classList.add('hidden')
       );
     }
@@ -3729,6 +3773,11 @@ ${trkpts}
       document.getElementById('chip-eat').addEventListener('click', () => showGroup('eat'));
       document.getElementById('chip-water').addEventListener('click', () => showGroup('water'));
       document.querySelectorAll('.pg-btn').forEach((b) => b.addEventListener('click', () => setPlacesGroup(b.dataset.pg)));
+      document.getElementById('btn-clear-filter').addEventListener('click', () => setPlacesGroup(AppState.placesGroup));
+      document.getElementById('btn-close-shortcuts').addEventListener('click', () => document.getElementById('shortcuts-modal').classList.add('hidden'));
+      document.getElementById('shortcuts-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'shortcuts-modal') e.target.classList.add('hidden');
+      });
       document.getElementById('btn-hide-group').addEventListener('click', () => {
         const g = AppState.placesGroup;
         if (g === 'water') setShowWater(!AppState.showWater);
@@ -3785,6 +3834,10 @@ ${trkpts}
         if (ll) openPlaceModal(ll.lat, ll.lng);
       });
       document.getElementById('btn-refresh-poi').addEventListener('click', () => loadPOIsForCurrentView());
+      document.getElementById('map-status').addEventListener('click', (e) => {
+        if (e.currentTarget.dataset.retry) loadPOIsForCurrentView();
+        else e.currentTarget.classList.add('hidden');
+      });
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
       document.getElementById('btn-add-place-center').addEventListener('click', () => {
         const c = AppState.is3D && AppState.map3d ? AppState.map3d.getCenter() : AppState.map.getCenter();
@@ -3989,6 +4042,371 @@ ${trkpts}
     function poiSvg(cat, size = 16, color = 'currentColor') {
       return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${POI_ICONS[cat] || POI_ICONS.attraction}</svg>`;
     }
+
+    // -------------------------------------------------------------------------
+    // 14 bis. LIEUX DEPUIS LES TUILES VECTORIELLES OPENFREEMAP
+    //   Les serveurs publics Overpass sont saturés et refusent souvent les demandes.
+    //   Les tuiles OpenFreeMap (données OpenStreetMap, couche « poi ») sont servies par un CDN :
+    //   rapides et fiables. Overpass ne sert plus que de secours.
+    // -------------------------------------------------------------------------
+    const TileSource = (() => {
+      let template = null;
+      const cache = new Map(); // "z/x/y" -> Promise<[{...}]>
+      const td = new TextDecoder();
+
+      async function getTemplate() {
+        if (template) return template;
+        try {
+          const saved = JSON.parse(localStorage.getItem('abicyclette.tilejson') || 'null');
+          if (saved && Date.now() - saved.at < 86400000) return (template = saved.url);
+        } catch {}
+        const res = await fetch('https://tiles.openfreemap.org/planet');
+        if (!res.ok) throw new Error('TileJSON ' + res.status);
+        template = (await res.json()).tiles[0];
+        try {
+          localStorage.setItem('abicyclette.tilejson', JSON.stringify({ url: template, at: Date.now() }));
+        } catch {}
+        return template;
+      }
+
+      // --- Décodeur Mapbox Vector Tile minimal (seule la couche « poi » est lue) ---
+      function varint(b, p) {
+        let r = 0, s = 1, c;
+        do {
+          c = b[p.i++];
+          r += (c & 0x7f) * s;
+          s *= 128;
+        } while (c >= 0x80);
+        return r;
+      }
+      const zz = (n) => (n % 2 === 1 ? -(n + 1) / 2 : n / 2);
+      function skip(b, p, wire) {
+        if (wire === 0) varint(b, p);
+        else if (wire === 1) p.i += 8;
+        else if (wire === 2) {
+          const l = varint(b, p);
+          p.i += l;
+        }
+        else if (wire === 5) p.i += 4;
+      }
+      function readValue(b, start, end) {
+        const p = { i: start };
+        let v = null;
+        while (p.i < end) {
+          const tag = varint(b, p), f = Math.floor(tag / 8), w = tag & 7;
+          if (f === 1) {
+            const l = varint(b, p);
+            v = td.decode(b.subarray(p.i, p.i + l));
+            p.i += l;
+          } else if (f === 2) {
+            v = new DataView(b.buffer, b.byteOffset + p.i, 4).getFloat32(0, true);
+            p.i += 4;
+          } else if (f === 3) {
+            v = new DataView(b.buffer, b.byteOffset + p.i, 8).getFloat64(0, true);
+            p.i += 8;
+          } else if (f === 4 || f === 5) v = varint(b, p);
+          else if (f === 6) v = zz(varint(b, p));
+          else if (f === 7) v = !!varint(b, p);
+          else skip(b, p, w);
+        }
+        return v;
+      }
+      function readLayer(b, start, end) {
+        const p = { i: start };
+        const layer = { name: '', keys: [], values: [], extent: 4096, feats: [] };
+        while (p.i < end) {
+          const tag = varint(b, p), f = Math.floor(tag / 8), w = tag & 7;
+          if (f === 1) {
+            const l = varint(b, p);
+            layer.name = td.decode(b.subarray(p.i, p.i + l));
+            p.i += l;
+            if (layer.name !== 'poi') return null; // couche inutile : on s'arrête
+          } else if (f === 2) {
+            const l = varint(b, p);
+            layer.feats.push([p.i, p.i + l]);
+            p.i += l;
+          } else if (f === 3) {
+            const l = varint(b, p);
+            layer.keys.push(td.decode(b.subarray(p.i, p.i + l)));
+            p.i += l;
+          } else if (f === 4) {
+            const l = varint(b, p);
+            layer.values.push(readValue(b, p.i, p.i + l));
+            p.i += l;
+          } else if (f === 5) layer.extent = varint(b, p);
+          else skip(b, p, w);
+        }
+        return layer;
+      }
+      function readFeature(b, start, end, layer) {
+        const p = { i: start };
+        const feat = { id: 0, props: {}, x: null, y: null };
+        while (p.i < end) {
+          const tag = varint(b, p), f = Math.floor(tag / 8), w = tag & 7;
+          if (f === 1) feat.id = varint(b, p);
+          else if (f === 2) {
+            const len = varint(b, p);
+            const e = p.i + len;
+            while (p.i < e) {
+              const k = varint(b, p), v = varint(b, p);
+              feat.props[layer.keys[k]] = layer.values[v];
+            }
+          } else if (f === 4) {
+            const len = varint(b, p);
+            const e = p.i + len;
+            const cmd = varint(b, p);
+            if ((cmd & 7) === 1 && p.i < e) {
+              feat.x = zz(varint(b, p));
+              feat.y = zz(varint(b, p));
+            }
+            p.i = e;
+          } else skip(b, p, w);
+        }
+        return feat;
+      }
+      function decodePOIs(buf, z, x, y) {
+        const b = new Uint8Array(buf);
+        const p = { i: 0 };
+        let layer = null;
+        while (p.i < b.length) {
+          const tag = varint(b, p), f = Math.floor(tag / 8), w = tag & 7;
+          if (f === 3 && w === 2) {
+            const l = varint(b, p);
+            const L = readLayer(b, p.i, p.i + l);
+            p.i += l;
+            if (L) {
+              layer = L;
+              break;
+            }
+          } else skip(b, p, w);
+        }
+        if (!layer) return [];
+        const n = Math.pow(2, z);
+        return layer.feats
+          .map(([s, e]) => readFeature(b, s, e, layer))
+          .filter((f) => f.x !== null)
+          .map((f) => {
+            const lon = ((x + f.x / layer.extent) / n) * 360 - 180;
+            const m = Math.PI - (2 * Math.PI * (y + f.y / layer.extent)) / n;
+            const lat = (Math.atan(Math.sinh(m)) * 180) / Math.PI;
+            return { fid: f.id, lat, lon, ...f.props };
+          });
+      }
+
+      function tileXY(lat, lon, z) {
+        const n = Math.pow(2, z);
+        const x = Math.floor(((lon + 180) / 360) * n);
+        const r = (lat * Math.PI) / 180;
+        const y = Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+        return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)) };
+      }
+
+      async function tile(z, x, y) {
+        const key = `${z}/${x}/${y}`;
+        if (!cache.has(key)) {
+          const pr = (async () => {
+            const url = (await getTemplate()).replace('{z}', z).replace('{x}', x).replace('{y}', y);
+            const res = await fetch(url);
+            if (res.status === 204 || res.status === 404) return []; // tuile vide (mer, désert…)
+            if (!res.ok) throw new Error('tuile ' + res.status);
+            return decodePOIs(await res.arrayBuffer(), z, x, y);
+          })();
+          pr.catch(() => cache.delete(key));
+          cache.set(key, pr);
+          if (cache.size > 400) cache.delete(cache.keys().next().value);
+        }
+        return cache.get(key);
+      }
+
+      // Tous les lieux bruts d'une zone (s, w, n, e) au niveau z (≤ 14), au plus maxTiles tuiles
+      async function rawInBounds(s, w, n, e, z = 14, maxTiles = 16) {
+        z = Math.min(14, Math.max(11, z));
+        let a, c;
+        for (;;) {
+          a = tileXY(n, w, z);
+          c = tileXY(s, e, z);
+          if ((c.x - a.x + 1) * (c.y - a.y + 1) <= maxTiles || z <= 11) break;
+          z--; // zone trop grande : on lit des tuiles plus larges (moins détaillées)
+        }
+        const jobs = [];
+        for (let x = a.x; x <= c.x; x++) for (let y = a.y; y <= c.y; y++) jobs.push(tile(z, x, y));
+        const res = await Promise.allSettled(jobs);
+        if (res.every((r) => r.status === 'rejected')) throw new Error('Tuiles indisponibles');
+        return res
+          .filter((r) => r.status === 'fulfilled')
+          .flatMap((r) => r.value)
+          .filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
+      }
+
+      return { rawInBounds };
+    })();
+
+    // Classe / sous-classe OpenMapTiles -> nos catégories
+    const TILE_CAT = {
+      castle: 'heritage', monument: 'heritage', ruins: 'heritage', archaeological_site: 'heritage', fort: 'heritage',
+      manor: 'heritage', city_gate: 'heritage', memorial: 'heritage',
+      viewpoint: 'viewpoint', museum: 'museum', attraction: 'attraction', artwork: 'attraction', gallery: 'attraction', zoo: 'attraction',
+      theme_park: 'attraction', place_of_worship: 'worship', park: 'nature', nature_reserve: 'nature', garden: 'nature',
+      bicycle: 'repair', bicycle_repair_station: 'repair', bicycle_parking: 'parking', charging_station: 'charging',
+      toilets: 'toilets', shelter: 'shelter', picnic_site: 'picnic', picnic_table: 'picnic',
+      bakery: 'bakery', pastry: 'bakery', restaurant: 'restaurant', fast_food: 'restaurant',
+      cafe: 'cafe', bar: 'cafe', pub: 'cafe', ice_cream: 'cafe',
+      supermarket: 'grocery', convenience: 'grocery', greengrocer: 'grocery', butcher: 'grocery', deli: 'grocery', farm: 'grocery', grocery: 'grocery',
+      pharmacy: 'pharmacy', camp_site: 'camp', caravan_site: 'camp', campsite: 'camp', station: 'station', halt: 'station',
+    };
+    const OSM_TYPE = { 0: 'node', 1: 'node', 2: 'way', 3: 'relation', 4: 'relation' };
+
+    // Lit une zone sur les tuiles et renvoie { pois, water } au format de l'appli
+    async function tilePlaces(s, w, n, e, z = 14, maxTiles = 16) {
+      const raw = await TileSource.rawInBounds(s, w, n, e, z, maxTiles);
+      const pois = [];
+      const water = [];
+      const seen = new Set();
+      raw.forEach((r) => {
+        const sub = r.subclass || '';
+        const osmType = OSM_TYPE[r.fid % 10] || 'node';
+        const osmId = Math.floor(r.fid / 10);
+        const id = r.fid ? `${osmType}_${osmId}` : `t_${r.lat.toFixed(5)}_${r.lon.toFixed(5)}`;
+        // Un même lieu peut figurer dans plusieurs tuiles voisines (marges)
+        const twin = `${r.name || ''}|${r.lat.toFixed(4)}|${r.lon.toFixed(4)}`;
+        if (seen.has(id) || seen.has(twin)) return;
+        seen.add(id);
+        seen.add(twin);
+        if (sub === 'drinking_water' || r.class === 'drinking_water' || sub === 'water_tap') {
+          water.push({ id, lat: r.lat, lon: r.lon, typeLabel: sub === 'water_tap' ? "Robinet d'eau potable" : "Fontaine d'eau potable", name: r['name:fr'] || r.name || "Fontaine d'eau potable", access: 'public', seasonal: null, osmType, osmId });
+          return;
+        }
+        // Les gares sont à la fois des lieux et des haltes possibles
+        const cat = TILE_CAT[sub] || TILE_CAT[r.class];
+        if (!cat) return;
+        if (cat === 'station' && r.class !== 'railway') return; // pas les stations de bus/métro
+        pois.push(applyOSMDetails({
+          id, lat: r.lat, lon: r.lon, cat, osmType, osmId,
+          name: r['name:fr'] || r.name || POI_BY_ID[cat].label.replace(/s( &|$)/, '$1'),
+          hours: null, website: null, wikipedia: null, description: null,
+        }));
+      });
+      return { pois, water };
+    }
+
+    // Détails (horaires, site, téléphone) lus directement dans OpenStreetMap, par lots
+    const osmDetailsCache = new Map();
+    async function fetchOSMDetails(points) {
+      const want = points.filter((p) => p.osmId && !osmDetailsCache.has(p.id) && !p.hours);
+      const byType = {};
+      want.forEach((p) => (byType[p.osmType] = byType[p.osmType] || []).push(p.osmId));
+      await Promise.allSettled(
+        Object.entries(byType).map(async ([type, ids]) => {
+          for (let i = 0; i < ids.length; i += 50) {
+            const chunk = ids.slice(i, i + 50);
+            const res = await fetch(`https://api.openstreetmap.org/api/0.6/${type}s.json?${type}s=${chunk.join(',')}`);
+            if (!res.ok) continue;
+            const data = await res.json();
+            (data.elements || []).forEach((el) => osmDetailsCache.set(`${el.type}_${el.id}`, el.tags || {}));
+          }
+        })
+      );
+      points.forEach(applyOSMDetails);
+      return points;
+    }
+
+    function applyOSMDetails(p) {
+        const t = osmDetailsCache.get(p.id);
+        if (!t) return p;
+        p.hours = p.hours || t.opening_hours || null;
+        p.website = p.website || t.website || t['contact:website'] || null;
+        p.phone = p.phone || t.phone || t['contact:phone'] || null;
+        p.wikipedia = p.wikipedia || t.wikipedia || null;
+        p.description = p.description || t.description || null;
+        return p;
+    }
+
+    // -------------------------------------------------------------------------
+    // Horaires OSM (« Mo-Fr 07:00-19:30; Sa 08:00-12:30,14:00-19:00; Su off »)
+    // -------------------------------------------------------------------------
+    const OH_DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    const OH_FR = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+    function parseOpeningHours(str) {
+      if (!str) return null;
+      const s0 = str.trim();
+      if (s0 === '24/7') return Array.from({ length: 7 }, () => [[0, 1440]]);
+      const week = Array.from({ length: 7 }, () => null);
+      let ok = false;
+      for (let rule of s0.split(';')) {
+        rule = rule.trim();
+        if (!rule) continue;
+        const m = rule.match(/^((?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:\s*[-,]\s*(?:Mo|Tu|We|Th|Fr|Sa|Su|PH))*)?\s*(.*)$/);
+        if (!m) continue;
+        let days = [0, 1, 2, 3, 4, 5, 6];
+        if (m[1]) {
+          days = [];
+          m[1].split(',').forEach((part) => {
+            const [a, b] = part.split('-').map((x) => OH_DAYS.indexOf(x.trim()));
+            if (a < 0) return; // PH (jours fériés) : ignoré
+            if (b === undefined || b < 0) days.push(a);
+            else for (let d = a; ; d = (d + 1) % 7) {
+              days.push(d);
+              if (d === b) break;
+            }
+          });
+          if (!days.length) continue;
+        }
+        const t = m[2].trim();
+        let intervals;
+        if (/^(off|closed)$/i.test(t)) intervals = [];
+        else {
+          intervals = [];
+          for (const span of t.split(',')) {
+            const mm = span.trim().match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\+?$/);
+            if (!mm) {
+              intervals = null;
+              break;
+            }
+            const a = +mm[1] * 60 + +mm[2];
+            let b = +mm[3] * 60 + +mm[4];
+            if (b <= a) b += 1440;
+            intervals.push([a, b]);
+          }
+          if (!intervals) continue; // format non compris : on ignore la règle
+        }
+        days.forEach((d) => (week[d] = intervals));
+        ok = true;
+      }
+      return ok ? week.map((x) => x || []) : null;
+    }
+
+    function hoursStatus(str, now = new Date()) {
+      const week = parseOpeningHours(str);
+      if (!week) return str ? { open: null, text: str } : null;
+      const fmt = (m) => `${Math.floor((m % 1440) / 60)}h${String(m % 60).padStart(2, '0')}`.replace('h00', 'h');
+      const d = (now.getDay() + 6) % 7;
+      const t = now.getHours() * 60 + now.getMinutes();
+      // Ouvert maintenant ? (y compris une plage d'hier qui déborde après minuit)
+      if (week.every((w) => w.some(([a, b]) => a === 0 && b >= 1440))) return { open: true, text: 'Ouvert 24h/24' };
+      for (const [a, b] of week[d]) if (t >= a && t < b) return { open: true, text: `Ouvert · ferme à ${fmt(b)}` };
+      for (const [a, b] of week[(d + 6) % 7]) if (b > 1440 && t < b - 1440) return { open: true, text: `Ouvert · ferme à ${fmt(b)}` };
+      for (let k = 0; k < 7; k++) {
+        const day = (d + k) % 7;
+        const next = week[day].filter(([a]) => k > 0 || a > t).sort((x, y) => x[0] - y[0])[0];
+        if (next) {
+          const when = k === 0 ? '' : k === 1 ? ' demain' : ` ${OH_FR[day]}`;
+          return { open: false, text: `Fermé · ouvre${when} à ${fmt(next[0])}` };
+        }
+      }
+      return { open: false, text: 'Fermé' };
+    }
+
+    function hoursBadge(p) {
+      const st = hoursStatus(p.hours);
+      if (!st) return '';
+      const cls = st.open === true ? 'text-emerald-700' : st.open === false ? 'text-rose-700' : 'text-slate-500';
+      return `<span class="font-bold ${cls}">${escapeHtml(st.text)}</span>`;
+    }
+
+    // Les avis ne sont pas dans OpenStreetMap : lien vers la fiche Google Maps du lieu
+    function reviewsUrl(p) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.name} ${p.lat.toFixed(5)},${p.lon.toFixed(5)}`)}`;
+    }
     const POI_DEFAULT = ['heritage', 'viewpoint', 'museum', 'attraction', 'bakery', 'repair'];
     const LS_POI = 'abicyclette.poi.enabled';
     let poiRequestSeq = 0;
@@ -4044,6 +4462,24 @@ ${trkpts}
       });
     }
 
+    // Pastille sur la carte : dit ce qui se passe (zoom trop faible, chargement, erreur)
+    let mapStatusTimer = null;
+    function setMapStatus(text, { retry = false, autoHide = 0 } = {}) {
+      const el = document.getElementById('map-status');
+      clearTimeout(mapStatusTimer);
+      if (!text || AppState.isGuiding) {
+        el.classList.add('hidden');
+        return;
+      }
+      el.textContent = text;
+      el.dataset.retry = retry ? '1' : '';
+      el.classList.remove('hidden');
+      if (autoHide) mapStatusTimer = setTimeout(() => el.classList.add('hidden'), autoHide);
+    }
+
+    // Lieux « à voir » assez rares pour être cherchés sur une grande zone
+    const POI_WIDE = ['heritage', 'viewpoint', 'museum', 'attraction'];
+
     async function loadPOIsForCurrentView() {
       const statusEl = document.getElementById('poi-status-text');
       const enabled = [...AppState.poiEnabled];
@@ -4051,6 +4487,7 @@ ${trkpts}
         AppState.poiPoints = [];
         renderPOIs([]);
         statusEl.textContent = 'Aucune catégorie choisie';
+        setMapStatus('');
         return;
       }
       const map = AppState.map;
@@ -4064,28 +4501,68 @@ ${trkpts}
         statusEl.textContent = `${cached.length} lieu(x) (cache hors ligne)`;
         return;
       }
-      if (map.getZoom() < 13) {
-        statusEl.textContent = 'Zoomez un peu pour afficher les lieux';
+
+      // Selon le zoom : tout (≥ 13), seulement les lieux à voir (11–12), rien en dessous
+      const z = map.getZoom();
+      let cats = enabled;
+      let hint = '';
+      if (z < 11) {
+        statusEl.textContent = 'Zoomez pour afficher les lieux';
+        setMapStatus('Zoomez pour voir les lieux');
         return;
+      }
+      if (z < 12) {
+        cats = enabled.filter((c) => POI_WIDE.includes(c));
+        if (cats.length < enabled.length) hint = 'Zoomez pour voir aussi commerces et services';
+        if (!cats.length) {
+          statusEl.textContent = hint;
+          setMapStatus(hint);
+          return;
+        }
       }
 
       const seq = ++poiRequestSeq;
       statusEl.textContent = 'Recherche des lieux…';
-      try {
-        const q = buildPOIQuery(b.getSouth().toFixed(4), b.getWest().toFixed(4), b.getNorth().toFixed(4), b.getEast().toFixed(4));
-        const data = await fetchOverpassWithFallback(q, 'poi');
-        if (!data || seq !== poiRequestSeq) return; // une requête plus récente est partie
-        const pts = parsePOIElements(data.elements || [], enabled);
+      setMapStatus('Recherche des lieux…');
+      const done = (pts) => {
         AppState.poiPoints = pts;
         OfflineDB.putExtraPOIs(pts);
         renderPOIs(pts);
-        statusEl.textContent = `${pts.length} lieu(x) dans la zone`;
+        statusEl.textContent = `${pts.length} lieu(x) dans la zone${hint ? ' · ' + hint.toLowerCase() : ''}`;
+        if (hint) setMapStatus(hint, { autoHide: 4000 });
+        else setMapStatus(pts.length ? `${pts.length} lieu(x) affiché(s)` : 'Aucun lieu de ces types ici', { autoHide: 2500 });
+        // Horaires des lieux de la liste, en un seul appel à OpenStreetMap
+        fetchOSMDetails(pts.filter((p) => POI_BY_ID[p.cat]?.group === AppState.placesGroup).slice(0, 25)).then(() => {
+          if (seq === poiRequestSeq) renderPOIList(AppState.poiPoints);
+        });
+      };
+      try {
+        const { pois } = await tilePlaces(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), Math.round(z), 16);
+        if (seq !== poiRequestSeq) return;
+        done(pois.filter((p) => cats.includes(p.cat)));
+        return;
+      } catch {
+        /* tuiles indisponibles : secours Overpass */
+      }
+      try {
+        const q = buildPOIQuery(b.getSouth().toFixed(4), b.getWest().toFixed(4), b.getNorth().toFixed(4), b.getEast().toFixed(4), z < 13 ? 200 : 300, cats);
+        // (secours) Overpass
+        const data = await fetchOverpassWithFallback(q, 'poi');
+        if (!data || seq !== poiRequestSeq) return; // une requête plus récente est partie
+        const pts = parsePOIElements(data.elements || [], cats);
+        AppState.poiPoints = pts;
+        OfflineDB.putExtraPOIs(pts);
+        renderPOIs(pts);
+        statusEl.textContent = `${pts.length} lieu(x) dans la zone${hint ? ' · ' + hint.toLowerCase() : ''}`;
+        if (hint) setMapStatus(hint, { autoHide: 4000 });
+        else setMapStatus(pts.length ? `${pts.length} lieu(x) affiché(s)` : 'Aucun lieu de ces types ici', { autoHide: 2500 });
       } catch {
         if (seq !== poiRequestSeq) return;
         const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => inBounds(p) && AppState.poiEnabled.has(p.cat));
         AppState.poiPoints = cached;
         renderPOIs(cached);
         statusEl.textContent = cached.length ? `${cached.length} lieu(x) (secours local)` : 'Serveur des lieux occupé — touchez ↻ dans un instant';
+        setMapStatus(cached.length ? `${cached.length} lieu(x) en mémoire · toucher pour réessayer` : 'Serveur des lieux occupé · toucher pour réessayer', { retry: true });
       }
     }
 
@@ -4100,9 +4577,10 @@ ${trkpts}
         <div class="p-3.5 font-sans">
           <div class="text-[11px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5" style="color:${c.color}">${poiSvg(p.cat, 14)} ${c.label}</div>
           <div class="text-sm font-bold text-slate-900 mb-1">${escapeHtml(p.name)}</div>
-          ${p.hours ? `<div class="text-[11px] text-slate-500 mb-1">🕒 ${escapeHtml(p.hours)}</div>` : ''}
+          <div class="text-[12px] mb-1">${p.hours ? hoursBadge(p) : p.osmId && !osmDetailsCache.has(p.id) ? '<span class="text-slate-400">Horaires…</span>' : '<span class="text-slate-400">Horaires non renseignés</span>'}</div>
+          ${p.hours && hoursStatus(p.hours)?.open !== null ? `<div class="text-[10px] text-slate-400 mb-1">${escapeHtml(p.hours)}</div>` : ''}
           ${p.description ? `<div class="text-[11px] text-slate-600 mb-1">${escapeHtml(p.description)}</div>` : ''}
-          <div class="text-[11px] flex gap-3 mb-2">${web}${wiki}</div>
+          <div class="text-[11px] flex flex-wrap gap-x-3 gap-y-1 mb-2">${web}${wiki}${p.phone ? `<a href="tel:${escapeHtml(p.phone.replace(/\s/g, ''))}" class="text-sky-600 underline">Appeler</a>` : ''}<a href="${reviewsUrl(p)}" target="_blank" rel="noopener" class="text-sky-600 underline">Avis &amp; photos</a></div>
           <div class="grid grid-cols-3 gap-1.5">
             <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${name}')" class="py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
             <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${name}')" class="py-1.5 rounded-lg bg-amber-500 text-white text-[11px] font-bold">Étape</button>
@@ -4111,17 +4589,43 @@ ${trkpts}
         </div>`;
     }
 
+    // Marqueurs mis à jour sans tout effacer : une fiche ouverte reste ouverte
+    const poiMarkers = new Map();
     function renderPOIs(points) {
-      AppState.poiLayer.clearLayers();
+      const keep = new Set(points.map((p) => p.id));
+      for (const [id, m] of poiMarkers) {
+        if (!keep.has(id) && !m.isPopupOpen()) {
+          AppState.poiLayer.removeLayer(m);
+          poiMarkers.delete(id);
+        }
+      }
       points.forEach((p) => {
+        const existing = poiMarkers.get(p.id);
+        if (existing) {
+          existing._poi = Object.assign(existing._poi, p);
+          return;
+        }
         const m = L.marker([p.lat, p.lon], { icon: createPOIIcon(p.cat) });
-        m.bindPopup(poiPopupHtml(p));
+        m._poi = p;
+        poiMarkers.set(p.id, m);
+        m.bindPopup(() => poiPopupHtml(m._poi));
+        m.on('popupopen', async () => {
+          if (m._poi.osmId) {
+            await fetchOSMDetails([m._poi]);
+            m.setPopupContent(poiPopupHtml(m._poi));
+          }
+        });
         AppState.poiLayer.addLayer(m);
       });
+      renderPOIList(points);
+      if (AppState.is3D) Map3D.refreshOverlays();
+    }
+
+    function renderPOIList(points) {
 
       const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
       const sorted = points
-        .filter((p) => POI_BY_ID[p.cat]?.group === AppState.placesGroup)
+        .filter((p) => (AppState.poiCatFilter ? p.cat === AppState.poiCatFilter : POI_BY_ID[p.cat]?.group === AppState.placesGroup))
         .map((p) => ({ ...p, distance: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
         .sort((a, b) => {
           const rank = { visit: 0, eat: 1, service: 2 };
@@ -4145,7 +4649,7 @@ ${trkpts}
               <span class="poi-icon shrink-0" style="background:${c.color};color:#fff;width:32px;height:32px">${poiSvg(p.cat, 16, '#fff')}</span>
               <div class="min-w-0 flex-1 cursor-pointer" onclick="focusPOI('${p.id}')">
                 <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
-                <div class="text-[11px] text-slate-500">${c.label} • <span class="font-semibold">${formatDistance(p.distance)}</span></div>
+                <div class="text-[11px] text-slate-500 truncate">${formatDistance(p.distance)} • ${p.hours ? hoursBadge(p) : c.label}</div>
               </div>
               <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-600 text-emerald-700 hover:text-white text-xs font-bold">Y aller</button>
             </div>`;
@@ -4234,12 +4738,18 @@ ${trkpts}
         const lons = route.coords.map((c) => c[1]);
         const pad = 0.006;
         const visitIds = POI_CATEGORIES.filter((c) => c.group === 'visit').map((c) => c.id);
-        const q = buildPOIQuery(
-          (Math.min(...lats) - pad).toFixed(4), (Math.min(...lons) - pad).toFixed(4),
-          (Math.max(...lats) + pad).toFixed(4), (Math.max(...lons) + pad).toFixed(4), 1500, visitIds
-        );
-        const data = await fetchOverpassWithFallback(q);
-        const found = parsePOIElements(data.elements || [], visitIds)
+        let raw;
+        try {
+          raw = (await tilePlaces(Math.min(...lats) - pad, Math.min(...lons) - pad, Math.max(...lats) + pad, Math.max(...lons) + pad, 13, 36)).pois.filter((p) => visitIds.includes(p.cat));
+        } catch {
+          const q = buildPOIQuery(
+            (Math.min(...lats) - pad).toFixed(4), (Math.min(...lons) - pad).toFixed(4),
+            (Math.max(...lats) + pad).toFixed(4), (Math.max(...lons) + pad).toFixed(4), 1500, visitIds
+          );
+          const data = await fetchOverpassWithFallback(q);
+          raw = parsePOIElements(data.elements || [], visitIds);
+        }
+        const found = raw
           .filter((p) => p.name && p.name !== POI_BY_ID[p.cat].label)
           .map((p) => ({ ...p, snap: snapToRoute(p.lat, p.lon, route) }))
           .filter((p) => p.snap.dist <= 500)
@@ -5023,6 +5533,15 @@ ${trkpts}
       resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-slate-500">Recherche autour de vous…</div>`;
       resultsEl.classList.remove('hidden');
       const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      try {
+        const pts = await nearbyFromTiles(ref, cats);
+        await fetchOSMDetails(pts.slice(0, 15));
+        OfflineDB.putExtraPOIs(pts);
+        showCategoryResults(pts, cats, resultsEl, false);
+        return;
+      } catch {
+        /* secours Overpass ci-dessous */
+      }
       const parts = cats
         .flatMap((id) => POI_BY_ID[id].q)
         .map((q) => `${q}(around:6000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)});`)
@@ -5035,6 +5554,22 @@ ${trkpts}
       } catch {
         resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-rose-600">Serveur occupé, réessayez.</div>`;
       }
+    }
+
+    // Lieux d'une catégorie autour d'un point, depuis les tuiles (≈ 2,5 km, puis ≈ 6 km si trop peu)
+    async function nearbyFromTiles(ref, cats, min = 3) {
+      const dLat = (km) => km / 111.32;
+      const dLon = (km) => km / (111.32 * Math.cos((ref.lat * Math.PI) / 180));
+      let out = [];
+      for (const [km, z, max] of [[2.5, 14, 9], [6, 13, 9]]) {
+        const { pois } = await tilePlaces(ref.lat - dLat(km), ref.lon - dLon(km), ref.lat + dLat(km), ref.lon + dLon(km), z, max);
+        out = pois.filter((p) => cats.includes(p.cat));
+        if (out.length >= min) break;
+      }
+      return out
+        .map((p) => ({ p, d: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
+        .sort((a, b) => a.d - b.d)
+        .map((x) => x.p);
     }
 
     function showCategoryResults(pts, cats, resultsEl, offline) {
@@ -5058,7 +5593,7 @@ ${trkpts}
       if (AppState.is3D) Map3D.refreshOverlays();
 
       if (!sorted.length) {
-        resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-slate-500">Rien trouvé à moins de 6 km${offline ? ' (cache hors ligne)' : ''}.</div>`;
+        resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-slate-500">Rien trouvé à proximité${offline ? ' (cache hors ligne)' : ''}.</div>`;
         return;
       }
       const label = cats.map((c) => POI_BY_ID[c].label).join(', ');
@@ -5071,7 +5606,7 @@ ${trkpts}
             <span class="shrink-0" style="color:${POI_BY_ID[p.cat].color}">${poiSvg(p.cat, 18)}</span>
             <button type="button" onclick="focusSearchResult(${p.lat}, ${p.lon})" class="min-w-0 flex-1 text-left">
               <div class="text-xs font-bold text-slate-900 truncate">${escapeHtml(p.name)}</div>
-              <div class="text-[11px] text-slate-500 truncate">${formatDistance(p.distance)}${p.hours ? ' · ' + escapeHtml(p.hours) : ''}</div>
+              <div class="text-[11px] text-slate-500 truncate">${formatDistance(p.distance)}${p.hours ? ' · ' + hoursBadge(p) : ''}</div>
             </button>
             <button type="button" onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}'); document.getElementById('global-search-results').classList.add('hidden')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
           </div>`
@@ -5105,13 +5640,21 @@ ${trkpts}
       btn.textContent = 'Recherche des lieux à voir…';
       try {
         const cats = ['heritage', 'viewpoint', 'museum', 'attraction', 'nature', 'worship'];
-        const parts = cats
-          .flatMap((id) => POI_BY_ID[id].q)
-          .map((q) => `${q}(around:${R},${start.lat.toFixed(5)},${start.lon.toFixed(5)});`)
-          .join('');
-        const data = await fetchOverpassWithFallback(`[out:json][timeout:20];(${parts});out center 400;`);
+        let found;
+        try {
+          const km = R / 1000;
+          const dLat = km / 111.32, dLon = km / (111.32 * Math.cos((start.lat * Math.PI) / 180));
+          found = (await tilePlaces(start.lat - dLat, start.lon - dLon, start.lat + dLat, start.lon + dLon, 13, 25)).pois.filter((p) => cats.includes(p.cat));
+        } catch {
+          const parts = cats
+            .flatMap((id) => POI_BY_ID[id].q)
+            .map((q) => `${q}(around:${R},${start.lat.toFixed(5)},${start.lon.toFixed(5)});`)
+            .join('');
+          const data = await fetchOverpassWithFallback(`[out:json][timeout:20];(${parts});out center 400;`);
+          found = parsePOIElements(data.elements || [], cats);
+        }
         const weight = { heritage: 3, museum: 3, viewpoint: 3, attraction: 2, nature: 1.5, worship: 1 };
-        const cands = parsePOIElements(data.elements || [], cats)
+        const cands = found
           .filter((p) => p.name && !Object.values(POI_BY_ID).some((c) => c.label.startsWith(p.name)))
           .map((p) => {
             const d = haversineDistance(start.lat, start.lon, p.lat, p.lon);
@@ -5148,9 +5691,7 @@ ${trkpts}
           const a = vias[k - 1], b = vias[k];
           const mlat = (a.lat + b.lat) / 2, mlon = (a.lon + b.lon) / 2;
           try {
-            const pq = ['bakery', 'cafe'].flatMap((id) => POI_BY_ID[id].q).map((x) => `${x}(around:3000,${mlat.toFixed(5)},${mlon.toFixed(5)});`).join('');
-            const pd = await fetchOverpassWithFallback(`[out:json][timeout:15];(${pq});out center 60;`);
-            const pause = parsePOIElements(pd.elements || [], ['bakery', 'cafe'])
+            const pause = (await nearbyFromTiles({ lat: mlat, lon: mlon }, ['bakery', 'cafe'], 1))
               .filter((p) => p.name && p.name !== POI_BY_ID[p.cat].label.replace(/s( &|$)/, '$1'))
               .map((p) => ({ ...p, d: haversineDistance(mlat, mlon, p.lat, p.lon) }))
               .sort((x, y) => x.d - y.d)[0];
@@ -5240,8 +5781,10 @@ ${trkpts}
       set('chip-water', AppState.showWater);
     }
 
-    function setPlacesGroup(group) {
+    function setPlacesGroup(group, keepFilter = false) {
       AppState.placesGroup = group;
+      if (!keepFilter) AppState.poiCatFilter = null;
+      document.getElementById('btn-clear-filter').classList.toggle('hidden', !AppState.poiCatFilter);
       document.querySelectorAll('.pg-btn').forEach((b) => b.classList.toggle('on', b.dataset.pg === group));
       document.getElementById('pg-poi').classList.toggle('hidden', group === 'water');
       document.getElementById('pg-water').classList.toggle('hidden', group !== 'water');
@@ -5257,6 +5800,90 @@ ${trkpts}
       const shown = g === 'water' ? AppState.showWater : groupEnabled(g);
       const b = document.getElementById('btn-hide-group');
       b.textContent = shown ? 'Masquer de la carte' : 'Afficher sur la carte';
+    }
+
+    // ----- Raccourcis cliquables (« favoris ») : Boulangerie, Café… -----
+    const SHORT_LABEL = {
+      bakery: 'Boulangerie', restaurant: 'Restaurant', cafe: 'Café', grocery: 'Courses', pharmacy: 'Pharmacie',
+      toilets: 'Toilettes', repair: 'Réparation', parking: 'Parking vélo', charging: 'Recharge', shelter: 'Abri',
+      picnic: 'Pique-nique', camp: 'Camping', station: 'Gare', heritage: 'Château', viewpoint: 'Point de vue',
+      museum: 'Musée', attraction: 'Curiosité', worship: 'Église', nature: 'Parc',
+    };
+
+    function renderShortcuts() {
+      const box = document.getElementById('home-shortcuts');
+      box.innerHTML =
+        AppState.shortcuts
+          .filter((c) => POI_BY_ID[c])
+          .map((c) => `<button data-sc="${c}" class="chip big" style="height:40px">${poiSvg(c, 15)}${SHORT_LABEL[c] || POI_BY_ID[c].label}</button>`)
+          .join('') + `<button id="btn-edit-shortcuts" aria-label="Choisir mes raccourcis" class="chip big" style="height:40px">✎</button>`;
+      box.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => showCategoryNearby(b.dataset.sc)));
+      document.getElementById('btn-edit-shortcuts').addEventListener('click', openShortcutsModal);
+    }
+
+    function openShortcutsModal() {
+      const box = document.getElementById('shortcuts-choices');
+      box.innerHTML = POI_CATEGORIES.map(
+        (c) => `<button data-sc2="${c.id}" class="chip ${AppState.shortcuts.includes(c.id) ? 'on' : ''}">${poiSvg(c.id, 14)} ${SHORT_LABEL[c.id] || c.label}</button>`
+      ).join('');
+      box.querySelectorAll('[data-sc2]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const id = b.dataset.sc2;
+          AppState.shortcuts = AppState.shortcuts.includes(id) ? AppState.shortcuts.filter((x) => x !== id) : [...AppState.shortcuts, id];
+          b.classList.toggle('on', AppState.shortcuts.includes(id));
+          try {
+            localStorage.setItem('abicyclette.shortcuts', JSON.stringify(AppState.shortcuts));
+          } catch {}
+          renderShortcuts();
+        })
+      );
+      document.getElementById('shortcuts-modal').classList.remove('hidden');
+      pushBackStep();
+    }
+
+    // Un raccourci : les lieux de ce type autour de moi, avec ouvert / fermé
+    async function showCategoryNearby(cat) {
+      const label = SHORT_LABEL[cat] || POI_BY_ID[cat].label;
+      if (!AppState.poiEnabled.has(cat)) {
+        AppState.poiEnabled.add(cat);
+        try {
+          localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
+        } catch {}
+      }
+      AppState.poiCatFilter = cat;
+      setPlacesGroup(POI_BY_ID[cat].group, true);
+      syncHomeChips();
+      openSheetAt('places');
+      document.querySelector('#side-drawer .overflow-y-auto')?.scrollTo({ top: 0 });
+      const statusEl = document.getElementById('poi-status-text');
+      statusEl.textContent = `Recherche : ${label.toLowerCase()} autour de vous…`;
+      document.getElementById('poi-list').innerHTML = '<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Recherche…</div>';
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      let pts = [];
+      try {
+        pts = await nearbyFromTiles(ref, [cat]);
+      } catch {
+        try {
+          const parts = POI_BY_ID[cat].q.map((q) => `${q}(around:5000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)});`).join('');
+          pts = parsePOIElements((await fetchOverpassWithFallback(`[out:json][timeout:15];(${parts});out center 60;`)).elements || [], [cat]);
+        } catch {
+          statusEl.textContent = 'Lieux indisponibles pour le moment (réseau ?)';
+          renderPOIList(AppState.poiPoints);
+          return;
+        }
+      }
+      // On fusionne avec les lieux déjà affichés, et on les montre sur la carte
+      const byId = new Map(AppState.poiPoints.map((p) => [p.id, p]));
+      pts.forEach((p) => byId.has(p.id) || byId.set(p.id, p));
+      AppState.poiPoints = [...byId.values()];
+      renderPOIs(AppState.poiPoints);
+      statusEl.textContent = `${pts.length} × ${label.toLowerCase()} autour de vous · horaires…`;
+      await fetchOSMDetails(pts.slice(0, 25).map((p) => byId.get(p.id)));
+      if (AppState.poiCatFilter === cat) {
+        renderPOIList(AppState.poiPoints);
+        const open = pts.filter((p) => hoursStatus(byId.get(p.id).hours)?.open === true).length;
+        statusEl.textContent = `${pts.length} × ${label.toLowerCase()} autour de vous${open ? ` · ${open} ouvert(s) maintenant` : ''}`;
+      }
     }
 
     // Puces de l'accueil : affiche le groupe sur la carte ET ouvre sa liste
@@ -5330,6 +5957,29 @@ ${trkpts}
       let visits = (await OfflineDB.getAllExtraPOIs()).filter((p) => POI_BY_ID[p.cat]?.group === 'visit' && p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
       if (!isOfflineMode()) {
         try {
+          // Tuiles z14 traversées par le tracé (points tous les ~300 m), au plus 60
+          const keys = new Map();
+          let acc = 0;
+          for (let i = 0; i < route.coords.length; i++) {
+            if (i && (acc += route.cumDist[i] - route.cumDist[i - 1]) < 300 && i !== route.coords.length - 1) continue;
+            acc = 0;
+            const [la, lo] = route.coords[i];
+            const nT = 16384, tx = Math.floor(((lo + 180) / 360) * nT);
+            const r = (la * Math.PI) / 180, ty = Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * nT);
+            keys.set(`${tx}/${ty}`, [tx, ty]);
+          }
+          const t2lat = (y) => (Math.atan(Math.sinh(Math.PI - (2 * Math.PI * y) / 16384)) * 180) / Math.PI;
+          const res = await Promise.allSettled(
+            [...keys.values()].slice(0, 60).map(([tx, ty]) => tilePlaces(t2lat(ty + 1) + 1e-6, (tx / 16384) * 360 - 180 + 1e-6, t2lat(ty) - 1e-6, ((tx + 1) / 16384) * 360 - 180 - 1e-6, 14, 1))
+          );
+          const ok = res.filter((x) => x.status === 'fulfilled').map((x) => x.value);
+          if (!ok.length) throw new Error('tuiles');
+          ok.forEach((r) => {
+            water = water.concat(r.water);
+            visits = visits.concat(r.pois.filter((p) => POI_BY_ID[p.cat]?.group === 'visit'));
+          });
+        } catch {
+        try {
           const bb = `(${s.toFixed(4)},${w.toFixed(4)},${n.toFixed(4)},${e.toFixed(4)})`;
           const visitIds = ['heritage', 'viewpoint', 'museum', 'attraction'];
           const q = `[out:json][timeout:20];(node["amenity"="drinking_water"]${bb};node["man_made"="water_tap"]${bb};node["natural"="spring"]["drinking_water"="yes"]${bb};${visitIds
@@ -5348,6 +5998,7 @@ ${trkpts}
           OfflineDB.putPOIs(water);
         } catch {
           /* on garde ce qui est en cache */
+        }
         }
       }
       const seen = new Set();
@@ -5490,9 +6141,17 @@ ${trkpts}
       const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
       list.innerHTML = '<div class="text-[11px] text-slate-500">Recherche…</div>';
       try {
-        const q = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
-        const data = await fetchOverpassWithFallback(q);
-        const st = (data.elements || [])
+        let elements;
+        try {
+          const dLat = 12 / 111.32, dLon = 12 / (111.32 * Math.cos((ref.lat * Math.PI) / 180));
+          const { pois } = await tilePlaces(ref.lat - dLat, ref.lon - dLon, ref.lat + dLat, ref.lon + dLon, 12, 16);
+          elements = pois.filter((p) => p.cat === 'station').map((p) => ({ tags: { name: p.name.replace(/^Gare (de |d’|d')?/i, '') }, lat: p.lat, lon: p.lon }));
+          if (!elements.length) throw new Error('aucune');
+        } catch {
+          const q = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
+          elements = (await fetchOverpassWithFallback(q)).elements || [];
+        }
+        const st = elements
           .filter((e) => e.tags?.name && !/subway|light_rail|tram/.test(e.tags.station || '') && e.tags.subway !== 'yes')
           .map((e) => ({ name: e.tags.name, lat: e.lat, lon: e.lon, d: haversineDistance(ref.lat, ref.lon, e.lat, e.lon) }))
           .sort((a, b) => a.d - b.d)
@@ -5729,8 +6388,28 @@ ${trkpts}
       document.getElementById('toggle-prefer-cycleways').checked = AppState.preferCycleways;
       if (localStorage.getItem('abicyclette.showWater') === '0') setShowWater(false);
       document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('on', b.dataset.theme === AppState.theme));
+      try {
+        const sc = JSON.parse(localStorage.getItem('abicyclette.shortcuts') || 'null');
+        if (Array.isArray(sc)) AppState.shortcuts = sc;
+      } catch {}
+      renderShortcuts();
       syncHomeChips();
       updateHome();
+
+      // Ma position au démarrage, sans redemander l'autorisation si elle est déjà donnée
+      try {
+        const perm = await navigator.permissions?.query({ name: 'geolocation' });
+        if (perm?.state === 'granted') {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              updateUserGPSMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+              AppState.map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(14, AppState.map.getZoom()));
+            },
+            () => {},
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+          );
+        }
+      } catch {}
 
       // Application installable & coque disponible hors ligne
       if ('serviceWorker' in navigator && location.protocol === 'https:') {
