@@ -245,17 +245,30 @@
     .theme-dot.on { border-color: #059669; background: rgba(16,185,129,.1); }
     .dp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; cursor: pointer; font-size: 14px; font-weight: 700; color: #0f172a; }
     .dp-row small { display: block; font-size: 11px; font-weight: 500; color: #64748b; }
-    .dp-switch { appearance: none; -webkit-appearance: none; width: 46px; height: 28px; border-radius: 999px; background: #cbd5e1; position: relative; flex: none; transition: background .2s; }
-    .dp-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 999px; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
-    .dp-switch:checked { background: #059669; }
-    .dp-switch:checked::after { transform: translateX(18px); }
+    /* Interrupteurs : rail gris = non, rail plein + pastille à droite = oui (mêmes règles dans tous les styles) */
+    input.dp-switch {
+      appearance: none !important; -webkit-appearance: none !important; margin: 0; cursor: pointer;
+      width: 52px !important; height: 32px !important; border-radius: 999px !important; flex: none; position: relative;
+      background: #d1d5db !important; border: 0 !important; outline: none; transition: background .15s;
+    }
+    input.dp-switch::after {
+      content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 999px;
+      background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .15s;
+    }
+    input.dp-switch:checked { background: #059669 !important; }
+    input.dp-switch:checked::after { transform: translateX(20px); }
+    body.bw-mode input.dp-switch { background: #ffffff !important; box-shadow: inset 0 0 0 2px #000 !important; }
+    body.bw-mode input.dp-switch::after { background: #000; box-shadow: none; }
+    body.bw-mode input.dp-switch:checked { background: #000 !important; }
+    body.bw-mode input.dp-switch:checked::after { background: #fff; }
+    body.night-mode input.dp-switch { background: #2a3440 !important; }
+    body.night-mode input.dp-switch:checked { background: #34d399 !important; }
     .poi-tg { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 2px; border-radius: 14px; border: 2px solid #e2e8f0; font-size: 10.5px; font-weight: 700; color: #94a3b8; background: #fff; line-height: 1.15; text-align: center; }
     .poi-tg svg { opacity: .45; }
     .poi-tg.on { border-color: currentColor; color: var(--c); }
     .poi-tg.on svg { opacity: 1; }
     .poi-tg.on span { color: #0f172a; }
     body.bw-mode .theme-dot.on, body.bw-mode .poi-tg.on { border-color: #000 !important; background: #fff !important; }
-    body.bw-mode .dp-switch:checked { background: #000; }
     body.night-mode .poi-tg, body.night-mode .theme-dot { background: #161b22 !important; border-color: #2a3440 !important; }
     body.night-mode .poi-tg.on { border-color: var(--c) !important; }
     body.night-mode .poi-tg.on span, body.night-mode .dp-row, body.night-mode .theme-dot { color: #e6edf3 !important; }
@@ -423,7 +436,7 @@
       filter: invert(1);
     }
     body.noir-mode .leaflet-marker-pane { filter: grayscale(1) invert(1); }
-    body.noir-mode .sw { filter: invert(1); }
+    body.noir-mode .sw, body.noir-mode .poi-tg.on svg, body.noir-mode .sc-ico svg { filter: invert(1); } /* couleurs d'origine */
 
     /* =====================================================================
        CONTRASTE RENFORCÉ (bouton ◐) : textes plus épais et plus sombres
@@ -590,7 +603,11 @@
           <button data-contrast="2" class="contrast-btn seg sm">Maximum</button>
         </div>
         <label class="dp-row">
-          <span>Icônes en couleur<small>même sur une carte noir et blanc</small></span>
+          <span>Pistes cyclables en couleur<small>sur les cartes Noir &amp; blanc et Noir</small></span>
+          <input id="toggle-color-cycleways" type="checkbox" class="dp-switch" checked />
+        </label>
+        <label class="dp-row">
+          <span>Icônes en couleur<small>sur les cartes Noir &amp; blanc et Noir</small></span>
           <input id="toggle-color-icons" type="checkbox" class="dp-switch" />
         </label>
       </section>
@@ -1496,6 +1513,7 @@
       contrast: 0,            // 0 normal, 1 fort, 2 maximum
       showBikeRoutes: true,   // itinéraires vélo balisés (Waymarked Trails)
       colorIcons: false,      // icônes en couleur même en N&B / Noir
+      colorCycleways: true,   // pistes en couleur même en N&B / Noir
       lastRaster: 'cyclosm',
       map3d: null,
       map3dReady: false,
@@ -3757,6 +3775,13 @@ ${trkpts}
       document.getElementById('display-backdrop').addEventListener('click', () => displayPanel.classList.add('hidden'));
       document.getElementById('layer-images').addEventListener('click', () => switchBaseLayer(AppState.lastRaster || 'cyclosm'));
       document.getElementById('toggle-color-icons').addEventListener('change', (e) => setColorIcons(e.target.checked));
+      document.getElementById('toggle-color-cycleways').addEventListener('change', (e) => {
+        AppState.colorCycleways = e.target.checked;
+        try {
+          localStorage.setItem('abicyclette.colorCycleways', e.target.checked ? '1' : '0');
+        } catch {}
+        if (AppState.glOn) Map3D.applyStyle();
+      });
       document.getElementById('btn-poi-fewer').addEventListener('click', () => setPoiSet(POI_DEFAULT));
       document.getElementById('btn-poi-none').addEventListener('click', () => setPoiSet([]));
       document.getElementById('btn-sheet-close').addEventListener('click', collapseMobileSheet);
@@ -5498,7 +5523,7 @@ ${trkpts}
         const theme = AppState.theme;
         const P = { ...(PAL[theme] || PAL.normal) };
         if (theme === 'bw' || theme === 'noir') {
-          if (AppState.colorIcons) P.cyc = theme === 'noir' ? '#2dd4bf' : '#0d9488'; // pistes en couleur sur carte N&B
+          if (AppState.colorCycleways) P.cyc = theme === 'noir' ? '#2dd4bf' : '#0d9488'; // pistes en couleur sur carte N&B
           else P.cycDash = theme === 'noir' ? '#000000' : '#ffffff';
         }
         const k = [1, 1.3, 1.6][AppState.contrast] || 1;
@@ -6897,6 +6922,8 @@ ${trkpts}
       AppState.showBikeRoutes = localStorage.getItem('abicyclette.bikeRoutes') !== '0';
       document.getElementById('toggle-bike-routes').checked = AppState.showBikeRoutes;
       if (localStorage.getItem('abicyclette.colorIcons') === '1') setColorIcons(true, true);
+      AppState.colorCycleways = localStorage.getItem('abicyclette.colorCycleways') !== '0';
+      document.getElementById('toggle-color-cycleways').checked = AppState.colorCycleways;
       renderPoiToggles();
       const savedContrast = +(localStorage.getItem('abicyclette.contrast') || 0);
       if (savedContrast) setContrast(savedContrast, true);
