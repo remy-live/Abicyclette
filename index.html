@@ -3615,21 +3615,27 @@ ${trkpts}
       if ('ResizeObserver' in window) new ResizeObserver(setPeek).observe(home);
 
       let startY = 0;
+      let startX = 0;
       let moved = false;
+      // Zone de glisse : poignée + accueil (puces, raccourcis, onglets)
+      const dragZone = [handle, home];
       handle.addEventListener('click', () => {
         if (!moved) cycle();
         moved = false;
       });
-      handle.addEventListener('touchstart', (e) => {
+      dragZone.forEach((zone) => zone.addEventListener('touchstart', (e) => {
         moved = false;
+        startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         drawer.classList.add('dragging');
-      }, { passive: true });
+      }, { passive: true }));
 
-      handle.addEventListener('touchend', (e) => {
+      dragZone.forEach((zone) => zone.addEventListener('touchend', (e) => {
         drawer.classList.remove('dragging');
         const deltaY = e.changedTouches[0].clientY - startY;
+        const deltaX = e.changedTouches[0].clientX - startX;
         moved = Math.abs(deltaY) > 10;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) return; // défilement horizontal des puces : pas un glissement du tiroir
         if (deltaY < -45) {
           // glissement vers le haut : mini → accueil → ouvert
           if (drawer.classList.contains('sheet-mini')) collapseMobileSheet();
@@ -3639,7 +3645,7 @@ ${trkpts}
           if (drawer.classList.contains('sheet-expanded') || drawer.classList.contains('sheet-half')) collapseMobileSheet();
           else minimizeSheet();
         }
-      });
+      }));
     }
 
     function bindAutocompleteInput(inputEl, resultsEl, onSelect, opts = {}) {
@@ -5595,22 +5601,53 @@ ${trkpts}
         return { c: color, h: '#ffffff' };
       }
 
-      function drawIcon(paths, color) {
-        const { c, h } = iconColors(color);
-        const sw = AppState.contrast ? 2.9 : 2.4;
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="-4 -4 32 32"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="${h}" stroke-width="${sw + 4}">${paths}</g><g stroke="${c}" stroke-width="${sw}">${paths}</g></g></svg>`;
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            const cv = document.createElement('canvas');
-            cv.width = cv.height = 64;
-            const ctx = cv.getContext('2d');
-            ctx.drawImage(img, 0, 0, 64, 64);
-            resolve(ctx.getImageData(0, 0, 64, 64));
-          };
-          img.onerror = () => resolve(null);
-          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      // Convertit nos petits SVG (path, circle, rect) en chemins Canvas
+      function toPath2D(markup) {
+        const out = [];
+        markup.replace(/<path[^>]*\sd="([^"]+)"[^>]*>/g, (_, d) => out.push(new Path2D(d)));
+        markup.replace(/<circle[^>]*>/g, (tag) => {
+          const g = (k) => parseFloat((tag.match(new RegExp(`\\s${k}="([^"]+)"`)) || [])[1] || 0);
+          const p = new Path2D();
+          p.arc(g('cx'), g('cy'), g('r'), 0, Math.PI * 2);
+          out.push(p);
         });
+        markup.replace(/<rect[^>]*>/g, (tag) => {
+          const g = (k) => parseFloat((tag.match(new RegExp(`\\s${k}="([^"]+)"`)) || [])[1] || 0);
+          const p = new Path2D();
+          const x = g('x'), y = g('y'), w = g('width'), h = g('height'), r = Math.min(g('rx'), w / 2, h / 2);
+          p.moveTo(x + r, y);
+          p.arcTo(x + w, y, x + w, y + h, r);
+          p.arcTo(x + w, y + h, x, y + h, r);
+          p.arcTo(x, y + h, x, y, r);
+          p.arcTo(x, y, x + w, y, r);
+          p.closePath();
+          out.push(p);
+        });
+        return out;
+      }
+
+      function drawIcon(paths, color) {
+        try {
+          const { c, h } = iconColors(color);
+          const sw = AppState.contrast ? 2.9 : 2.4;
+          const cv = document.createElement('canvas');
+          cv.width = cv.height = 64;
+          const ctx = cv.getContext('2d');
+          ctx.scale(2, 2); // icône de 32 px affichée en pixelRatio 2
+          ctx.translate(4, 4); // marge pour le liseré
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          const list = toPath2D(paths);
+          ctx.strokeStyle = h;
+          ctx.lineWidth = sw + 4;
+          list.forEach((p) => ctx.stroke(p));
+          ctx.strokeStyle = c;
+          ctx.lineWidth = sw;
+          list.forEach((p) => ctx.stroke(p));
+          return Promise.resolve(ctx.getImageData(0, 0, 64, 64));
+        } catch {
+          return Promise.resolve(null);
+        }
       }
 
       async function ensureIcons() {
@@ -5745,14 +5782,17 @@ ${trkpts}
         const feats = [];
         (AppState.showWater ? AppState.waterPoints : []).forEach((p) => {
           feats.push(point(p.lat, p.lon, {
-            icon: 'ico-water', name: p.name, rank: 1,
+            icon: 'ico-water', name: '', rank: 1,
             html: `<div class="p-3"><div class="text-xs font-bold mb-2">${escapeHtml(p.name)}</div><button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-1.5 rounded-lg bg-sky-600 text-white text-[11px] font-bold">Y aller à vélo</button></div>`,
           }));
         });
         const RANK = { visit: 2, eat: 3, service: 4 };
         AppState.poiPoints
           .filter((p) => AppState.poiEnabled.has(p.cat) || p.cat === AppState.poiCatFilter)
-          .forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id, rank: p.cat === 'parking' ? 6 : RANK[POI_BY_ID[p.cat]?.group] ?? 5 })));
+          .forEach((p) => {
+            const generic = p.name === POI_BY_ID[p.cat]?.label.replace(/s( &|$)/, '$1') || p.name === POI_BY_ID[p.cat]?.label;
+            feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: generic ? '' : p.name, html: poiPopupHtml(p), poiId: p.id, rank: p.cat === 'parking' ? 6 : RANK[POI_BY_ID[p.cat]?.group] ?? 5 }));
+          });
         visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p), top: true, rank: 0 })));
         m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
 
@@ -6417,7 +6457,7 @@ ${trkpts}
     function showGroup(group) {
       if (group === 'water') {
         if (!AppState.showWater) setShowWater(true);
-      } else if (!groupEnabled(group)) {
+      } else {
         POI_CATEGORIES.filter((c) => c.group === group && (group !== 'eat' || c.id !== 'pharmacy')).forEach((c) => AppState.poiEnabled.add(c.id));
         try {
           localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
