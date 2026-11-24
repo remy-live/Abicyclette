@@ -2414,13 +2414,47 @@
         showToast('Recherche d’adresse indisponible hors ligne.', 'warning');
         return [];
       }
+      // Autour de moi d'abord : « beau » près de Beauvais doit proposer Beauvais
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      const q = query.trim();
+      const withDist = (items) =>
+        items.map((it) => ({ ...it, _dist: haversineDistance(ref.lat, ref.lon, parseFloat(it.lat), parseFloat(it.lon)) }));
+      // Proche et commençant par ce qu'on tape : en tête
+      const rank = (items) => {
+        const norm = (t) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const nq = norm(q);
+        const score = (it) => Math.log10(Math.max(300, it._dist)) - (norm(it.display_name).startsWith(nq) ? 0.7 : 0) - (it._city ? 0.3 : 0);
+        return items.sort((a, b) => score(a) - score(b)).slice(0, 6);
+      };
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=fr&q=${encodeURIComponent(query)}`;
+        // Photon : complète les débuts de mots et favorise ce qui est proche
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${ref.lat.toFixed(4)}&lon=${ref.lon.toFixed(4)}&limit=10&lang=fr`;
         const res = await fetch(url);
-        if (!res.ok) return [];
-        return await res.json();
+        if (!res.ok) throw new Error('photon');
+        const feats = (await res.json()).features || [];
+        const seen = new Set();
+        const items = feats
+          .map((f) => {
+            const pr = f.properties || {};
+            const name = pr.name || [pr.housenumber, pr.street].filter(Boolean).join(' ');
+            const parts = [name, pr.name && pr.street ? [pr.housenumber, pr.street].filter(Boolean).join(' ') : '', pr.city !== name ? pr.city : '', pr.postcode, pr.county !== name ? pr.county : '', pr.country !== 'France' ? pr.country : '']
+              .filter(Boolean);
+            return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], display_name: parts.join(', '), _city: ['city', 'town', 'village'].includes(pr.osm_value) || pr.type === 'city' };
+          })
+          .filter((it) => it.display_name && !seen.has(it.display_name) && seen.add(it.display_name));
+        if (items.length) return rank(withDist(items));
+        throw new Error('vide');
       } catch {
-        return [];
+        try {
+          // Repli Nominatim, avec la zone autour de moi en priorité
+          const d = 0.6;
+          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=8&accept-language=fr&viewbox=${ref.lon - d},${ref.lat + d},${ref.lon + d},${ref.lat - d}&bounded=0&q=${encodeURIComponent(q)}`;
+          const res = await fetch(url);
+          if (!res.ok) return [];
+          return rank(withDist(await res.json()));
+        } catch {
+          return [];
+        }
       }
     }
 
@@ -3907,8 +3941,8 @@ ${trkpts}
           .map(
             (item) => `
             <button type="button" data-lat="${item.lat}" data-lon="${item.lon}" data-name="${escapeHtml(item.display_name)}" class="w-full text-left px-3 py-2.5 hover:bg-emerald-50 text-xs text-slate-700 transition block">
-              <div class="font-semibold text-slate-900 truncate">${escapeHtml(item.display_name.split(',')[0])}</div>
-              <div class="text-[10px] text-slate-400 truncate">${escapeHtml(item.display_name)}</div>
+              <div class="flex items-baseline gap-2"><span class="font-semibold text-slate-900 truncate flex-1" style="font-size:14px">${escapeHtml(item.display_name.split(',')[0])}</span>${item._dist != null ? `<span class="shrink-0 font-bold text-slate-500" style="font-size:12px">${formatDistance(item._dist)}</span>` : ''}</div>
+              <div class="text-slate-400 truncate" style="font-size:11.5px">${escapeHtml(item.display_name.split(',').slice(1).join(',').trim() || item.display_name)}</div>
             </button>`
           )
           .join('');
