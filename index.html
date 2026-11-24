@@ -170,7 +170,8 @@
         bottom: 0;
         top: auto;
         width: 100%;
-        max-height: 84vh;
+        max-height: 90vh;
+        height: 90vh;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         border-top-left-radius: 24px;
@@ -181,9 +182,11 @@
       #side-drawer.sheet-collapsed {
         transform: translateY(calc(100% - var(--peek, 190px)));
       }
-      #side-drawer.sheet-half {
-        transform: translateY(38%);
-      }
+      #side-drawer.sheet-half { transform: translateY(0%); }
+      /* Panneau ouvert : l'accueil se réduit aux onglets, tout l'espace va au contenu */
+      #side-drawer.sheet-expanded #home-chips, #side-drawer.sheet-expanded #home-route,
+      #side-drawer.sheet-expanded #home-idle, #side-drawer.sheet-half #home-chips,
+      #side-drawer.sheet-half #home-route, #side-drawer.sheet-half #home-idle { display: none !important; }
       #side-drawer.sheet-expanded {
         transform: translateY(0%);
       }
@@ -220,6 +223,10 @@
     .seg.on, .theme-btn.on { border-color: #059669; background: rgba(16,185,129,.12); color: #065f46; }
     .theme-btn { justify-content: flex-start; padding: 0 10px; }
     .sw { width: 22px; height: 22px; border-radius: 7px; flex: none; }
+    .pg-btn { height: 40px; border-radius: 12px; font-size: 12px; font-weight: 800; color: #475569; }
+    .pg-btn.on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    body.night-mode .pg-btn.on { background: #0f2a20 !important; color: #34d399 !important; }
+    body.sun-mode .pg-btn.on { background: #000 !important; color: #fff !important; }
     .home-alt { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border-radius: 16px; border: 2px solid #e2e8f0; background: rgba(255,255,255,.85); }
     .home-alt.on { border-color: #059669; background: rgba(16,185,129,.1); }
 
@@ -558,7 +565,7 @@
 
           <!-- Bouton inversion & indication clic carte -->
           <div class="flex items-center justify-between pl-5 pr-1">
-            <span class="text-[11px] text-slate-400">Astuce : cliquez sur la carte pour placer un point</span>
+            <span class="text-[11px] text-slate-400">Astuce : appui long sur la carte pour placer un point</span>
             <button id="btn-swap-points" title="Inverser départ et arrivée" class="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-500 transition">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="17 1 21 5 17 9"></polyline>
@@ -717,63 +724,33 @@
 
       <!-- ONGLET LIEUX : points d'intérêt, lieux à visiter, mes lieux synchronisés -->
       <section id="tab-places" class="space-y-4">
-        <!-- Catégories de points d'intérêt -->
-        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900">Sur la carte</h2>
+        <!-- Lieux autour : 4 groupes -->
+        <div class="space-y-3">
+          <div id="place-groups" class="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-slate-200/60">
+            <button data-pg="visit" class="pg-btn on">À voir</button>
+            <button data-pg="eat" class="pg-btn">Manger</button>
+            <button data-pg="service" class="pg-btn">Services</button>
+            <button data-pg="water" class="pg-btn">Eau</button>
+          </div>
+
+          <div id="pg-poi" class="space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
               <p id="poi-status-text" class="text-[11px] text-slate-500">Choisissez ce que vous voulez voir</p>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button id="btn-hide-group" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold">Masquer</button>
+                <button id="btn-refresh-poi" aria-label="Actualiser" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                </button>
+              </div>
             </div>
-            <button id="btn-refresh-poi" title="Actualiser" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-            </button>
+            <div id="poi-chips-group" class="flex flex-wrap gap-1.5"></div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Autour (<span id="poi-count">0</span>)</div>
+            <div id="poi-list" class="space-y-2">
+              <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
+            </div>
           </div>
-          <div>
-            <div class="text-[11px] font-bold uppercase tracking-wider text-amber-600 mb-1.5">À visiter</div>
-            <div id="poi-chips-visit" class="flex flex-wrap gap-1.5"></div>
-          </div>
-          <div>
-            <div class="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-1.5">Manger & courses</div>
-            <div id="poi-chips-eat" class="flex flex-wrap gap-1.5"></div>
-          </div>
-          <div>
-            <div class="text-[11px] font-bold uppercase tracking-wider text-teal-700 mb-1.5">Services vélo & pratique</div>
-            <div id="poi-chips-service" class="flex flex-wrap gap-1.5"></div>
-          </div>
-        </div>
 
-        <!-- Balade visite : boucle passant par des lieux à voir -->
-        <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3.5 space-y-2.5">
-          <div>
-            <h2 class="text-sm font-bold text-slate-900">Balade visite</h2>
-            <p class="text-[11px] text-slate-600">Une boucle depuis votre position par des lieux à voir.</p>
-          </div>
-          <div class="flex gap-1.5 flex-wrap">
-            <button data-tour="15" class="tour-len chip">1 h · 15 km</button>
-            <button data-tour="30" class="tour-len chip on">2 h · 30 km</button>
-            <button data-tour="45" class="tour-len chip">3 h · 45 km</button>
-          </div>
-          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-            <input id="tour-pause" type="checkbox" class="w-4 h-4 accent-amber-500" checked />
-            Pause boulangerie ou café à mi-parcours
-          </label>
-          <button id="btn-make-tour" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Créer la balade</button>
-        </div>
-
-        <!-- Liste des POI proches -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Autour (<span id="poi-count">0</span>)</h3>
-            <span class="text-[11px] text-slate-400">OpenStreetMap</span>
-          </div>
-          <div id="poi-list" class="space-y-2">
-            <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
-          </div>
-        </div>
-
+          <div id="pg-water" class="hidden space-y-3">
         <!-- Carte résumé points d'eau -->
         <div class="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3.5">
           <div class="flex items-center justify-between mb-2">
@@ -818,6 +795,27 @@
           </div>
         </div>
 
+          </div>
+        </div>
+
+        <!-- Balade visite : boucle passant par des lieux à voir -->
+        <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3.5 space-y-2.5">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900">Balade visite</h2>
+            <p class="text-[11px] text-slate-600">Une boucle depuis votre position par des lieux à voir.</p>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <button data-tour="15" class="tour-len chip">1 h · 15 km</button>
+            <button data-tour="30" class="tour-len chip on">2 h · 30 km</button>
+            <button data-tour="45" class="tour-len chip">3 h · 45 km</button>
+          </div>
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <input id="tour-pause" type="checkbox" class="w-4 h-4 accent-amber-500" checked />
+            Pause boulangerie ou café à mi-parcours
+          </label>
+          <button id="btn-make-tour" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Créer la balade</button>
+        </div>
+
         <!-- Rentrer en train -->
         <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-2">
           <div class="flex items-center justify-between gap-2">
@@ -847,7 +845,7 @@
             <button id="btn-add-place-here" class="py-2 px-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition">+ Ma position</button>
             <button id="btn-add-place-center" class="py-2 px-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold transition">+ Centre carte</button>
           </div>
-          <p class="text-[11px] text-slate-600">Astuce : touchez la carte puis « Ajouter à mes lieux ».</p>
+          <p class="text-[11px] text-slate-600">Astuce : appui long sur la carte puis « Ajouter à mes lieux ».</p>
           <div id="my-places-list" class="space-y-1.5"></div>
 
           <!-- Réglages synchronisation cloud -->
@@ -1353,6 +1351,7 @@
       editingPlaceId: null,
       pendingPlaceLatLng: null,
       pendingPlaceCat: 'favori',
+      placesGroup: 'visit',
       // Préférences
       preferCycleways: true,
       pickViaMode: false,
@@ -1520,6 +1519,7 @@
         center: [49.417, 2.826],
         zoom: 13,
         zoomControl: false,
+        tapHold: true, // appui long = « clic droit » sur mobile
       });
 
       AppState.baseLayers = {
@@ -1568,8 +1568,9 @@
       // Clic sur la carte pour menu "Départ ici / Arrivée ici"
       map.on('click', (e) => {
         if (consumeViaPick(e.latlng.lat, e.latlng.lng)) return;
-        openMapClickContextMenu(e.latlng, e.originalEvent);
+        onPlainMapTap();
       });
+      map.on('contextmenu', (e) => openMapClickContextMenu(e.latlng, e.originalEvent));
     }
 
     function switchBaseLayer(layerId) {
@@ -1805,6 +1806,7 @@
 
     window.routeToWaterPoint = function (lat, lon, label) {
       AppState.map.closePopup();
+      collapseMobileSheet(); // la carte d'accueil montre le trajet et le bouton Partir
       setRouteDestination(lat, lon, label || "Point d'eau potable");
       if (!AppState.origin) {
         if (AppState.userLocation) {
@@ -1964,6 +1966,20 @@
         return await res.json();
       } catch {
         return [];
+      }
+    }
+
+    // Toucher simple : ferme ce qui est ouvert ; une seule fois, on explique l'appui long
+    function onPlainMapTap() {
+      const menu = document.getElementById('map-click-menu');
+      if (!menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+        return;
+      }
+      document.getElementById('global-search-results').classList.add('hidden');
+      if (!localStorage.getItem('abicyclette.hintLongPress')) {
+        localStorage.setItem('abicyclette.hintLongPress', '1');
+        showToast('Astuce : appui long sur la carte pour un départ, une arrivée, une étape ou un lieu.', 'info', 4500);
       }
     }
 
@@ -3228,10 +3244,8 @@ ${trkpts}
 
     function expandMobileSheetIfCollapsed() {
       const drawer = document.getElementById('side-drawer');
-      if (drawer.classList.contains('sheet-collapsed')) {
-        drawer.classList.remove('sheet-collapsed');
-        drawer.classList.add('sheet-half');
-      }
+      drawer.classList.remove('sheet-collapsed', 'sheet-half');
+      drawer.classList.add('sheet-expanded');
     }
 
     function collapseMobileSheet() {
@@ -3244,13 +3258,15 @@ ${trkpts}
       const drawer = document.getElementById('side-drawer');
       const handle = document.getElementById('sheet-drag-handle');
       const cycle = () => {
-        if (drawer.classList.contains('sheet-collapsed')) drawer.classList.replace('sheet-collapsed', 'sheet-half');
-        else if (drawer.classList.contains('sheet-half')) drawer.classList.replace('sheet-half', 'sheet-expanded');
+        if (drawer.classList.contains('sheet-collapsed')) expandMobileSheetIfCollapsed();
         else collapseMobileSheet();
       };
       // Hauteur visible du panneau replié = poignée + accueil (puces, trajet, onglets)
       const home = document.getElementById('sheet-home');
-      const setPeek = () => drawer.style.setProperty('--peek', `${handle.offsetHeight + home.offsetHeight}px`);
+      const setPeek = () => {
+        if (drawer.classList.contains('sheet-collapsed')) drawer.style.setProperty('--peek', `${handle.offsetHeight + home.offsetHeight}px`);
+      };
+      new MutationObserver(setPeek).observe(drawer, { attributes: true, attributeFilter: ['class'] });
       setPeek();
       if ('ResizeObserver' in window) new ResizeObserver(setPeek).observe(home);
 
@@ -3269,21 +3285,8 @@ ${trkpts}
         drawer.classList.remove('dragging');
         const deltaY = e.changedTouches[0].clientY - startY;
         moved = Math.abs(deltaY) > 10;
-        if (deltaY < -45) {
-          // Glissement vers le haut
-          if (drawer.classList.contains('sheet-collapsed')) {
-            drawer.classList.replace('sheet-collapsed', 'sheet-half');
-          } else {
-            drawer.classList.replace('sheet-half', 'sheet-expanded');
-          }
-        } else if (deltaY > 45) {
-          // Glissement vers le bas
-          if (drawer.classList.contains('sheet-expanded')) {
-            drawer.classList.replace('sheet-expanded', 'sheet-half');
-          } else {
-            collapseMobileSheet();
-          }
-        }
+        if (deltaY < -45) expandMobileSheetIfCollapsed(); // glissement vers le haut
+        else if (deltaY > 45) collapseMobileSheet(); // glissement vers le bas
       });
     }
 
@@ -3348,6 +3351,7 @@ ${trkpts}
         btn.addEventListener('click', () => {
           switchSidebarTab(btn.dataset.tab);
           expandMobileSheetIfCollapsed();
+          document.querySelector('#side-drawer .overflow-y-auto')?.scrollTo({ top: 0 });
         });
       });
 
@@ -3441,8 +3445,12 @@ ${trkpts}
         if (AppState.pendingClickLatLng) {
           const { lat, lng } = AppState.pendingClickLatLng;
           setRouteOrigin(lat, lng, `Point carte (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-          switchSidebarTab('route');
-          expandMobileSheetIfCollapsed();
+          if (AppState.dest) {
+            collapseMobileSheet();
+            calculateBikeRoute();
+          } else {
+            showToast('Départ placé. Appui long ailleurs pour l’arrivée.', 'info', 2500);
+          }
         }
         document.getElementById('map-click-menu').classList.add('hidden');
       });
@@ -3451,9 +3459,12 @@ ${trkpts}
         if (AppState.pendingClickLatLng) {
           const { lat, lng } = AppState.pendingClickLatLng;
           setRouteDestination(lat, lng, `Point carte (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
-          switchSidebarTab('route');
-          expandMobileSheetIfCollapsed();
-          if (AppState.origin) calculateBikeRoute();
+          if (!AppState.origin) {
+            const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+            setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
+          }
+          collapseMobileSheet();
+          calculateBikeRoute();
         }
         document.getElementById('map-click-menu').classList.add('hidden');
       });
@@ -3610,9 +3621,16 @@ ${trkpts}
 
       // Accueil simplifié
       document.getElementById('chip-pistes').addEventListener('click', () => setPreferCycleways(!AppState.preferCycleways));
-      document.getElementById('chip-visit').addEventListener('click', () => toggleGroup('visit'));
-      document.getElementById('chip-eat').addEventListener('click', () => toggleGroup('eat'));
-      document.getElementById('chip-water').addEventListener('click', () => setShowWater(!AppState.showWater));
+      document.getElementById('chip-visit').addEventListener('click', () => showGroup('visit'));
+      document.getElementById('chip-eat').addEventListener('click', () => showGroup('eat'));
+      document.getElementById('chip-water').addEventListener('click', () => showGroup('water'));
+      document.querySelectorAll('.pg-btn').forEach((b) => b.addEventListener('click', () => setPlacesGroup(b.dataset.pg)));
+      document.getElementById('btn-hide-group').addEventListener('click', () => {
+        const g = AppState.placesGroup;
+        if (g === 'water') setShowWater(!AppState.showWater);
+        else toggleGroup(g);
+        updateHideButton();
+      });
       document.getElementById('btn-go').addEventListener('click', startLiveGuidance);
       document.getElementById('btn-home-clear').addEventListener('click', () => document.getElementById('btn-clear-route').click());
       document.getElementById('btn-home-tour').addEventListener('click', () => openSheetAt('places', 'btn-make-tour'));
@@ -3972,6 +3990,7 @@ ${trkpts}
 
       const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
       const sorted = points
+        .filter((p) => POI_BY_ID[p.cat]?.group === AppState.placesGroup)
         .map((p) => ({ ...p, distance: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
         .sort((a, b) => {
           const rank = { visit: 0, eat: 1, service: 2 };
@@ -3979,10 +3998,12 @@ ${trkpts}
           const gb = rank[POI_BY_ID[b.cat].group];
           return ga === gb ? a.distance - b.distance : ga - gb;
         });
-      document.getElementById('poi-count').textContent = points.length;
+      document.getElementById('poi-count').textContent = sorted.length;
       const list = document.getElementById('poi-list');
       if (!sorted.length) {
-        list.innerHTML = `<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Aucun lieu de ces catégories ici.</div>`;
+        list.innerHTML = groupEnabled(AppState.placesGroup)
+          ? `<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Rien de ce type dans la zone affichée. Déplacez ou dézoomez la carte.</div>`
+          : `<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Masqué. Touchez une catégorie ci-dessus pour l'afficher.</div>`;
       } else {
         list.innerHTML = sorted
           .slice(0, 30)
@@ -4026,6 +4047,7 @@ ${trkpts}
     window.viaToPoint = function (lat, lon, label) {
       AppState.map.closePopup();
       Map3D.closePopups();
+      collapseMobileSheet();
       addVia(lat, lon, label);
     };
 
@@ -4038,8 +4060,8 @@ ${trkpts}
     };
 
     function renderPOIChips() {
-      ['visit', 'eat', 'service'].forEach((group) => {
-        const box = document.getElementById(`poi-chips-${group}`);
+      [AppState.placesGroup === 'water' ? 'visit' : AppState.placesGroup].forEach((group) => {
+        const box = document.getElementById('poi-chips-group');
         box.innerHTML = POI_CATEGORIES.filter((c) => c.group === group)
           .map((c) => `<button data-poi="${c.id}" class="chip ${AppState.poiEnabled.has(c.id) ? 'on' : ''}">${c.emoji} ${c.label}</button>`)
           .join('');
@@ -4059,6 +4081,7 @@ ${trkpts}
     }
     const debouncedPOIReload = debounce(() => {
       syncHomeChips();
+      updateHideButton();
       loadPOIsForCurrentView();
     }, 600);
 
@@ -4599,8 +4622,29 @@ ${trkpts}
         m.on('click', (e) => {
           if (e.defaultPrevented) return;
           if (consumeViaPick(e.lngLat.lat, e.lngLat.lng)) return;
-          openMapClickContextMenu({ lat: e.lngLat.lat, lng: e.lngLat.lng }, e.originalEvent);
+          onPlainMapTap();
         });
+        m.on('contextmenu', (e) => openMapClickContextMenu({ lat: e.lngLat.lat, lng: e.lngLat.lng }, e.originalEvent));
+        // Appui long au doigt (iPhone : pas d'événement contextmenu natif)
+        let lpTimer = null;
+        let lpStart = null;
+        const cont = m.getCanvasContainer();
+        cont.addEventListener('touchstart', (ev) => {
+          if (ev.touches.length !== 1) return clearTimeout(lpTimer);
+          const t = ev.touches[0];
+          lpStart = { x: t.clientX, y: t.clientY };
+          clearTimeout(lpTimer);
+          lpTimer = setTimeout(() => {
+            const r = cont.getBoundingClientRect();
+            const ll = m.unproject([lpStart.x - r.left, lpStart.y - r.top]);
+            openMapClickContextMenu({ lat: ll.lat, lng: ll.lng }, { clientX: lpStart.x, clientY: lpStart.y });
+          }, 600);
+        }, { passive: true });
+        cont.addEventListener('touchmove', (ev) => {
+          const t = ev.touches[0];
+          if (lpStart && Math.hypot(t.clientX - lpStart.x, t.clientY - lpStart.y) > 10) clearTimeout(lpTimer);
+        }, { passive: true });
+        cont.addEventListener('touchend', () => clearTimeout(lpTimer), { passive: true });
       }
 
       function line(coords, props = {}) {
@@ -5065,6 +5109,42 @@ ${trkpts}
       set('chip-water', AppState.showWater);
     }
 
+    function setPlacesGroup(group) {
+      AppState.placesGroup = group;
+      document.querySelectorAll('.pg-btn').forEach((b) => b.classList.toggle('on', b.dataset.pg === group));
+      document.getElementById('pg-poi').classList.toggle('hidden', group === 'water');
+      document.getElementById('pg-water').classList.toggle('hidden', group !== 'water');
+      if (group !== 'water') {
+        renderPOIChips();
+        renderPOIs(AppState.poiPoints);
+      }
+      updateHideButton();
+    }
+
+    function updateHideButton() {
+      const g = AppState.placesGroup;
+      const shown = g === 'water' ? AppState.showWater : groupEnabled(g);
+      const b = document.getElementById('btn-hide-group');
+      b.textContent = shown ? 'Masquer de la carte' : 'Afficher sur la carte';
+    }
+
+    // Puces de l'accueil : affiche le groupe sur la carte ET ouvre sa liste
+    function showGroup(group) {
+      if (group === 'water') {
+        if (!AppState.showWater) setShowWater(true);
+      } else if (!groupEnabled(group)) {
+        POI_CATEGORIES.filter((c) => c.group === group && (group !== 'eat' || c.id !== 'pharmacy')).forEach((c) => AppState.poiEnabled.add(c.id));
+        try {
+          localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
+        } catch {}
+        loadPOIsForCurrentView();
+      }
+      syncHomeChips();
+      setPlacesGroup(group);
+      openSheetAt('places');
+      document.querySelector('#side-drawer .overflow-y-auto')?.scrollTo({ top: 0 });
+    }
+
     function toggleGroup(group) {
       const on = !groupEnabled(group);
       POI_CATEGORIES.filter((c) => c.group === group).forEach((c) => (on ? AppState.poiEnabled.add(c.id) : AppState.poiEnabled.delete(c.id)));
@@ -5074,7 +5154,7 @@ ${trkpts}
       renderPOIChips();
       syncHomeChips();
       loadPOIsForCurrentView();
-      showToast(on ? (group === 'visit' ? 'Lieux à voir affichés' : 'Restaurants, boulangeries, cafés affichés') : 'Masqués', 'info', 1600);
+      updateHideButton();
     }
 
     function setPreferCycleways(on) {
@@ -5100,9 +5180,7 @@ ${trkpts}
 
     function openSheetAt(tab, elementId) {
       switchSidebarTab(tab);
-      const drawer = document.getElementById('side-drawer');
-      drawer.classList.remove('sheet-collapsed', 'sheet-half');
-      drawer.classList.add('sheet-expanded');
+      expandMobileSheetIfCollapsed();
       if (elementId) setTimeout(() => document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
     }
 
