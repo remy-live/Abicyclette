@@ -184,6 +184,8 @@
       }
       #side-drawer.sheet-half { transform: translateY(0%); }
       /* Panneau ouvert : l'accueil se réduit aux onglets, tout l'espace va au contenu */
+      #side-drawer.sheet-expanded #home-chips-row, #side-drawer.sheet-expanded #home-shortcuts,
+      #side-drawer.sheet-expanded #home-results, #side-drawer.sheet-mini #home-results,
       #side-drawer.sheet-expanded #home-chips, #side-drawer.sheet-expanded #home-route,
       #side-drawer.sheet-expanded #home-idle, #side-drawer.sheet-half #home-chips,
       #side-drawer.sheet-half #home-route, #side-drawer.sheet-half #home-idle { display: none !important; }
@@ -272,6 +274,12 @@
     body.night-mode .poi-tg, body.night-mode .theme-dot { background: #161b22 !important; border-color: #2a3440 !important; }
     body.night-mode .poi-tg.on { border-color: var(--c) !important; }
     body.night-mode .poi-tg.on span, body.night-mode .dp-row, body.night-mode .theme-dot { color: #e6edf3 !important; }
+    .sc-tile.on .sc-ico { background: rgba(16,185,129,.14); border-radius: 12px; padding: 0 8px; }
+    .sc-tile.on { color: #065f46; }
+    body.bw-mode .sc-tile.on .sc-ico { background: #000 !important; color: #fff !important; }
+    .res-card { flex: none; width: 230px; text-align: left; padding: 10px 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: #fff; display: flex; flex-direction: column; gap: 6px; }
+    body.night-mode .res-card { background: #161b22; border-color: #2a3440; }
+    body.bw-mode .res-card { border-color: #000; }
     .home-alt { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border-radius: 16px; border: 2px solid #e2e8f0; background: rgba(255,255,255,.85); }
     .home-alt.on { border-color: #059669; background: rgba(16,185,129,.1); }
 
@@ -649,7 +657,7 @@
 
     <!-- ACCUEIL : puces, trajet en cours, onglets -->
     <div id="sheet-home" class="shrink-0 px-4 pt-1 md:pt-4 pb-3 space-y-3 border-b border-slate-200/60">
-      <div class="flex gap-1.5 items-center">
+      <div id="home-chips-row" class="flex gap-1.5 items-center">
       <div id="home-chips" class="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar">
         <button id="chip-pistes" class="chip big on" aria-pressed="true"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="16" r="4"/><circle cx="18" cy="16" r="4"/><path d="M6 16l4-8h5l3 8M10 8l4 8"/></svg>Pistes</button>
         <button id="chip-visit" class="chip big" aria-pressed="false"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>À voir</button>
@@ -662,6 +670,15 @@
       </div>
 
       <div id="home-shortcuts" class="flex gap-0.5 overflow-x-auto no-scrollbar -mt-1"></div>
+
+      <!-- Résultats d'un raccourci (Restaurant, Boulangerie…) : sur la carte + fiches ici -->
+      <div id="home-results" class="hidden space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div id="home-results-title" class="text-sm font-extrabold text-slate-900 truncate"></div>
+          <button id="btn-close-results" aria-label="Fermer les résultats" class="shrink-0 h-9 px-3 rounded-xl bg-slate-200/70 text-slate-700 text-xs font-bold">✕ Fermer</button>
+        </div>
+        <div id="home-results-list" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+      </div>
 
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
@@ -4008,7 +4025,8 @@ ${trkpts}
       document.getElementById('chip-eat').addEventListener('click', () => showGroup('eat'));
       document.getElementById('chip-water').addEventListener('click', () => showGroup('water'));
       document.querySelectorAll('.pg-btn').forEach((b) => b.addEventListener('click', () => setPlacesGroup(b.dataset.pg)));
-      document.getElementById('btn-clear-filter').addEventListener('click', () => setPlacesGroup(AppState.placesGroup));
+      document.getElementById('btn-clear-filter').addEventListener('click', () => closeHomeResults());
+      document.getElementById('btn-close-results').addEventListener('click', () => closeHomeResults());
       document.getElementById('btn-close-shortcuts').addEventListener('click', () => document.getElementById('shortcuts-modal').classList.add('hidden'));
       document.getElementById('shortcuts-modal').addEventListener('click', (e) => {
         if (e.target.id === 'shortcuts-modal') e.target.classList.add('hidden');
@@ -4910,6 +4928,11 @@ ${trkpts}
       const p = AppState.poiPoints.find((x) => x.id === id);
       if (!p) return;
       flyToActive(p.lat, p.lon, 17);
+      if (AppState.glOn) {
+        collapseMobileSheet();
+        Map3D.openPoi(p);
+        return;
+      }
       if (!AppState.glOn) {
         AppState.poiLayer.eachLayer((m) => {
           const ll = m.getLatLng();
@@ -5795,7 +5818,7 @@ ${trkpts}
         });
         const RANK = { visit: 2, eat: 3, service: 4 };
         AppState.poiPoints
-          .filter((p) => AppState.poiEnabled.has(p.cat) || p.cat === AppState.poiCatFilter)
+          .filter((p) => (AppState.poiCatFilter ? p.cat === AppState.poiCatFilter : AppState.poiEnabled.has(p.cat)))
           .forEach((p) => {
             const generic = p.name === POI_BY_ID[p.cat]?.label.replace(/s( &|$)/, '$1') || p.name === POI_BY_ID[p.cat]?.label;
             feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: generic ? '' : p.name, html: poiPopupHtml(p), poiId: p.id, rank: p.cat === 'parking' ? 6 : RANK[POI_BY_ID[p.cat]?.group] ?? 5 }));
@@ -5961,8 +5984,13 @@ ${trkpts}
         popup = null;
       }
 
+      function openPoi(p) {
+        if (!AppState.map3d) return;
+        openPointPopup({ properties: { html: poiPopupHtml(p), poiId: p.id }, geometry: { coordinates: [p.lon, p.lat] } });
+      }
+
       return {
-        show, hide, applyStyle, set3D, refreshOverlays, follow, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
+        show, hide, applyStyle, set3D, openPoi, refreshOverlays, follow, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
         enable: () => set3D(true),
         disable: () => set3D(false),
         toggle: () => set3D(!AppState.view3D),
@@ -6389,7 +6417,7 @@ ${trkpts}
       box.innerHTML =
         AppState.shortcuts
           .filter((c) => POI_BY_ID[c])
-          .map((c) => `<button data-sc="${c}" class="sc-tile"><span class="sc-ico" style="--c:${POI_BY_ID[c].color}">${poiSvg(c, 26)}</span><span>${SHORT_LABEL[c] || POI_BY_ID[c].label}</span></button>`)
+          .map((c) => `<button data-sc="${c}" class="sc-tile ${AppState.poiCatFilter === c ? 'on' : ''}"><span class="sc-ico" style="--c:${POI_BY_ID[c].color}">${poiSvg(c, 26)}</span><span>${SHORT_LABEL[c] || POI_BY_ID[c].label}</span></button>`)
           .join('') + `<button id="btn-edit-shortcuts" aria-label="Choisir mes raccourcis" class="sc-tile"><span class="sc-ico" style="--c:#64748b;font-size:20px;line-height:26px">✎</span><span>Choisir</span></button>`;
       box.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => showCategoryNearby(b.dataset.sc)));
       document.getElementById('btn-edit-shortcuts').addEventListener('click', openShortcutsModal);
@@ -6427,11 +6455,13 @@ ${trkpts}
       AppState.poiCatFilter = cat;
       setPlacesGroup(POI_BY_ID[cat].group, true);
       syncHomeChips();
-      openSheetAt('places');
-      document.querySelector('#side-drawer .overflow-y-auto')?.scrollTo({ top: 0 });
-      const statusEl = document.getElementById('poi-status-text');
-      statusEl.textContent = `Recherche : ${label.toLowerCase()} autour de vous…`;
-      document.getElementById('poi-list').innerHTML = '<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Recherche…</div>';
+      renderShortcuts();
+      collapseMobileSheet(); // on garde la carte sous les yeux
+      document.getElementById('home-shortcuts').classList.add('hidden');
+      document.getElementById('home-results').classList.remove('hidden');
+      document.getElementById('home-results-title').textContent = `${label} : recherche…`;
+      document.getElementById('home-results-list').innerHTML = '';
+
       const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
       let pts = [];
       try {
@@ -6441,23 +6471,62 @@ ${trkpts}
           const parts = POI_BY_ID[cat].q.map((q) => `${q}(around:5000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)});`).join('');
           pts = parsePOIElements((await fetchOverpassWithFallback(`[out:json][timeout:15];(${parts});out center 60;`)).elements || [], [cat]);
         } catch {
-          statusEl.textContent = 'Lieux indisponibles pour le moment (réseau ?)';
-          renderPOIList(AppState.poiPoints);
-          return;
+          /* on se contente des lieux déjà chargés */
         }
       }
-      // On fusionne avec les lieux déjà affichés, et on les montre sur la carte
+      if (AppState.poiCatFilter !== cat) return;
       const byId = new Map(AppState.poiPoints.map((p) => [p.id, p]));
       pts.forEach((p) => byId.has(p.id) || byId.set(p.id, p));
       AppState.poiPoints = [...byId.values()];
+      const found = AppState.poiPoints
+        .filter((p) => p.cat === cat)
+        .map((p) => ({ p, d: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 12)
+        .map((x) => x.p);
       renderPOIs(AppState.poiPoints);
-      statusEl.textContent = `${pts.length} × ${label.toLowerCase()} autour de vous · horaires…`;
-      await fetchOSMDetails(pts.slice(0, 25).map((p) => byId.get(p.id)));
-      if (AppState.poiCatFilter === cat) {
-        renderPOIList(AppState.poiPoints);
-        const open = pts.filter((p) => hoursStatus(byId.get(p.id).hours)?.open === true).length;
-        statusEl.textContent = `${pts.length} × ${label.toLowerCase()} autour de vous${open ? ` · ${open} ouvert(s) maintenant` : ''}`;
+      renderHomeResults(cat, found, ref);
+
+      // Cadrage : ma position et les plus proches
+      if (found.length) {
+        const b = L.latLngBounds([[ref.lat, ref.lon], ...found.slice(0, 5).map((p) => [p.lat, p.lon])]);
+        if (AppState.glOn) Map3D.fitBounds(b.pad(0.15));
+        else AppState.map.fitBounds(b.pad(0.15), { padding: [40, 40] });
       }
+      await fetchOSMDetails(found.slice(0, 15));
+      if (AppState.poiCatFilter === cat) {
+        renderHomeResults(cat, found, ref);
+        renderPOIList(AppState.poiPoints);
+      }
+    }
+
+    function renderHomeResults(cat, found, ref) {
+      const label = SHORT_LABEL[cat] || POI_BY_ID[cat].label;
+      const open = found.filter((p) => hoursStatus(p.hours)?.open === true).length;
+      document.getElementById('home-results-title').textContent = found.length
+        ? `${label} · ${found.length} autour${open ? ` · ${open} ouvert(s)` : ''}`
+        : `${label} : rien trouvé à proximité`;
+      document.getElementById('home-results-list').innerHTML = found
+        .map(
+          (p) => `
+          <div class="res-card">
+            <button onclick="focusPOI('${p.id}')" class="text-left min-w-0">
+              <div class="text-sm font-extrabold text-slate-900 truncate">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-500 truncate">${formatDistance(haversineDistance(ref.lat, ref.lon, p.lat, p.lon))}${p.hours ? ' · ' + hoursBadge(p) : ''}</div>
+            </button>
+            <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="h-9 rounded-xl bg-emerald-600 text-white text-xs font-bold">Y aller</button>
+          </div>`
+        )
+        .join('');
+    }
+
+    function closeHomeResults() {
+      AppState.poiCatFilter = null;
+      document.getElementById('home-results').classList.add('hidden');
+      document.getElementById('home-shortcuts').classList.remove('hidden');
+      renderShortcuts();
+      setPlacesGroup(AppState.placesGroup);
+      renderPOIs(AppState.poiPoints);
     }
 
     // Puces de l'accueil : affiche le groupe sur la carte ET ouvre sa liste
