@@ -179,7 +179,7 @@
         z-index: 30;
       }
       #side-drawer.sheet-collapsed {
-        transform: translateY(calc(100% - 134px));
+        transform: translateY(calc(100% - var(--peek, 190px)));
       }
       #side-drawer.sheet-half {
         transform: translateY(38%);
@@ -205,6 +205,27 @@
         transform: none !important;
       }
     }
+
+    /* Éléments simplifiés */
+    .no-scrollbar { scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .chip.big { height: 44px; padding: 0 11px; font-size: 13px; font-weight: 700; white-space: nowrap; flex: none; gap: 5px; }
+    #home-chips .chip.on { background: #059669; border-color: #059669; color: #fff; }
+    body.sun-mode:not(.bw-mode) #home-chips .chip.on { background: #facc15; color: #000; border: 2px solid #000; }
+    body.night-mode #global-search-input { background: transparent !important; }
+    .seg, .theme-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border-radius: 14px;
+      font-size: 13px; font-weight: 700; color: #1e293b; background: rgba(241,245,249,.9); border: 2px solid transparent;
+    }
+    .seg.on, .theme-btn.on { border-color: #059669; background: rgba(16,185,129,.12); color: #065f46; }
+    .theme-btn { justify-content: flex-start; padding: 0 10px; }
+    .sw { width: 22px; height: 22px; border-radius: 7px; flex: none; }
+    .home-alt { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border-radius: 16px; border: 2px solid #e2e8f0; background: rgba(255,255,255,.85); }
+    .home-alt.on { border-color: #059669; background: rgba(16,185,129,.1); }
+
+    /* Pendant le guidage : seuls le bandeau, la barre du bas et deux boutons restent */
+    body.guiding #side-drawer, body.guiding #quick-controls, body.guiding #top-search-container,
+    body.guiding #display-panel { display: none !important; }
 
     /* Carte 3D (MapLibre) superposée à la carte Leaflet */
     #map3d {
@@ -239,7 +260,7 @@
        - aucune animation
        - contraste maximal, textes plus gros
        ===================================================================== */
-    body.sun-mode * {
+    body.eco * {
       animation: none !important;
       transition: none !important;
       backdrop-filter: none !important;
@@ -265,7 +286,7 @@
     body.sun-mode #hud-instruction { font-size: 1.25rem; font-weight: 800; white-space: normal; }
     body.sun-mode #hud-icon { background: #facc15 !important; color: #000 !important; border-color: #facc15 !important; }
     body.sun-mode .leaflet-tile-pane { filter: contrast(1.25) saturate(1.25); }
-    body.sun-mode .gps-pulse-ring { display: none; }
+    body.eco .gps-pulse-ring { display: none; }
     body.sun-mode #btn-sun-mode { background: #facc15 !important; color: #000 !important; border: 2px solid #000 !important; }
     body.sun-mode .leaflet-control-attribution { background: #fff !important; }
     body.sun-mode button { font-weight: 700; }
@@ -308,10 +329,36 @@
     body.bw-mode #quick-controls #btn-sun-mode { background: #000 !important; color: #fff !important; }
     body.bw-mode #quick-controls button span { background: #000 !important; color: #fff !important; }
 
-    /* Pendant le guidage, les boutons rapides passent sous le bandeau */
-    body.guiding #quick-controls { top: 196px; }
-    body.sun-mode.guiding #quick-controls { top: 232px; }
-    @media (min-width: 768px) { body.guiding #quick-controls { top: 150px; } }
+    body.sun-mode .seg.on, body.sun-mode .theme-btn.on, body.sun-mode .home-alt.on { border: 3px solid #000 !important; background: #facc15 !important; color: #000 !important; }
+    body.sun-mode .home-alt, body.sun-mode .seg, body.sun-mode .theme-btn { border: 2px solid #000; }
+
+    /* =====================================================================
+       MODE NUIT (OLED) : fond noir, peu de lumière émise
+       ===================================================================== */
+    body.night-mode { background: #000; color: #e6edf3; }
+    body.night-mode .leaflet-container { background: #000; }
+    body.night-mode .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.78) contrast(0.92) saturate(0.7); }
+    body.night-mode #map3d canvas { filter: invert(1) hue-rotate(180deg) brightness(0.8) saturate(0.7); }
+    body.night-mode .glass-panel, body.night-mode .leaflet-popup-content-wrapper, body.night-mode .leaflet-popup-tip {
+      background: #0d1117 !important; border: 1px solid #222b36 !important; color: #e6edf3 !important; box-shadow: none !important;
+    }
+    body.night-mode .glass-dark { background: #0d1117 !important; border: 1px solid #222b36 !important; }
+    body.night-mode [class*="text-slate-9"], body.night-mode [class*="text-slate-8"], body.night-mode [class*="text-slate-7"] { color: #e6edf3 !important; }
+    body.night-mode [class*="text-slate-6"], body.night-mode [class*="text-slate-5"], body.night-mode [class*="text-slate-4"] { color: #9aa6b2 !important; }
+    body.night-mode [class*="bg-white"], body.night-mode [class*="bg-slate-1"], body.night-mode [class*="bg-slate-2"],
+    body.night-mode .chip, body.night-mode .seg, body.night-mode .theme-btn, body.night-mode .home-alt,
+    body.night-mode input, body.night-mode textarea {
+      background: #161b22 !important; color: #e6edf3 !important; border-color: #2a3440 !important;
+    }
+    body.night-mode [class*="/10"], body.night-mode [class*="/15"], body.night-mode [class*="/20"], body.night-mode [class*="/25"] {
+      background: #10161d !important; border-color: #222b36 !important;
+    }
+    body.night-mode .chip.on, body.night-mode .seg.on, body.night-mode .theme-btn.on, body.night-mode .home-alt.on {
+      background: #0f2a20 !important; border-color: #34d399 !important; color: #34d399 !important;
+    }
+    body.night-mode #hud-step-dist { color: #34d399 !important; }
+    body.night-mode .leaflet-control-attribution { background: #0d1117 !important; color: #6b7785 !important; }
+    body.night-mode .leaflet-control-attribution a { color: #6b7785 !important; }
   </style>
 </head>
 <body class="text-slate-800 antialiased select-none">
@@ -321,63 +368,42 @@
   <!-- Carte 3D (chargée à la demande) -->
   <div id="map3d"></div>
 
-  <!-- Bandeau supérieur de guidage GPS actif (HUD style Apple Maps) -->
-  <div id="guidance-hud" class="hidden fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-40 glass-dark text-white rounded-2xl p-3.5 sm:p-4 transition-all">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3.5 min-w-0">
-        <div id="hud-icon" class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300">
-          <!-- Icône directionnelle dynamique -->
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 19V5M5 12l7-7 7 7"/>
-          </svg>
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-baseline gap-2">
-            <span id="hud-step-dist" class="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400">-- m</span>
-            <span class="hud-label hidden sm:inline text-xs uppercase tracking-wider text-slate-400 font-semibold">Prochaine manœuvre</span>
-          </div>
-          <p id="hud-instruction" class="text-sm sm:text-base font-medium text-white truncate">Suivez la piste cyclable</p>
-        </div>
+  <!-- GUIDAGE : bandeau de manœuvre en haut, infos en bas -->
+  <div id="guidance-hud" class="hidden">
+    <div id="hud-band" class="glass-dark fixed top-3 left-3 right-3 md:left-auto md:right-4 md:w-[460px] z-40 text-white rounded-3xl p-4 flex items-center gap-4">
+      <div id="hud-icon" class="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300">
+        <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       </div>
-
-      <div class="flex items-center gap-2 shrink-0">
-        <!-- Bascule 2D / 3D pendant le guidage -->
-        <button id="btn-hud-3d" title="Vue 3D" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 text-xs font-bold transition">3D</button>
-        <!-- Bouton synthèse vocale -->
-        <button id="btn-toggle-voice" title="Activer/Couper le guidage vocal" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 transition">
-          <svg id="icon-voice-on" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-          </svg>
-          <svg id="icon-voice-off" class="w-5 h-5 hidden text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <line x1="23" y1="9" x2="17" y2="15"></line>
-            <line x1="17" y1="9" x2="23" y2="15"></line>
-          </svg>
-        </button>
-
-        <!-- Arrêter guidage -->
-        <button id="btn-stop-guidance" class="px-3 py-2.5 rounded-xl bg-rose-500/90 hover:bg-rose-500 text-white text-xs sm:text-sm font-semibold transition">
-          Quitter
-        </button>
+      <div class="min-w-0 flex-1">
+        <div id="hud-step-dist" class="text-4xl font-extrabold leading-none tracking-tight text-emerald-400">-- m</div>
+        <p id="hud-instruction" class="text-lg font-bold leading-tight mt-1">Suivez la piste cyclable</p>
+        <p id="hud-extra" class="hidden text-xs font-semibold text-slate-300 mt-1.5"></p>
       </div>
     </div>
 
-    <div class="mt-2.5 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
-      <div class="flex items-center gap-4">
-        <span>Restant : <strong id="hud-rem-dist" class="text-white">-- km</strong></span>
-        <span>Arrivée estimée : <strong id="hud-eta" class="text-white">--:--</strong></span>
+    <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col gap-2">
+      <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-extrabold text-slate-800">3D</button>
+      <button id="btn-toggle-voice" aria-label="Activer ou couper la voix" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800">
+        <svg id="icon-voice-on" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+        <svg id="icon-voice-off" class="w-6 h-6 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+      </button>
+    </div>
+
+    <div id="hud-bottom" class="glass-panel fixed bottom-3 left-3 right-3 md:left-auto md:right-4 md:w-[460px] z-40 rounded-3xl p-3.5 flex items-center gap-3">
+      <div class="flex-1 flex gap-5 min-w-0">
+        <div><div id="hud-eta" class="text-2xl font-extrabold leading-none">--:--</div><div class="text-[11px] font-semibold text-slate-500 mt-1">arrivée</div></div>
+        <div><div id="hud-rem-dist" class="text-2xl font-extrabold leading-none">--</div><div class="text-[11px] font-semibold text-slate-500 mt-1">restant</div></div>
+        <div><div id="hud-speed" class="text-2xl font-extrabold leading-none">0</div><div class="text-[11px] font-semibold text-slate-500 mt-1">km/h</div></div>
       </div>
-      <span id="hud-speed" class="px-2 py-0.5 rounded-md bg-white/10 font-mono text-emerald-300">0 km/h</span>
+      <button id="btn-stop-guidance" class="h-14 px-5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-base font-extrabold">Stop</button>
     </div>
   </div>
 
   <!-- Barre de recherche flottante supérieure (Desktop à droite du panneau, Mobile en haut) -->
   <div id="top-search-container" class="fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-30 pointer-events-none">
     <div class="max-w-xl mx-auto md:mx-0 pointer-events-auto">
-      <div class="glass-panel rounded-2xl p-1.5 flex items-center gap-2">
-        <div class="pl-2.5 text-emerald-600 shrink-0">
+      <div class="glass-panel rounded-full h-14 px-2 flex items-center gap-2">
+        <div class="pl-2.5 text-slate-700 shrink-0">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -386,8 +412,8 @@
         <input
           id="global-search-input"
           type="text"
-          placeholder="Lieu, ville… ou « boulangerie », « restaurant »"
-          class="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none py-1.5"
+          placeholder="Où va-t-on ?"
+          class="w-full bg-transparent text-base font-semibold text-slate-800 placeholder-slate-500 focus:outline-none py-1.5" aria-label="Destination, lieu ou type de commerce"
           autocomplete="off"
         />
         <button id="global-search-clear" class="hidden p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/50">
@@ -398,9 +424,9 @@
         </button>
         <span id="eco-badge" class="hidden shrink-0 px-2 py-1 rounded-lg bg-yellow-400 text-black text-[11px] font-extrabold border-2 border-black">ÉCO</span>
         <!-- Badge statut réseau / hors-ligne -->
-        <button id="btn-open-offline-badge" title="Gérer le mode hors ligne" class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 transition">
+        <button id="btn-open-offline-badge" title="Gérer le mode hors ligne" class="shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 transition">
           <span id="network-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span id="network-label" class="hidden sm:inline">En ligne</span>
+          <span id="network-label" class="sr-only">En ligne</span>
         </button>
       </div>
 
@@ -409,85 +435,57 @@
     </div>
   </div>
 
-  <!-- Contrôles rapides flottants à droite -->
-  <div id="quick-controls" class="fixed right-3 top-20 md:top-4 z-20 flex flex-col gap-2">
-    <!-- Ma position GPS -->
-    <button id="btn-locate-me" title="Ma position GPS" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-      </svg>
-    </button>
+  <!-- Deux boutons flottants : ma position, affichage -->
+  <div id="quick-controls" class="fixed right-3 top-[84px] md:top-4 z-20 flex flex-col gap-2.5">
+    <button id="btn-locate-me" aria-label="Ma position" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-800 active:scale-95 transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg></button>
+    <button id="btn-display" aria-label="Affichage : 3D, style, fond de carte" class="glass-panel w-12 h-12 rounded-2xl flex items-center justify-center text-slate-800 active:scale-95 transition"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+    <div class="hidden md:flex flex-col glass-panel rounded-2xl overflow-hidden">
+      <button id="btn-zoom-in" aria-label="Zoom avant" class="w-12 h-11 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 border-b border-slate-200/60 font-bold text-lg">+</button>
+      <button id="btn-zoom-out" aria-label="Zoom arrière" class="w-12 h-11 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 font-bold text-lg">−</button>
+    </div>
+  </div>
 
-    <!-- Vue 3D -->
-    <button id="btn-toggle-3d" title="Vue 3D (relief et bâtiments)" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition text-xs font-extrabold">
-      3D
-    </button>
-
-    <!-- Mode soleil / économie batterie -->
-    <button id="btn-sun-mode" title="Mode soleil & économie batterie" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-amber-600 active:scale-95 transition">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-        <circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>
-      </svg>
-    </button>
-
-    <!-- Point d'eau le plus proche -->
-    <button id="btn-nearest-water" title="Itinéraire vers le point d'eau le plus proche" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-sky-600 hover:bg-sky-50 active:scale-95 transition relative">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-      </svg>
-      <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center shadow">+</span>
-    </button>
-
-    <!-- Calque Surligner Pistes & Véloroutes -->
-    <button id="btn-toggle-cycleways" title="Surligner pistes & véloroutes" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="5.5" cy="17.5" r="3.5"/>
-        <circle cx="18.5" cy="17.5" r="3.5"/>
-        <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/>
-      </svg>
-    </button>
-
-    <!-- Sélecteur de fonds de carte -->
-    <div class="relative">
-      <button id="btn-layer-menu" title="Fonds de carte" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
-        </svg>
-      </button>
-
-      <!-- Popover choix fond de carte -->
-      <div id="layer-menu-popover" class="hidden absolute right-13 top-0 w-52 glass-panel rounded-2xl p-2 space-y-1 z-30">
-        <div class="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Fond de carte</div>
-        <button data-layer="cyclosm" class="layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700">
-          <span>CyclOSM (Vélo)</span>
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        </button>
-        <button data-layer="osm" class="layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200/50">
-          <span>OSM Standard</span>
-          <span class="w-2 h-2 rounded-full bg-transparent"></span>
-        </button>
-        <button data-layer="opentopo" class="layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200/50">
-          <span>OpenTopoMap (Relief)</span>
-          <span class="w-2 h-2 rounded-full bg-transparent"></span>
-        </button>
+  <!-- Panneau « Affichage » -->
+  <div id="display-panel" class="hidden fixed right-3 top-[84px] md:top-4 md:right-20 z-40 glass-panel rounded-3xl p-4 w-[min(330px,calc(100vw-24px))] space-y-4 max-h-[75vh] overflow-y-auto custom-scroll">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-extrabold text-slate-900">Affichage</h2>
+      <button id="btn-close-display" aria-label="Fermer" class="w-9 h-9 rounded-xl hover:bg-slate-200/70 text-slate-500">✕</button>
+    </div>
+    <div>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Vue</div>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="view-2d" class="seg on">2D</button>
+        <button id="view-3d" class="seg"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg> 3D relief</button>
       </div>
     </div>
-
-    <!-- Mode Hors Ligne -->
-    <button id="btn-offline-modal" title="Mode Hors Ligne & Téléchargement de zone" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
-      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-        <polyline points="7 10 12 15 17 10"></polyline>
-        <line x1="12" y1="15" x2="12" y2="3"></line>
-      </svg>
-    </button>
-
-    <!-- Zoom + / - (Desktop) -->
-    <div class="hidden md:flex flex-col glass-panel rounded-2xl overflow-hidden">
-      <button id="btn-zoom-in" title="Zoom avant" class="w-11 h-10 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 border-b border-slate-200/60 font-bold text-lg">+</button>
-      <button id="btn-zoom-out" title="Zoom arrière" class="w-11 h-10 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 font-bold text-lg">−</button>
+    <div>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Style</div>
+      <div class="grid grid-cols-2 gap-2">
+        <button data-theme="normal" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#eef1ea 50%,#0b7a55 50%)"></span>Clair</button>
+        <button data-theme="sun" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#ff00b4 50%);outline:2px solid #000"></span>Soleil</button>
+        <button data-theme="bw" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#000000 50%);outline:2px solid #000"></span>Noir & blanc</button>
+        <button data-theme="night" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#000000 50%,#34d399 50%)"></span>Nuit</button>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1.5">Soleil, Noir & blanc et Nuit économisent aussi la batterie.</p>
+    </div>
+    <div>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fond de carte</div>
+      <div class="grid grid-cols-3 gap-2">
+        <button data-layer="cyclosm" class="layer-option seg on">Vélo</button>
+        <button data-layer="osm" class="layer-option seg">Standard</button>
+        <button data-layer="opentopo" class="layer-option seg">Relief</button>
+      </div>
+    </div>
+    <label class="flex items-center justify-between gap-3 cursor-pointer">
+      <span><span class="block text-sm font-bold text-slate-900">Surligner les pistes</span><span class="block text-[11px] text-slate-500">Pistes et véloroutes cliquables</span></span>
+      <span class="relative inline-flex items-center">
+        <input id="toggle-cycleways-checkbox" type="checkbox" class="sr-only peer" />
+        <span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></span>
+      </span>
+    </label>
+    <div class="grid grid-cols-2 gap-2">
+      <button id="btn-nearest-water" class="py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold">Eau la plus proche</button>
+      <button id="btn-offline-modal" class="py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold">Cartes hors ligne</button>
     </div>
   </div>
 
@@ -498,148 +496,43 @@
       <div class="w-10 h-1.5 rounded-full bg-slate-300/90"></div>
     </div>
 
-    <!-- En-tête marque & onglets -->
-    <div class="px-4 pt-1 md:pt-4 pb-2.5 border-b border-slate-200/60 shrink-0">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-sm">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="5.5" cy="17.5" r="3.5"/>
-              <circle cx="18.5" cy="17.5" r="3.5"/>
-              <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-base font-bold tracking-tight text-slate-900 leading-none">À bicyclette</h1>
-            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Carte vélo & navigation libre</p>
-          </div>
-        </div>
-
-        <!-- Bouton expansion mobile rapide -->
-        <button id="btn-toggle-sheet-mobile" class="md:hidden px-2.5 py-1 rounded-xl bg-slate-200/70 text-xs font-semibold text-slate-700">
-          Panneau
-        </button>
+    <!-- ACCUEIL : puces, trajet en cours, onglets -->
+    <div id="sheet-home" class="shrink-0 px-4 pt-1 md:pt-4 pb-3 space-y-3 border-b border-slate-200/60">
+      <div id="home-chips" class="flex gap-1.5 overflow-x-auto no-scrollbar">
+        <button id="chip-pistes" class="chip big on" aria-pressed="true"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="16" r="4"/><circle cx="18" cy="16" r="4"/><path d="M6 16l4-8h5l3 8M10 8l4 8"/></svg>Pistes</button>
+        <button id="chip-visit" class="chip big" aria-pressed="false"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>À voir</button>
+        <button id="chip-eat" class="chip big" aria-pressed="false"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-3 4-3 7h3v11"/></svg>Manger</button>
+        <button id="chip-water" class="chip big on" aria-pressed="true"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg>Eau</button>
       </div>
 
-      <!-- Navigation par onglets -->
-      <div class="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
-        <button data-tab="explore" class="tab-btn py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
-          Explorer
-        </button>
-        <button data-tab="route" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
-          Itinéraire
-        </button>
-        <button data-tab="places" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
-          Lieux
-        </button>
-        <button data-tab="gpx" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
-          Outils
-        </button>
+      <div id="home-route" class="hidden space-y-2.5">
+        <div class="flex items-baseline justify-between gap-3">
+          <div id="home-dest" class="text-lg font-extrabold text-slate-900 truncate">Destination</div>
+          <div id="home-dist" class="text-sm font-semibold text-slate-500 shrink-0"></div>
+        </div>
+        <div id="home-alts" class="flex gap-2"></div>
+        <p id="home-weather" class="hidden text-[12px] font-semibold text-slate-600"></p>
+        <div class="flex gap-2">
+          <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Partir</button>
+          <button id="btn-home-clear" aria-label="Effacer le trajet" class="w-14 h-14 rounded-2xl bg-slate-200/70 text-slate-600 text-lg font-bold">✕</button>
+        </div>
+      </div>
+
+      <div id="home-idle" class="grid grid-cols-2 gap-2">
+        <button id="btn-home-tour" class="h-12 rounded-2xl bg-emerald-600 text-white text-sm font-extrabold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>Balade visite</button>
+        <button id="btn-home-places" class="h-12 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/></svg>Mes lieux</button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
+        <button data-tab="route" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Trajet</button>
+        <button data-tab="places" class="tab-btn py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">Lieux</button>
+        <button data-tab="gpx" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Plus</button>
       </div>
     </div>
 
     <!-- Contenu défilant des onglets -->
     <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4">
 
-      <!-- ONGLET 1 : EXPLORER (Points d'eau & Pistes) -->
-      <section id="tab-explore" class="space-y-4">
-        <!-- Raccourcis -->
-        <div class="grid grid-cols-3 gap-2">
-          <button data-quick="visit" class="quick-btn py-2.5 rounded-2xl bg-amber-500/15 text-amber-800 text-xs font-bold">À voir</button>
-          <button data-quick="eat" class="quick-btn py-2.5 rounded-2xl bg-red-500/10 text-red-800 text-xs font-bold">Manger</button>
-          <button data-quick="tour" class="quick-btn py-2.5 rounded-2xl bg-emerald-500/15 text-emerald-800 text-xs font-bold">Balade visite</button>
-        </div>
-        <!-- Carte résumé points d'eau -->
-        <div class="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3.5">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <span class="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                </svg>
-              </span>
-              <div>
-                <h2 class="text-sm font-bold text-slate-900">Points d'eau potable</h2>
-                <p id="water-status-text" class="text-[11px] text-slate-600">Chargement autour de la carte...</p>
-              </div>
-            </div>
-            <button id="btn-refresh-water" title="Actualiser les points d'eau" class="p-2 rounded-xl bg-white/80 hover:bg-white text-sky-600 shadow-sm transition">
-              <svg id="icon-refresh-water" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-            </button>
-          </div>
-
-          <button id="btn-route-nearest-water-panel" class="w-full py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-            </svg>
-            <span>Aller au point d'eau le plus proche</span>
-          </button>
-        </div>
-
-        <!-- Liste des points d'eau à proximité -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">À proximité (<span id="water-count">0</span>)</h3>
-            <span class="text-[11px] text-slate-400">Données OpenStreetMap</span>
-          </div>
-          <div id="water-list" class="space-y-2">
-            <div class="text-xs text-slate-500 text-center py-6 bg-white/50 rounded-2xl">
-              Déplacez la carte pour afficher les fontaines et robinets publics.
-            </div>
-          </div>
-        </div>
-
-        <!-- Calque Pistes & Véloroutes -->
-        <div class="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M4 19L8 5M16 5l4 14M12 6v2M12 11v2M12 16v2"/>
-                </svg>
-              </span>
-              <div>
-                <h2 class="text-sm font-bold text-slate-900">Pistes & Véloroutes</h2>
-                <p class="text-[11px] text-slate-600">Surbrillance interactive Overpass</p>
-              </div>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input id="toggle-cycleways-checkbox" type="checkbox" class="sr-only peer" />
-              <div class="w-10 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-          <p class="text-[11px] text-slate-600 leading-relaxed">
-            Activez ce calque pour rendre les pistes cyclables et itinéraires EuroVelo cliquables (nom, réseau et revêtement).
-          </p>
-        </div>
-
-        <!-- Légende rapide CyclOSM -->
-        <div class="rounded-2xl bg-white/60 border border-slate-200/70 p-3.5 space-y-2">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Légende CyclOSM</h3>
-          <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-700">
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full bg-[#0073e6]"></span>
-              <span>Piste cyclable dédiée</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full bg-[#16a34a]"></span>
-              <span>Voie verte / Parc</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full border-b-2 border-dashed border-[#0073e6]"></span>
-              <span>Bande cyclable</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full bg-[#a855f7]"></span>
-              <span>Véloroute / EuroVelo</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- ONGLET 2 : ITINÉRAIRE VÉLO & GUIDAGE -->
       <section id="tab-route" class="hidden space-y-4">
@@ -780,6 +673,8 @@
               </div>
             </div>
 
+            <p id="route-weather" class="hidden mt-2 text-[11px] text-slate-300 leading-relaxed"></p>
+            <div id="route-weather-advice" class="hidden mt-2"></div>
             <!-- Bouton Démarrer le guidage GPS -->
             <button id="btn-start-guidance" class="mt-3 w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition shadow">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -821,7 +716,7 @@
       </section>
 
       <!-- ONGLET LIEUX : points d'intérêt, lieux à visiter, mes lieux synchronisés -->
-      <section id="tab-places" class="hidden space-y-4">
+      <section id="tab-places" class="space-y-4">
         <!-- Catégories de points d'intérêt -->
         <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-3">
           <div class="flex items-center justify-between">
@@ -854,13 +749,17 @@
         <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3.5 space-y-2.5">
           <div>
             <h2 class="text-sm font-bold text-slate-900">Balade visite</h2>
-            <p class="text-[11px] text-slate-600">Une boucle depuis votre position qui passe par des lieux à voir.</p>
+            <p class="text-[11px] text-slate-600">Une boucle depuis votre position par des lieux à voir.</p>
           </div>
-          <div class="flex gap-1.5">
-            <button data-tour="15" class="tour-len chip">15 km</button>
-            <button data-tour="30" class="tour-len chip on">30 km</button>
-            <button data-tour="50" class="tour-len chip">50 km</button>
+          <div class="flex gap-1.5 flex-wrap">
+            <button data-tour="15" class="tour-len chip">1 h · 15 km</button>
+            <button data-tour="30" class="tour-len chip on">2 h · 30 km</button>
+            <button data-tour="45" class="tour-len chip">3 h · 45 km</button>
           </div>
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+            <input id="tour-pause" type="checkbox" class="w-4 h-4 accent-amber-500" checked />
+            Pause boulangerie ou café à mi-parcours
+          </label>
           <button id="btn-make-tour" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Créer la balade</button>
         </div>
 
@@ -873,6 +772,62 @@
           <div id="poi-list" class="space-y-2">
             <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
           </div>
+        </div>
+
+        <!-- Carte résumé points d'eau -->
+        <div class="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                </svg>
+              </span>
+              <div>
+                <h2 class="text-sm font-bold text-slate-900">Points d'eau potable</h2>
+                <p id="water-status-text" class="text-[11px] text-slate-600">Chargement autour de la carte...</p>
+              </div>
+            </div>
+            <button id="btn-refresh-water" title="Actualiser les points d'eau" class="p-2 rounded-xl bg-white/80 hover:bg-white text-sky-600 shadow-sm transition">
+              <svg id="icon-refresh-water" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+          </div>
+
+          <button id="btn-route-nearest-water-panel" class="w-full py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+            <span>Aller au point d'eau le plus proche</span>
+          </button>
+        </div>
+
+        <!-- Liste des points d'eau à proximité -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">À proximité (<span id="water-count">0</span>)</h3>
+            <span class="text-[11px] text-slate-400">Données OpenStreetMap</span>
+          </div>
+          <div id="water-list" class="space-y-2">
+            <div class="text-xs text-slate-500 text-center py-6 bg-white/50 rounded-2xl">
+              Déplacez la carte pour afficher les fontaines et robinets publics.
+            </div>
+          </div>
+        </div>
+
+        <!-- Rentrer en train -->
+        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Rentrer en train</h2>
+              <p class="text-[11px] text-slate-500">Les gares les plus proches de vous</p>
+            </div>
+            <button id="btn-find-stations" class="shrink-0 px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Chercher</button>
+          </div>
+          <div id="stations-list" class="space-y-1.5"></div>
         </div>
 
         <!-- Mes lieux -->
@@ -940,6 +895,41 @@
               </svg>
               <span>Exporter GPX</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Mes sorties enregistrées -->
+        <div class="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Mes sorties</h2>
+              <p id="rides-summary" class="text-[11px] text-slate-600">Enregistrées pendant le guidage, ou à la demande</p>
+            </div>
+            <button id="btn-record" class="shrink-0 px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">● Enregistrer</button>
+          </div>
+          <div id="rides-list" class="space-y-1.5"></div>
+        </div>
+
+        <!-- Légende rapide CyclOSM -->
+        <div class="rounded-2xl bg-white/60 border border-slate-200/70 p-3.5 space-y-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Légende CyclOSM</h3>
+          <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-700">
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full bg-[#0073e6]"></span>
+              <span>Piste cyclable dédiée</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full bg-[#16a34a]"></span>
+              <span>Voie verte / Parc</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full border-b-2 border-dashed border-[#0073e6]"></span>
+              <span>Bande cyclable</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full bg-[#a855f7]"></span>
+              <span>Véloroute / EuroVelo</span>
+            </div>
           </div>
         </div>
 
@@ -1105,7 +1095,7 @@
   </div>
 
   <!-- Conteneur de notifications Toast (remplace tout alert()) -->
-  <div id="toast-container" class="fixed bottom-36 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4"></div>
+  <div id="toast-container" class="fixed top-[84px] md:top-auto md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4"></div>
 
   <!-- Leaflet 1.9.4 JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -1368,6 +1358,7 @@
       pickViaMode: false,
       theme: 'normal',        // normal | sun | bw
       tourKm: 30,
+      showWater: true,
       searchLayer: null,
     };
 
@@ -1587,14 +1578,7 @@
       AppState.baseLayers[layerId].addTo(AppState.map);
       AppState.activeLayerId = layerId;
 
-      document.querySelectorAll('.layer-option').forEach((btn) => {
-        const active = btn.dataset.layer === layerId;
-        btn.className = active
-          ? 'layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700'
-          : 'layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200/50';
-        const dot = btn.querySelector('span:last-child');
-        dot.className = active ? 'w-2 h-2 rounded-full bg-emerald-500' : 'w-2 h-2 rounded-full bg-transparent';
-      });
+      document.querySelectorAll('.layer-option').forEach((btn) => btn.classList.toggle('on', btn.dataset.layer === layerId));
     }
 
     function createWaterDropIcon() {
@@ -1830,8 +1814,6 @@
           setRouteOrigin(c.lat, c.lng, 'Centre de la carte');
         }
       }
-      switchSidebarTab('route');
-      expandMobileSheetIfCollapsed();
       calculateBikeRoute();
     };
 
@@ -2281,6 +2263,13 @@
 
     // Styles du tracé : normal ou très contrasté (mode soleil)
     function routeStyles() {
+      if (AppState.theme === 'night') {
+        return {
+          outline: { color: '#000000', weight: 11, opacity: 1 },
+          main: { color: '#34d399', weight: 6, opacity: 1 },
+          alt: { color: '#9aa6b2', weight: 4, opacity: 0.6, dashArray: '1 8' },
+        };
+      }
       if (AppState.theme === 'bw') {
         return {
           outline: { color: '#ffffff', weight: 15, opacity: 1 },
@@ -2357,6 +2346,7 @@
     }
 
     function renderAlternativesList() {
+      updateHome();
       const box = document.getElementById('route-alternatives-box');
       const list = document.getElementById('route-alternatives');
       const alts = AppState.alternatives;
@@ -2428,6 +2418,11 @@
       renderElevationChart(routeData.coords, routeData.distance);
       renderRouteSteps(routeData.steps);
       if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.isGuiding) loadCompanion(routeData);
+      else if (!routeData._weatherDone) {
+        routeData._weatherDone = true;
+        loadRouteWeather(routeData);
+      }
     }
 
     // ----- Étapes intermédiaires (via) -----
@@ -2457,8 +2452,6 @@
         AppState.vias.splice(bestPos, 0, { lat, lon, label });
       }
       renderVias();
-      switchSidebarTab('route');
-      expandMobileSheetIfCollapsed();
       calculateBikeRoute();
     }
 
@@ -2714,6 +2707,8 @@
       }
 
       startGeoWatch();
+      loadCompanion(AppState.currentRoute);
+      if (!Rides.isRecording()) Rides.start(true);
 
       // Navigation 3D par défaut (désactivable : bouton 2D du bandeau)
       if (!AppState.is3D && !isOfflineMode() && localStorage.getItem('abicyclette.nav3d') !== '0') {
@@ -2728,7 +2723,8 @@
         AppState.watchId = null;
       }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      releaseWakeLock();
+      if (Rides.isAuto()) Rides.stop();
+      if (!Rides.isRecording()) releaseWakeLock();
 
       document.getElementById('guidance-hud').classList.add('hidden');
       document.body.classList.remove('guiding');
@@ -2821,6 +2817,7 @@
         AppState.lastGuidanceRenderAt = now;
         updateGuidanceHUD(nextStep.instruction, stepDist, remDist, estSeconds, speedKmh, nextStep.turnType);
         followCamera(lat, lon, route, snap);
+        companionTick(route, snap, stepDist);
       }
 
       // Arrivée
@@ -2870,7 +2867,7 @@
       document.getElementById('hud-step-dist').textContent = formatDistance(stepDist);
       document.getElementById('hud-instruction').textContent = instruction;
       document.getElementById('hud-rem-dist').textContent = formatDistance(remDist);
-      document.getElementById('hud-speed').textContent = `${speedKmh} km/h`;
+      document.getElementById('hud-speed').textContent = String(speedKmh);
 
       const eta = new Date(Date.now() + remSeconds * 1000);
       document.getElementById('hud-eta').textContent = eta.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -3208,6 +3205,7 @@ ${trkpts}
         AppState.userAccuracyCircle.setLatLng([lat, lon]).setRadius(accuracy);
       }
       if (AppState.is3D) Map3D.updateUser(lat, lon);
+      if (Rides.isRecording()) Rides.addPoint(lat, lon, accuracy);
     }
 
     // -------------------------------------------------------------------------
@@ -3221,7 +3219,7 @@ ${trkpts}
           : 'tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
       });
 
-      ['explore', 'route', 'places', 'gpx'].forEach((id) => {
+      ['route', 'places', 'gpx'].forEach((id) => {
         const section = document.getElementById(`tab-${id}`);
         if (id === tabName) section.classList.remove('hidden');
         else section.classList.add('hidden');
@@ -3245,20 +3243,24 @@ ${trkpts}
     function initMobileBottomSheetGestures() {
       const drawer = document.getElementById('side-drawer');
       const handle = document.getElementById('sheet-drag-handle');
-      const toggleBtn = document.getElementById('btn-toggle-sheet-mobile');
-
-      toggleBtn.addEventListener('click', () => {
-        if (drawer.classList.contains('sheet-collapsed')) {
-          drawer.classList.replace('sheet-collapsed', 'sheet-half');
-        } else if (drawer.classList.contains('sheet-half')) {
-          drawer.classList.replace('sheet-half', 'sheet-expanded');
-        } else {
-          collapseMobileSheet();
-        }
-      });
+      const cycle = () => {
+        if (drawer.classList.contains('sheet-collapsed')) drawer.classList.replace('sheet-collapsed', 'sheet-half');
+        else if (drawer.classList.contains('sheet-half')) drawer.classList.replace('sheet-half', 'sheet-expanded');
+        else collapseMobileSheet();
+      };
+      // Hauteur visible du panneau replié = poignée + accueil (puces, trajet, onglets)
+      const home = document.getElementById('sheet-home');
+      const setPeek = () => drawer.style.setProperty('--peek', `${handle.offsetHeight + home.offsetHeight}px`);
+      setPeek();
+      if ('ResizeObserver' in window) new ResizeObserver(setPeek).observe(home);
 
       let startY = 0;
+      let moved = false;
+      handle.addEventListener('click', () => {
+        if (!moved) cycle();
+      });
       handle.addEventListener('touchstart', (e) => {
+        moved = false;
         startY = e.touches[0].clientY;
         drawer.classList.add('dragging');
       }, { passive: true });
@@ -3266,6 +3268,7 @@ ${trkpts}
       handle.addEventListener('touchend', (e) => {
         drawer.classList.remove('dragging');
         const deltaY = e.changedTouches[0].clientY - startY;
+        moved = Math.abs(deltaY) > 10;
         if (deltaY < -45) {
           // Glissement vers le haut
           if (drawer.classList.contains('sheet-collapsed')) {
@@ -3364,9 +3367,16 @@ ${trkpts}
 
       bindAutocompleteInput(globalInput, globalResults, (lat, lon, name) => {
         globalInput.value = name;
-        flyToActive(lat, lon, 15);
+        globalResults.classList.add('hidden');
+        globalInput.blur();
+        AppState.vias = [];
+        renderVias();
         setRouteDestination(lat, lon, name);
-        showToast(`Destination définie : ${name}`, 'info');
+        if (!AppState.origin || AppState.origin.label === 'Centre de la carte') {
+          const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+          setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
+        }
+        calculateBikeRoute();
       }, { categories: true });
 
       // Autocomplétion Départ & Arrivée
@@ -3383,8 +3393,11 @@ ${trkpts}
 
       // Boutons rapides à droite
       document.getElementById('btn-locate-me').addEventListener('click', locateUserOnce);
-      document.getElementById('btn-nearest-water').addEventListener('click', routeToNearestWaterPoint);
       document.getElementById('btn-route-nearest-water-panel').addEventListener('click', routeToNearestWaterPoint);
+      document.getElementById('btn-nearest-water').addEventListener('click', () => {
+        document.getElementById('display-panel').classList.add('hidden');
+        routeToNearestWaterPoint();
+      });
       document.getElementById('btn-refresh-water').addEventListener('click', loadWaterPointsForCurrentView);
 
       document.getElementById('btn-zoom-in').addEventListener('click', () =>
@@ -3394,39 +3407,34 @@ ${trkpts}
         AppState.is3D && AppState.map3d ? AppState.map3d.zoomOut() : AppState.map.zoomOut()
       );
 
-      // Sélecteur de fonds de carte
-      const layerMenuBtn = document.getElementById('btn-layer-menu');
-      const layerPopover = document.getElementById('layer-menu-popover');
-      layerMenuBtn.addEventListener('click', (e) => {
+      // Panneau Affichage
+      const displayPanel = document.getElementById('display-panel');
+      const displayBtn = document.getElementById('btn-display');
+      displayBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        layerPopover.classList.toggle('hidden');
+        displayPanel.classList.toggle('hidden');
       });
-      document.querySelectorAll('.layer-option').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          switchBaseLayer(btn.dataset.layer);
-          layerPopover.classList.add('hidden');
-        });
-      });
+      document.getElementById('btn-close-display').addEventListener('click', () => displayPanel.classList.add('hidden'));
+      document.querySelectorAll('.layer-option').forEach((btn) => btn.addEventListener('click', () => switchBaseLayer(btn.dataset.layer)));
+      document.getElementById('view-2d').addEventListener('click', () => AppState.is3D && Map3D.disable());
+      document.getElementById('view-3d').addEventListener('click', () => !AppState.is3D && Map3D.enable());
+      document.querySelectorAll('.theme-btn').forEach((btn) => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
 
       // Toggle surlignage pistes & véloroutes
       const cyclewaysCheckbox = document.getElementById('toggle-cycleways-checkbox');
-      const cyclewaysQuickBtn = document.getElementById('btn-toggle-cycleways');
 
       const syncCyclewaysToggle = (enabled) => {
         AppState.cyclewaysEnabled = enabled;
         cyclewaysCheckbox.checked = enabled;
         if (enabled) {
-          cyclewaysQuickBtn.classList.add('ring-2', 'ring-emerald-500', 'text-emerald-600');
           loadCyclewaysForCurrentView();
           showToast('Surlignage des pistes cyclables activé.', 'info', 2200);
         } else {
-          cyclewaysQuickBtn.classList.remove('ring-2', 'ring-emerald-500', 'text-emerald-600');
           AppState.cyclewaysLayer.clearLayers();
         }
       };
 
       cyclewaysCheckbox.addEventListener('change', (e) => syncCyclewaysToggle(e.target.checked));
-      cyclewaysQuickBtn.addEventListener('click', () => syncCyclewaysToggle(!AppState.cyclewaysEnabled));
 
       // Menu clic carte
       document.getElementById('ctx-set-origin').addEventListener('click', () => {
@@ -3503,6 +3511,7 @@ ${trkpts}
         AppState.vias = [];
         renderVias();
         clearAlternativeLayers();
+        ['route-weather', 'route-weather-advice', 'home-weather'].forEach((id) => document.getElementById(id).classList.add('hidden'));
         if (AppState.is3D) Map3D.refreshOverlays();
       });
 
@@ -3548,7 +3557,10 @@ ${trkpts}
         offlineModal.classList.remove('hidden');
       };
 
-      document.getElementById('btn-offline-modal').addEventListener('click', openOfflineModal);
+      document.getElementById('btn-offline-modal').addEventListener('click', () => {
+        document.getElementById('display-panel').classList.add('hidden');
+        openOfflineModal();
+      });
       document.getElementById('btn-open-offline-badge').addEventListener('click', openOfflineModal);
       document.getElementById('btn-open-offline-from-tab').addEventListener('click', openOfflineModal);
       document.getElementById('btn-close-offline-modal').addEventListener('click', () => {
@@ -3596,8 +3608,19 @@ ${trkpts}
         showToast('Cache hors ligne vidé avec succès.', 'success');
       });
 
+      // Accueil simplifié
+      document.getElementById('chip-pistes').addEventListener('click', () => setPreferCycleways(!AppState.preferCycleways));
+      document.getElementById('chip-visit').addEventListener('click', () => toggleGroup('visit'));
+      document.getElementById('chip-eat').addEventListener('click', () => toggleGroup('eat'));
+      document.getElementById('chip-water').addEventListener('click', () => setShowWater(!AppState.showWater));
+      document.getElementById('btn-go').addEventListener('click', startLiveGuidance);
+      document.getElementById('btn-home-clear').addEventListener('click', () => document.getElementById('btn-clear-route').click());
+      document.getElementById('btn-home-tour').addEventListener('click', () => openSheetAt('places', 'btn-make-tour'));
+      document.getElementById('btn-home-places').addEventListener('click', () => openSheetAt('places', 'my-places-list'));
+      document.getElementById('btn-find-stations').addEventListener('click', findStations);
+      document.getElementById('btn-record').addEventListener('click', () => (Rides.isRecording() ? Rides.stop() : Rides.start(false)));
+
       // Vue 3D
-      document.getElementById('btn-toggle-3d').addEventListener('click', () => Map3D.toggle());
       document.getElementById('btn-hud-3d').addEventListener('click', async () => {
         await Map3D.toggle();
         try {
@@ -3610,18 +3633,9 @@ ${trkpts}
       });
 
       // Mode soleil / économie batterie
-      document.getElementById('btn-sun-mode').addEventListener('click', () =>
-        setTheme(THEMES[(THEMES.indexOf(AppState.theme) + 1) % THEMES.length])
-      );
 
       // Pistes d'abord
-      document.getElementById('toggle-prefer-cycleways').addEventListener('change', (e) => {
-        AppState.preferCycleways = e.target.checked;
-        try {
-          localStorage.setItem('abicyclette.preferCycleways', e.target.checked ? '1' : '0');
-        } catch {}
-        if (AppState.origin && AppState.dest) calculateBikeRoute({ keepView: true });
-      });
+      document.getElementById('toggle-prefer-cycleways').addEventListener('change', (e) => setPreferCycleways(e.target.checked));
 
       // Étapes
       document.getElementById('btn-pick-via').addEventListener('click', startViaPick);
@@ -3640,24 +3654,7 @@ ${trkpts}
       );
       document.getElementById('btn-make-tour').addEventListener('click', makeVisitTour);
 
-      // Raccourcis de l'onglet Explorer
-      document.querySelectorAll('.quick-btn').forEach((b) =>
-        b.addEventListener('click', () => {
-          const q = b.dataset.quick;
-          switchSidebarTab('places');
-          expandMobileSheetIfCollapsed();
-          if (q === 'tour') {
-            document.getElementById('btn-make-tour').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-          }
-          POI_CATEGORIES.filter((c) => c.group === q).forEach((c) => AppState.poiEnabled.add(c.id));
-          try {
-            localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
-          } catch {}
-          renderPOIChips();
-          loadPOIsForCurrentView();
-        })
-      );
+
 
       // Lieux
       document.getElementById('ctx-add-place').addEventListener('click', () => {
@@ -3734,11 +3731,9 @@ ${trkpts}
         showToast('Vous êtes hors ligne. Bascule sur le cache local.', 'warning');
       });
 
-      // Fermer les popovers au clic extérieur
+      // Fermer le panneau Affichage au clic extérieur
       document.addEventListener('click', (e) => {
-        if (!layerMenuBtn.contains(e.target) && !layerPopover.contains(e.target)) {
-          layerPopover.classList.add('hidden');
-        }
+        if (!displayBtn.contains(e.target) && !displayPanel.contains(e.target)) displayPanel.classList.add('hidden');
       });
     }
 
@@ -4062,7 +4057,10 @@ ${trkpts}
         );
       });
     }
-    const debouncedPOIReload = debounce(() => loadPOIsForCurrentView(), 600);
+    const debouncedPOIReload = debounce(() => {
+      syncHomeChips();
+      loadPOIsForCurrentView();
+    }, 600);
 
     // Lieux à visiter le long du trajet (à moins de 500 m du tracé)
     async function findVisitsAlongRoute() {
@@ -4317,6 +4315,7 @@ ${trkpts}
 
     const CloudSync = (() => {
       const FILE = 'abicyclette-lieux.json';
+      const RIDES_FILE = 'abicyclette-sorties.json';
       const K_TOKEN = 'abicyclette.gh.token';
       const K_GIST = 'abicyclette.gh.gist';
       let busy = false;
@@ -4415,22 +4414,35 @@ ${trkpts}
             throw e;
           }
           let remote = [];
+          let remoteRides = [];
           try {
             remote = JSON.parse(gist.files?.[FILE]?.content || '{}').places || [];
           } catch {}
+          try {
+            // Un gros fichier est tronqué dans la réponse : on le relit en entier
+            const rf = gist.files?.[RIDES_FILE];
+            let txt = rf?.content || '{}';
+            if (rf?.truncated && rf.raw_url) txt = await (await fetch(rf.raw_url)).text();
+            remoteRides = JSON.parse(txt).rides || [];
+          } catch {}
           const merged = merge(AppState.myPlaces, remote);
-          const changed = JSON.stringify(merged) !== JSON.stringify(remote);
-          if (changed) {
-            await gh(`/gists/${id}`, {
-              method: 'PATCH',
-              body: JSON.stringify({ files: { [FILE]: { content: JSON.stringify({ version: 1, updatedAt: Date.now(), places: merged }, null, 1) } } }),
-            });
+          const mergedRides = merge(Rides.all(), remoteRides);
+          const files = {};
+          if (JSON.stringify(merged) !== JSON.stringify(remote)) {
+            files[FILE] = { content: JSON.stringify({ version: 1, updatedAt: Date.now(), places: merged }, null, 1) };
+          }
+          if (JSON.stringify(mergedRides) !== JSON.stringify(remoteRides) && mergedRides.length) {
+            files[RIDES_FILE] = { content: JSON.stringify({ version: 1, updatedAt: Date.now(), rides: mergedRides }) };
+          }
+          if (Object.keys(files).length) {
+            await gh(`/gists/${id}`, { method: 'PATCH', body: JSON.stringify({ files }) });
           }
           AppState.myPlaces = merged;
           persistMyPlaces();
           renderMyPlaces();
+          Rides.replaceAll(mergedRides);
           const t = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-          setStatus(`☁️ Synchronisé à ${t} • ${visiblePlaces().length} lieu(x)`);
+          setStatus(`☁️ Synchronisé à ${t} • ${visiblePlaces().length} lieu(x), ${Rides.all().filter((r) => !r.deleted).length} sortie(s)`);
           if (!silent) showToast('Lieux synchronisés.', 'success', 2000);
         } catch (e) {
           if (e.status === 401 || e.status === 403) {
@@ -4503,11 +4515,8 @@ ${trkpts}
 
       function updateButtons() {
         const on = AppState.is3D;
-        const b = document.getElementById('btn-toggle-3d');
-        b.classList.toggle('ring-2', on);
-        b.classList.toggle('ring-emerald-500', on);
-        b.classList.toggle('text-emerald-600', on);
-        b.textContent = on ? '2D' : '3D';
+        document.getElementById('view-2d').classList.toggle('on', !on);
+        document.getElementById('view-3d').classList.toggle('on', on);
         document.getElementById('btn-hud-3d').textContent = on ? '2D' : '3D';
       }
 
@@ -4612,7 +4621,7 @@ ${trkpts}
       function refreshOverlays() {
         const m = AppState.map3d;
         if (!m || !AppState.map3dReady) return;
-        const sun = AppState.sunMode;
+        const sun = AppState.theme === 'sun';
 
         // Trajet choisi + variantes
         m.getSource('route').setData(AppState.currentRoute ? { type: 'FeatureCollection', features: [line(AppState.currentRoute.coords)] } : emptyFC());
@@ -4621,14 +4630,16 @@ ${trkpts}
           features: AppState.alternatives.map((r, idx) => (idx === AppState.selectedAltIdx ? null : line(r.coords, { idx }))).filter(Boolean),
         });
         const bw = AppState.theme === 'bw';
-        m.setPaintProperty('route-line', 'line-color', bw ? '#000000' : sun ? '#ff00b4' : '#059669');
-        m.setPaintProperty('route-casing', 'line-color', bw ? '#ffffff' : sun ? '#000000' : '#ffffff');
+        const night = AppState.theme === 'night';
+        // En nuit, le canvas 3D est inversé par filtre CSS : on prend les couleurs « inverses »
+        m.setPaintProperty('route-line', 'line-color', bw ? '#000000' : night ? '#cb2c66' : sun ? '#ff00b4' : '#059669');
+        m.setPaintProperty('route-casing', 'line-color', bw ? '#ffffff' : night ? '#ffffff' : sun ? '#000000' : '#ffffff');
         m.setPaintProperty('route-casing', 'line-width', sun ? 15 : 12);
-        m.setLayoutProperty('hillshade', 'visibility', sun ? 'none' : 'visible');
+        m.setLayoutProperty('hillshade', 'visibility', AppState.theme === 'normal' ? 'visible' : 'none');
 
         // Points
         const feats = [];
-        AppState.waterPoints.forEach((p) => {
+        (AppState.showWater ? AppState.waterPoints : []).forEach((p) => {
           feats.push(point(p.lat, p.lon, {
             r: 6, color: '#0284c7', name: p.name,
             html: `<div class="p-3"><div class="text-xs font-bold mb-2">💧 ${escapeHtml(p.name)}</div><button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-1.5 rounded-lg bg-sky-600 text-white text-[11px] font-bold">Y aller à vélo</button></div>`,
@@ -4765,18 +4776,22 @@ ${trkpts}
     // 17. MODE SOLEIL / ÉCONOMIE BATTERIE
     // -------------------------------------------------------------------------
     const LS_THEME = 'abicyclette.theme';
-    const THEMES = ['normal', 'sun', 'bw'];
-    const THEME_LABEL = { normal: 'Affichage normal', sun: 'Soleil : couleurs fortes, batterie ménagée', bw: 'Noir & blanc contrasté, batterie ménagée' };
+    const THEMES = ['normal', 'sun', 'bw', 'night'];
+    const THEME_LABEL = { normal: 'Style clair', sun: 'Soleil : couleurs fortes, batterie ménagée', bw: 'Noir & blanc contrasté, batterie ménagée', night: 'Nuit : écran sombre, batterie ménagée' };
 
     function setTheme(theme, silent = false) {
+      if (!THEMES.includes(theme)) theme = 'normal';
       AppState.theme = theme;
-      // Les deux modes contrastés économisent aussi la batterie
+      // Soleil, noir & blanc et nuit économisent la batterie (GPS, rafraîchissement, effets)
       AppState.sunMode = theme !== 'normal';
-      document.body.classList.toggle('sun-mode', theme !== 'normal');
+      document.body.classList.toggle('eco', theme !== 'normal');
+      document.body.classList.toggle('sun-mode', theme === 'sun' || theme === 'bw');
       document.body.classList.toggle('bw-mode', theme === 'bw');
+      document.body.classList.toggle('night-mode', theme === 'night');
+      document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('on', b.dataset.theme === theme));
       const badge = document.getElementById('eco-badge');
       badge.classList.toggle('hidden', theme === 'normal');
-      badge.textContent = theme === 'bw' ? 'N&B' : 'SOLEIL';
+      badge.textContent = { sun: 'SOLEIL', bw: 'N&B', night: 'NUIT' }[theme] || '';
       document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'normal' ? '#059669' : '#000000');
       try {
         localStorage.setItem(LS_THEME, theme);
@@ -4787,7 +4802,7 @@ ${trkpts}
       }
       if (AppState.isGuiding) startGeoWatch();
       if (AppState.is3D) Map3D.refreshOverlays();
-      if (!silent) showToast(THEME_LABEL[theme], theme === 'normal' ? 'info' : 'warning', 2400);
+      if (!silent) showToast(THEME_LABEL[theme], 'info', 2200);
     }
 
     // Compatibilité : ancien interrupteur soleil
@@ -4950,14 +4965,31 @@ ${trkpts}
           stops = stops.concat(cands.filter((p) => !used.has(p.id)).sort((a, b) => b.score - a.score).slice(0, 3 - stops.length));
         }
         stops.sort((a, b) => a.ang - b.ang);
+        let vias = stops.map((p) => ({ lat: p.lat, lon: p.lon, label: p.name }));
 
-        AppState.vias = stops.map((p) => ({ lat: p.lat, lon: p.lon, label: p.name }));
+        // Pause boulangerie / café à mi-parcours
+        if (document.getElementById('tour-pause').checked && vias.length >= 2) {
+          const k = Math.floor(vias.length / 2);
+          const a = vias[k - 1], b = vias[k];
+          const mlat = (a.lat + b.lat) / 2, mlon = (a.lon + b.lon) / 2;
+          try {
+            const pq = ['bakery', 'cafe'].flatMap((id) => POI_BY_ID[id].q).map((x) => `${x}(around:3000,${mlat.toFixed(5)},${mlon.toFixed(5)});`).join('');
+            const pd = await fetchOverpassWithFallback(`[out:json][timeout:15];(${pq});out center 60;`);
+            const pause = parsePOIElements(pd.elements || [], ['bakery', 'cafe'])
+              .filter((p) => p.name && p.name !== POI_BY_ID[p.cat].label.replace(/s( &|$)/, '$1'))
+              .map((p) => ({ ...p, d: haversineDistance(mlat, mlon, p.lat, p.lon) }))
+              .sort((x, y) => x.d - y.d)[0];
+            if (pause) vias.splice(k, 0, { lat: pause.lat, lon: pause.lon, label: `Pause : ${pause.name}` });
+          } catch {
+            /* la balade se fait sans pause */
+          }
+        }
+        AppState.vias = vias;
         setRouteOrigin(start.lat, start.lon, AppState.userLocation ? 'Ma position GPS' : 'Départ');
-        setRouteDestination(start.lat, start.lon, 'Retour au départ');
+        setRouteDestination(start.lat, start.lon, 'Balade visite · retour au départ');
         renderVias();
-        switchSidebarTab('route');
-        expandMobileSheetIfCollapsed();
-        showToast(`Balade : ${stops.map((p) => p.name).join(' → ')}`, 'success', 4500);
+        collapseMobileSheet();
+        showToast(`Balade : ${vias.map((p) => p.label).join(' → ')}`, 'success', 5000);
         await calculateBikeRoute();
       } catch {
         showToast('Serveur des lieux occupé, réessayez dans un instant.', 'warning');
@@ -4984,6 +5016,477 @@ ${trkpts}
     }
 
     // -------------------------------------------------------------------------
+    // 17 quinquies. ACCUEIL SIMPLIFIÉ : puces, carte du trajet, bouton Partir
+    // -------------------------------------------------------------------------
+    function shortLabel(label) {
+      if (!label) return 'Destination';
+      if (/^Point carte|^Étape \(/.test(label)) return 'Point choisi sur la carte';
+      return label.split(',')[0];
+    }
+
+    function updateHome() {
+      const r = AppState.currentRoute;
+      document.getElementById('home-route').classList.toggle('hidden', !r);
+      document.getElementById('home-idle').classList.toggle('hidden', !!r);
+      if (!r) return;
+      document.getElementById('home-dest').textContent = shortLabel(AppState.dest?.label);
+      document.getElementById('home-dist').textContent = `${formatDistance(r.distance)} · ${formatDuration(r.duration)}`;
+      const alts = AppState.alternatives.slice(0, 3);
+      const box = document.getElementById('home-alts');
+      if (alts.length < 2) {
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = alts
+        .map(
+          (a, i) => `
+          <button data-halt="${i}" class="home-alt ${i === AppState.selectedAltIdx ? 'on' : ''}">
+            <div class="text-base font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
+            <div class="text-[11px] font-semibold text-slate-500 truncate">${(a.tags && a.tags[0]) || 'Variante'} · ${formatDistance(a.distance)}</div>
+          </button>`
+        )
+        .join('');
+      box.querySelectorAll('.home-alt').forEach((b) => b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.halt, 10), true)));
+    }
+
+    function groupEnabled(group) {
+      return POI_CATEGORIES.some((c) => c.group === group && AppState.poiEnabled.has(c.id));
+    }
+
+    function syncHomeChips() {
+      const set = (id, on) => {
+        const el = document.getElementById(id);
+        el.classList.toggle('on', on);
+        el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      };
+      set('chip-pistes', AppState.preferCycleways);
+      set('chip-visit', groupEnabled('visit'));
+      set('chip-eat', groupEnabled('eat'));
+      set('chip-water', AppState.showWater);
+    }
+
+    function toggleGroup(group) {
+      const on = !groupEnabled(group);
+      POI_CATEGORIES.filter((c) => c.group === group).forEach((c) => (on ? AppState.poiEnabled.add(c.id) : AppState.poiEnabled.delete(c.id)));
+      try {
+        localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
+      } catch {}
+      renderPOIChips();
+      syncHomeChips();
+      loadPOIsForCurrentView();
+      showToast(on ? (group === 'visit' ? 'Lieux à voir affichés' : 'Restaurants, boulangeries, cafés affichés') : 'Masqués', 'info', 1600);
+    }
+
+    function setPreferCycleways(on) {
+      AppState.preferCycleways = on;
+      document.getElementById('toggle-prefer-cycleways').checked = on;
+      try {
+        localStorage.setItem('abicyclette.preferCycleways', on ? '1' : '0');
+      } catch {}
+      syncHomeChips();
+      if (AppState.origin && AppState.dest) calculateBikeRoute({ keepView: true });
+    }
+
+    function setShowWater(on) {
+      AppState.showWater = on;
+      if (on) AppState.waterMarkersLayer.addTo(AppState.map);
+      else AppState.map.removeLayer(AppState.waterMarkersLayer);
+      try {
+        localStorage.setItem('abicyclette.showWater', on ? '1' : '0');
+      } catch {}
+      syncHomeChips();
+      if (AppState.is3D) Map3D.refreshOverlays();
+    }
+
+    function openSheetAt(tab, elementId) {
+      switchSidebarTab(tab);
+      const drawer = document.getElementById('side-drawer');
+      drawer.classList.remove('sheet-collapsed', 'sheet-half');
+      drawer.classList.add('sheet-expanded');
+      if (elementId) setTimeout(() => document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 sexies. COMPAGNON DE ROUTE : eau sur le trajet & lieux annoncés
+    // -------------------------------------------------------------------------
+    async function loadCompanion(route) {
+      const comp = { water: [], visits: [], announced: new Set(), warned: new Set() };
+      route._comp = comp;
+      const lats = route.coords.map((c) => c[0]);
+      const lons = route.coords.map((c) => c[1]);
+      const pad = 0.004;
+      const s = Math.min(...lats) - pad, n = Math.max(...lats) + pad, w = Math.min(...lons) - pad, e = Math.max(...lons) + pad;
+
+      let water = (await OfflineDB.getAllPOIs()).filter((p) => p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
+      let visits = (await OfflineDB.getAllExtraPOIs()).filter((p) => POI_BY_ID[p.cat]?.group === 'visit' && p.lat >= s && p.lat <= n && p.lon >= w && p.lon <= e);
+      if (!isOfflineMode()) {
+        try {
+          const bb = `(${s.toFixed(4)},${w.toFixed(4)},${n.toFixed(4)},${e.toFixed(4)})`;
+          const visitIds = ['heritage', 'viewpoint', 'museum', 'attraction'];
+          const q = `[out:json][timeout:20];(node["amenity"="drinking_water"]${bb};node["man_made"="water_tap"]${bb};node["natural"="spring"]["drinking_water"="yes"]${bb};${visitIds
+            .flatMap((id) => POI_BY_ID[id].q)
+            .map((x) => x + bb + ';')
+            .join('')});out center 1500;`;
+          const data = await fetchOverpassWithFallback(q);
+          const els = data.elements || [];
+          water = water.concat(
+            els
+              .filter((x) => x.tags && (x.tags.amenity === 'drinking_water' || x.tags.man_made === 'water_tap' || x.tags.natural === 'spring'))
+              .map(parseWaterElement)
+              .filter(Boolean)
+          );
+          visits = visits.concat(parsePOIElements(els, visitIds));
+          OfflineDB.putPOIs(water);
+        } catch {
+          /* on garde ce qui est en cache */
+        }
+      }
+      const seen = new Set();
+      water.forEach((p) => {
+        if (seen.has(p.id)) return;
+        seen.add(p.id);
+        const sn = snapToRoute(p.lat, p.lon, route);
+        if (sn.dist <= 250) comp.water.push({ along: sn.along, name: p.name });
+      });
+      visits.forEach((p) => {
+        if (seen.has(p.id) || !p.name) return;
+        seen.add(p.id);
+        const sn = snapToRoute(p.lat, p.lon, route);
+        if (sn.dist <= 200) comp.visits.push({ along: sn.along, name: p.name, cat: p.cat, id: p.id });
+      });
+      comp.water.sort((a, b) => a.along - b.along);
+      comp.visits.sort((a, b) => a.along - b.along);
+    }
+
+    function companionTick(route, snap, stepDist) {
+      const comp = route._comp;
+      const extra = document.getElementById('hud-extra');
+      if (!comp) return;
+      const total = route.cumDist[route.cumDist.length - 1];
+      const remaining = total - snap.along;
+      const ahead = comp.water.filter((w) => w.along > snap.along - 20);
+      let txt = '';
+      if (ahead.length) {
+        const next = ahead[0];
+        txt = `💧 Eau dans ${formatDistance(Math.max(0, next.along - snap.along))}`;
+        // Dernier point d'eau avant un long trou : on prévient en arrivant dessus
+        const after = ahead[1];
+        const gapEnd = after ? after.along : total;
+        const gap = gapEnd - next.along;
+        if (gap > 15000 && next.along - snap.along < 400 && !comp.warned.has(next.along)) {
+          comp.warned.add(next.along);
+          speakFrench(`Dernier point d'eau avant ${Math.round(gap / 1000)} kilomètres. Pensez à remplir vos bidons.`);
+          showToast(`Dernier point d'eau avant ${Math.round(gap / 1000)} km`, 'warning', 5000);
+        }
+      } else if (remaining > 15000) {
+        txt = '💧 Plus d’eau repérée sur le trajet';
+        if (!comp.warned.has('none')) {
+          comp.warned.add('none');
+          speakFrench(`Aucun point d'eau repéré sur les ${Math.round(remaining / 1000)} prochains kilomètres.`);
+        }
+      }
+      // Lieux à voir annoncés au passage
+      const v = comp.visits.find((x) => !comp.announced.has(x.id) && Math.abs(x.along - snap.along) < 120);
+      if (v) {
+        comp.announced.add(v.id);
+        if (stepDist > 80) speakFrench(`À voir : ${v.name}`);
+        showToast(`${POI_BY_ID[v.cat]?.emoji || '⭐'} À voir : ${v.name}`, 'info', 5000);
+      }
+      extra.textContent = txt;
+      extra.classList.toggle('hidden', !txt);
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 septies. VENT & PLUIE SUR LE TRAJET (Open-Meteo)
+    // -------------------------------------------------------------------------
+    let weatherSeq = 0;
+    async function loadRouteWeather(route) {
+      const el = document.getElementById('route-weather');
+      const advice = document.getElementById('route-weather-advice');
+      const homeEl = document.getElementById('home-weather');
+      [el, advice, homeEl].forEach((x) => x.classList.add('hidden'));
+      if (isOfflineMode() || !route || route.coords.length < 2) return;
+      const seq = ++weatherSeq;
+      const mid = route.coords[Math.floor(route.coords.length / 2)];
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${mid[0].toFixed(3)}&longitude=${mid[1].toFixed(3)}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh&forecast_days=2&timezone=auto`;
+        const res = await fetch(url);
+        if (!res.ok || seq !== weatherSeq) return;
+        const h = (await res.json()).hourly;
+        const now = new Date();
+        const pad2 = (x) => String(x).padStart(2, '0');
+        const key = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}T${pad2(now.getHours())}:00`;
+        let i0 = Math.max(0, h.time.indexOf(key));
+        const nH = Math.max(1, Math.ceil(route.duration / 3600));
+        const idx = Array.from({ length: nH }, (_, k) => Math.min(h.time.length - 1, i0 + k));
+        const wind = Math.round(idx.reduce((a, i) => a + h.wind_speed_10m[i], 0) / idx.length);
+        // Direction moyenne (moyenne circulaire)
+        const sx = idx.reduce((a, i) => a + Math.sin((h.wind_direction_10m[i] * Math.PI) / 180), 0);
+        const cx = idx.reduce((a, i) => a + Math.cos((h.wind_direction_10m[i] * Math.PI) / 180), 0);
+        const dir = ((Math.atan2(sx, cx) * 180) / Math.PI + 360) % 360;
+        const rain = Math.max(...idx.map((i) => h.precipitation_probability[i] ?? 0));
+        const temp = Math.round(h.temperature_2m[i0]);
+
+        // Part du trajet vent de face / dans le dos
+        const total = route.cumDist[route.cumDist.length - 1] || 1;
+        let head = 0, tail = 0, head1 = 0, head2 = 0;
+        for (let i = 1; i < route.coords.length; i++) {
+          const seg = route.cumDist[i] - route.cumDist[i - 1];
+          if (seg <= 0) continue;
+          const b = computeBearing(route.coords[i - 1][0], route.coords[i - 1][1], route.coords[i][0], route.coords[i][1]);
+          const c = Math.cos(((dir - b) * Math.PI) / 180); // le vent VIENT de « dir »
+          if (c > 0.35) {
+            head += seg;
+            if (route.cumDist[i] < total / 2) head1 += seg;
+            else head2 += seg;
+          } else if (c < -0.35) tail += seg;
+        }
+        const pct = (x) => Math.round((100 * x) / total);
+        const DIRS = ['nord', 'nord-est', 'est', 'sud-est', 'sud', 'sud-ouest', 'ouest', 'nord-ouest'];
+        const from = DIRS[Math.round(dir / 45) % 8];
+        el.textContent = `Vent ${wind} km/h du ${from} · de face ${pct(head)} % · dans le dos ${pct(tail)} % · pluie ${rain} % · ${temp} °C`;
+        el.classList.remove('hidden');
+        homeEl.textContent = `${temp} °C · vent ${wind} km/h ${pct(head) > 45 ? 'de face' : pct(tail) > 45 ? 'dans le dos' : 'de côté'} · pluie ${rain} %`;
+        homeEl.classList.remove('hidden');
+
+        // Conseils
+        const isLoop = AppState.origin && AppState.dest && haversineDistance(AppState.origin.lat, AppState.origin.lon, AppState.dest.lat, AppState.dest.lon) < 300;
+        let html = '';
+        if (isLoop && AppState.vias.length >= 2 && wind >= 10 && head2 - head1 > total * 0.12) {
+          html = `<div class="rounded-xl bg-amber-400 text-black p-2.5 text-[11px] font-bold flex items-center gap-2"><span class="flex-1">Vent de face au retour : faites la boucle dans l'autre sens, vous l'aurez à l'aller, encore frais.</span><button id="btn-reverse-loop" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-black text-white">Inverser</button></div>`;
+        } else if (wind >= 18 && pct(head) > 50) {
+          html = `<div class="rounded-xl bg-amber-400 text-black p-2.5 text-[11px] font-bold">Vent fort de face sur plus de la moitié du trajet : prévoyez plus de temps.</div>`;
+        }
+        if (rain >= 60) html += `<div class="rounded-xl bg-sky-500 text-white p-2.5 text-[11px] font-bold mt-1.5">Pluie probable (${rain} %) : pensez à la veste !</div>`;
+        if (html) {
+          advice.innerHTML = html;
+          advice.classList.remove('hidden');
+          document.getElementById('btn-reverse-loop')?.addEventListener('click', () => {
+            AppState.vias.reverse();
+            renderVias();
+            calculateBikeRoute({ keepView: true });
+          });
+        }
+      } catch {
+        /* météo facultative */
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 octies. RENTRER EN TRAIN : gares les plus proches
+    // -------------------------------------------------------------------------
+    async function findStations() {
+      const list = document.getElementById('stations-list');
+      if (isOfflineMode()) return showToast('Recherche de gares indisponible hors ligne.', 'warning');
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      list.innerHTML = '<div class="text-[11px] text-slate-500">Recherche…</div>';
+      try {
+        const q = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
+        const data = await fetchOverpassWithFallback(q);
+        const st = (data.elements || [])
+          .filter((e) => e.tags?.name && !/subway|light_rail|tram/.test(e.tags.station || '') && e.tags.subway !== 'yes')
+          .map((e) => ({ name: e.tags.name, lat: e.lat, lon: e.lon, d: haversineDistance(ref.lat, ref.lon, e.lat, e.lon) }))
+          .sort((a, b) => a.d - b.d)
+          .slice(0, 4);
+        if (!st.length) {
+          list.innerHTML = '<div class="text-[11px] text-slate-500">Aucune gare à moins de 25 km.</div>';
+          return;
+        }
+        list.innerHTML =
+          st
+            .map(
+              (g) => `
+          <div class="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-slate-200">
+            <span class="text-base">🚉</span>
+            <div class="min-w-0 flex-1"><div class="text-xs font-bold text-slate-800 truncate">Gare de ${escapeHtml(g.name)}</div><div class="text-[10px] text-slate-500">${formatDistance(g.d)} · ~${formatDuration(g.d / 4.5)} à vélo</div></div>
+            <button onclick="routeToPoint(${g.lat}, ${g.lon}, 'Gare de ${escapeJsString(g.name)}')" class="shrink-0 px-2 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
+          </div>`
+            )
+            .join('') +
+          `<a href="https://www.sncf-connect.com/" target="_blank" rel="noopener" class="block text-center text-[11px] font-bold text-sky-700 underline py-1">Horaires et places vélo sur SNCF Connect</a>`;
+      } catch {
+        list.innerHTML = '<div class="text-[11px] text-rose-600">Serveur occupé, réessayez.</div>';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 nonies. MES SORTIES : enregistrement GPS, GPX, synchronisation
+    // -------------------------------------------------------------------------
+    const Rides = (() => {
+      const LS = 'abicyclette.rides.v1';
+      let list = [];
+      let rec = null;
+      let ownWatch = null;
+      let showLayer = null;
+
+      function load() {
+        try {
+          list = JSON.parse(localStorage.getItem(LS) || '[]');
+        } catch {
+          list = [];
+        }
+      }
+      function save() {
+        try {
+          localStorage.setItem(LS, JSON.stringify(list));
+        } catch {
+          showToast('Mémoire pleine : exportez ou supprimez d’anciennes sorties.', 'warning');
+        }
+      }
+      const visible = () => list.filter((r) => !r.deleted);
+
+      function start(auto = false) {
+        if (rec) return;
+        rec = { id: newId(), startedAt: Date.now(), pts: [], dist: 0, auto };
+        if (!auto && 'geolocation' in navigator) {
+          ownWatch = navigator.geolocation.watchPosition(
+            (p) => updateUserGPSMarker(p.coords.latitude, p.coords.longitude, p.coords.accuracy),
+            () => {},
+            geoWatchOptions()
+          );
+          requestWakeLock();
+        }
+        updateButton();
+        if (!auto) showToast('Enregistrement de la sortie lancé.', 'success', 2000);
+      }
+
+      function addPoint(lat, lon, acc) {
+        if (!rec || (acc && acc > 60)) return;
+        const t = Math.round((Date.now() - rec.startedAt) / 1000);
+        const last = rec.pts[rec.pts.length - 1];
+        if (last) {
+          const d = haversineDistance(last[0], last[1], lat, lon);
+          if (d < 12) return;
+          if (d < 2000) rec.dist += d; // un saut énorme = signal perdu, on ne le compte pas
+        }
+        rec.pts.push([+lat.toFixed(5), +lon.toFixed(5), t]);
+      }
+
+      function stop() {
+        if (!rec) return;
+        if (ownWatch !== null) {
+          navigator.geolocation.clearWatch(ownWatch);
+          ownWatch = null;
+          if (!AppState.isGuiding) releaseWakeLock();
+        }
+        const r = rec;
+        rec = null;
+        updateButton();
+        if (r.pts.length < 2 || r.dist < 150) {
+          if (!r.auto) showToast('Sortie trop courte, non enregistrée.', 'info');
+          return;
+        }
+        const d = new Date(r.startedAt);
+        list.unshift({
+          id: r.id,
+          name: `Sortie du ${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`,
+          startedAt: r.startedAt,
+          duration: r.pts[r.pts.length - 1][2],
+          distance: Math.round(r.dist),
+          pts: r.pts,
+          updatedAt: Date.now(),
+        });
+        save();
+        render();
+        CloudSync.schedule();
+        showToast(`Sortie enregistrée : ${formatDistance(r.dist)}`, 'success');
+      }
+
+      function updateButton() {
+        const b = document.getElementById('btn-record');
+        b.textContent = rec ? '■ Arrêter' : '● Enregistrer';
+        b.classList.toggle('bg-slate-900', !!rec);
+        b.classList.toggle('bg-rose-600', !rec);
+      }
+
+      function render() {
+        const el = document.getElementById('rides-list');
+        const rides = visible();
+        const totalKm = rides.reduce((a, r) => a + r.distance, 0) / 1000;
+        document.getElementById('rides-summary').textContent = rides.length
+          ? `${rides.length} sortie(s) · ${totalKm.toFixed(0)} km au total`
+          : 'Enregistrées pendant le guidage, ou à la demande';
+        el.innerHTML = rides
+          .slice(0, 30)
+          .map((r) => {
+            const avg = r.duration >= 60 ? (r.distance / r.duration) * 3.6 : 0;
+            return `
+            <div class="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-emerald-100">
+              <div class="min-w-0 flex-1 cursor-pointer" onclick="Rides.show('${r.id}')">
+                <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(r.name)}</div>
+                <div class="text-[10px] text-slate-500">${formatDistance(r.distance)} · ${formatDuration(r.duration)}${avg ? ' · ' + avg.toFixed(1) + ' km/h' : ''}</div>
+              </div>
+              <button onclick="Rides.gpx('${r.id}')" class="shrink-0 px-2 py-1 rounded-lg bg-slate-900 text-white text-[11px] font-bold">GPX</button>
+              <button onclick="Rides.confirmDelete(this, '${r.id}')" class="shrink-0 px-2 py-1 rounded-lg text-slate-400 hover:text-rose-600 text-[11px] font-bold">✕</button>
+            </div>`;
+          })
+          .join('');
+      }
+
+      function show(id) {
+        const r = list.find((x) => x.id === id);
+        if (!r) return;
+        if (AppState.is3D) Map3D.disable();
+        if (showLayer) AppState.map.removeLayer(showLayer);
+        showLayer = L.polyline(r.pts.map((p) => [p[0], p[1]]), { color: '#7c3aed', weight: 5, opacity: 0.9 }).addTo(AppState.map);
+        AppState.map.fitBounds(showLayer.getBounds(), { padding: [40, 40] });
+        collapseMobileSheet();
+      }
+
+      function gpx(id) {
+        const r = list.find((x) => x.id === id);
+        if (!r) return;
+        const pts = r.pts
+          .map((p) => `      <trkpt lat="${p[0]}" lon="${p[1]}"><time>${new Date(r.startedAt + p[2] * 1000).toISOString()}</time></trkpt>`)
+          .join('\n');
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="A bicyclette" xmlns="http://www.topografix.com/GPX/1/1">\n  <trk>\n    <name>${escapeHtml(r.name)}</name>\n    <trkseg>\n${pts}\n    </trkseg>\n  </trk>\n</gpx>`;
+        const url = URL.createObjectURL(new Blob([xml], { type: 'application/gpx+xml' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `abicyclette-sortie-${new Date(r.startedAt).toISOString().slice(0, 10)}.gpx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function confirmDelete(btn, id) {
+        if (!btn.dataset.armed) {
+          btn.dataset.armed = '1';
+          btn.textContent = 'Sûr ?';
+          setTimeout(() => {
+            if (btn.isConnected) {
+              delete btn.dataset.armed;
+              btn.textContent = '✕';
+            }
+          }, 3000);
+          return;
+        }
+        const r = list.find((x) => x.id === id);
+        if (!r) return;
+        r.deleted = true;
+        r.pts = [];
+        r.updatedAt = Date.now();
+        save();
+        render();
+        CloudSync.schedule();
+      }
+
+      return {
+        load, render, start, stop, addPoint, show, gpx, confirmDelete,
+        isRecording: () => !!rec,
+        isAuto: () => !!rec?.auto,
+        all: () => list,
+        replaceAll: (l) => {
+          list = l;
+          save();
+          render();
+        },
+      };
+    })();
+    window.Rides = Rides;
+
+    // -------------------------------------------------------------------------
     // 18. POINT D'ENTRÉE AU CHARGEMENT DE LA PAGE
     // -------------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', async () => {
@@ -4997,6 +5500,7 @@ ${trkpts}
         AppState.poiEnabled = new Set(POI_DEFAULT);
       }
       loadMyPlaces();
+      Rides.load();
 
       initMap();
       bindUIEvents();
@@ -5006,6 +5510,7 @@ ${trkpts}
 
       renderPOIChips();
       renderMyPlaces();
+      Rides.render();
       loadPOIsForCurrentView();
       CloudSync.refreshInfo();
       CloudSync.sync(true);
@@ -5013,6 +5518,10 @@ ${trkpts}
       if (savedTheme !== 'normal') setTheme(savedTheme, true);
       AppState.preferCycleways = localStorage.getItem('abicyclette.preferCycleways') !== '0';
       document.getElementById('toggle-prefer-cycleways').checked = AppState.preferCycleways;
+      if (localStorage.getItem('abicyclette.showWater') === '0') setShowWater(false);
+      document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('on', b.dataset.theme === AppState.theme));
+      syncHomeChips();
+      updateHome();
 
       // Application installable & coque disponible hors ligne
       if ('serviceWorker' in navigator && location.protocol === 'https:') {

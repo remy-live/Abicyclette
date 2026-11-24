@@ -2,6 +2,14 @@
 
 Carte vélo et navigation GPS en une seule page web (Leaflet + MapLibre), utilisable sur téléphone et installable comme une appli.
 
+## Interface
+
+Une barre « Où va-t-on ? » (lieu, ville, ou « boulangerie », « restaurant »…), deux boutons (ma position, **Affichage**), et en bas des puces **Pistes · À voir · Manger · Eau**, la carte du trajet avec ses variantes et un gros bouton **Partir**. Le reste est rangé dans trois onglets : **Trajet**, **Lieux**, **Plus**.
+
+Pendant le guidage : la manœuvre en grand en haut, l'arrivée, la distance restante et la vitesse en bas, et deux boutons (2D/3D, voix).
+
+**Quatre styles** (bouton Affichage) : Clair, Soleil, Noir & blanc contrasté, Nuit. Les trois derniers ménagent la batterie.
+
 ## Fonctions
 
 - **Pistes cyclables d'abord** (activé par défaut) : profil BRouter « safety » qui évite les routes passantes.
@@ -18,6 +26,12 @@ Carte vélo et navigation GPS en une seule page web (Leaflet + MapLibre), utilis
   - services : réparation vélo, parking vélo, recharge VAE, toilettes, abris, pique-nique, cafés & boulangeries, campings, gares.
 - **À visiter sur le trajet** : liste des lieux à moins de 500 m du tracé, avec leur kilomètre.
 - **Mes lieux** synchronisés dans le cloud (voir plus bas).
+- **Eau sur le trajet** : « 💧 Eau dans 3,2 km » pendant le guidage, et alerte vocale au dernier point d'eau avant plus de 15 km sans.
+- **Lieux à voir annoncés** à la voix quand on passe à côté.
+- **Vent et pluie** sur le trajet (Open-Meteo) : part du trajet vent de face / dans le dos, conseil d'inverser une boucle si le vent est de face au retour.
+- **Rentrer en train** : les gares les plus proches, avec lien vers SNCF Connect pour les horaires.
+- **Mes sorties** : enregistrement GPS (automatique pendant le guidage), export GPX, synchronisées avec mes lieux.
+- **Balade visite** par durée (1 h, 2 h, 3 h), avec pause boulangerie ou café à mi-parcours.
 - **Hors ligne** : téléchargement d'une zone (tuiles, eau, lieux, pistes), import / export GPX.
 
 ## Synchroniser « Mes lieux »
