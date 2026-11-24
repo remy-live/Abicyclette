@@ -7445,6 +7445,43 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // 17 ter. BALADE VISITE (boucle par des lieux à voir)
     // -------------------------------------------------------------------------
+    // Lieux à voir sur l'anneau où passera la boucle : tuiles détaillées (z14) échantillonnées le long de
+    // trois cercles, au lieu d'une seule grande zone lue en tuiles grossières (qui ne contiennent presque rien)
+    async function ringPlaces(start, R, btn) {
+      const keys = new Map();
+      const cosL = Math.cos((start.lat * Math.PI) / 180);
+      [0.4, 0.65, 0.9].forEach((f) => {
+        const r = R * f;
+        const n = Math.max(8, Math.ceil((2 * Math.PI * r) / 2000));
+        for (let k = 0; k < n; k++) {
+          const a = (k / n) * 2 * Math.PI;
+          const lat = start.lat + (r * Math.cos(a)) / 111320;
+          const lon = start.lon + (r * Math.sin(a)) / (111320 * cosL);
+          const t = TileSource.tileXY(lat, lon, 14);
+          keys.set(`${t.x}/${t.y}`, [t.x, t.y, lat, lon]);
+        }
+      });
+      const list = [...keys.values()];
+      const out = new Map();
+      let done = 0;
+      for (let i = 0; i < list.length; i += 10) {
+        await Promise.allSettled(
+          list.slice(i, i + 10).map(async ([x, y]) => {
+            // Limites exactes de la tuile (un peu rentrées, pour ne lire qu'elle)
+            const N = 2 ** 14;
+            const lonOf = (tx) => (tx / N) * 360 - 180;
+            const latOf = (ty) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * ty) / N))) * 180) / Math.PI;
+            const e = 1e-6;
+            const { pois } = await tilePlaces(latOf(y + 1) + e, lonOf(x) + e, latOf(y) - e, lonOf(x + 1) - e, 14, 1).catch(() => ({ pois: [] }));
+            done++;
+            pois.forEach((p) => out.set(p.id, p));
+          })
+        );
+        if (btn) btn.textContent = `Recherche des lieux à voir… ${Math.round((100 * done) / list.length)} %`;
+      }
+      return [...out.values()];
+    }
+
     async function makeVisitTour() {
       if (isOfflineMode()) return showToast('Création de balade impossible hors ligne.', 'warning');
       const btn = document.getElementById('btn-make-tour');
@@ -7458,9 +7495,25 @@ ${trkpts}
         const cats = ['heritage', 'viewpoint', 'museum', 'attraction', 'nature', 'worship'];
         let found;
         try {
-          const km = R / 1000;
-          const dLat = km / 111.32, dLon = km / (111.32 * Math.cos((start.lat * Math.PI) / 180));
-          found = (await tilePlaces(start.lat - dLat, start.lon - dLon, start.lat + dLat, start.lon + dLon, 13, 25)).pois.filter((p) => cats.includes(p.cat));
+          found = (await ringPlaces(start, R, btn)).filter((p) => cats.includes(p.cat));
+          // Peu de choses dans les tuiles : on tente aussi Overpass (souvent saturé, donc sans insister)
+          if (found.filter((p) => p.name).length < 3) {
+            try {
+              btn.textContent = 'Recherche complémentaire…';
+              const parts = ['heritage', 'viewpoint', 'museum', 'attraction']
+                .flatMap((id) => POI_BY_ID[id].q)
+                .map((q) => `${q}(around:${R},${start.lat.toFixed(5)},${start.lon.toFixed(5)});`)
+                .join('');
+              const data = await Promise.race([
+                fetchOverpassWithFallback(`[out:json][timeout:12];(${parts});out center 200;`),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('lent')), 14000)),
+              ]);
+              const ids = new Set(found.map((p) => p.id));
+              found = found.concat(parsePOIElements(data.elements || [], cats).filter((p) => !ids.has(p.id)));
+            } catch {
+              /* tant pis : points de passage */
+            }
+          }
         } catch {
           const parts = cats
             .flatMap((id) => POI_BY_ID[id].q)
@@ -7481,10 +7534,6 @@ ${trkpts}
           })
           .filter((p) => p.d > R * 0.15);
 
-        if (cands.length < 2) {
-          showToast('Pas assez de lieux à voir dans le coin. Essayez une balade plus longue.', 'warning');
-          return;
-        }
         // Un lieu par secteur angulaire, puis tri par angle pour former la boucle
         const nStops = km <= 15 ? 3 : km <= 30 ? 4 : 5;
         const sectors = Array.from({ length: nStops }, () => null);
@@ -7492,13 +7541,25 @@ ${trkpts}
           const sec = Math.floor(((p.ang + Math.PI) / (2 * Math.PI)) * nStops) % nStops;
           if (!sectors[sec] || p.score > sectors[sec].score) sectors[sec] = p;
         });
-        let stops = sectors.filter(Boolean);
-        // Secteurs vides : on complète avec les meilleurs restants
-        if (stops.length < Math.min(3, cands.length)) {
-          const used = new Set(stops.map((p) => p.id));
-          stops = stops.concat(cands.filter((p) => !used.has(p.id)).sort((a, b) => b.score - a.score).slice(0, 3 - stops.length));
+        // Secteur sans lieu à voir : un simple point de passage, pour que la boucle ait quand même la bonne longueur
+        const nVisits = sectors.filter(Boolean).length;
+        if (nVisits < 2) {
+          const off = Math.random() * 2 * Math.PI; // une boucle différente à chaque essai
+          for (let k = 0; k < nStops; k++) {
+            if (sectors[k]) continue;
+            const ang = -Math.PI + ((k + 0.5) / nStops) * 2 * Math.PI + off / nStops;
+            const d = R * 0.7;
+            sectors[k] = {
+              lat: start.lat + (d * Math.cos(ang)) / 111320,
+              lon: start.lon + (d * Math.sin(ang)) / (111320 * Math.cos((start.lat * Math.PI) / 180)),
+              name: 'Point de passage', ang, geo: true,
+            };
+          }
+        } else {
+          // Assez de lieux : on laisse tomber les secteurs vides (la boucle passe par ceux qui existent)
+          for (let k = 0; k < nStops; k++) if (!sectors[k]) sectors[k] = null;
         }
-        stops.sort((a, b) => a.ang - b.ang);
+        const stops = sectors.filter(Boolean).sort((a, b) => a.ang - b.ang);
         let vias = stops.map((p) => ({ lat: p.lat, lon: p.lon, label: p.name }));
 
         // Pause boulangerie / café à mi-parcours
@@ -7521,7 +7582,12 @@ ${trkpts}
         setRouteDestination(start.lat, start.lon, 'Balade visite · retour au départ');
         renderVias();
         collapseMobileSheet();
-        showToast(`Balade : ${vias.map((p) => p.label).join(' → ')}`, 'success', 5000);
+        const named = vias.filter((v) => v.label !== 'Point de passage');
+        showToast(
+          named.length ? `Balade : ${named.map((p) => p.label).join(' → ')}` : 'Peu de lieux à voir repérés autour : voici une boucle de la bonne longueur.',
+          named.length ? 'success' : 'info',
+          5000
+        );
         await calculateBikeRoute();
       } catch {
         showToast('Serveur des lieux occupé, réessayez dans un instant.', 'warning');
