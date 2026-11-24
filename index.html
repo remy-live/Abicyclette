@@ -504,6 +504,9 @@
 
     <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col gap-2">
       <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-extrabold text-slate-800">3D</button>
+      <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-400">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path id="hud-visits-slash" d="M3 3l18 18"/></svg>
+      </button>
       <button id="btn-toggle-voice" aria-label="Activer ou couper la voix" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800">
         <svg id="icon-voice-on" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
         <svg id="icon-voice-off" class="w-6 h-6 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
@@ -627,6 +630,18 @@
           <button id="btn-poi-fewer" class="flex-1 seg sm">Essentiels</button>
           <button id="btn-poi-none" class="flex-1 seg sm">Aucun</button>
         </div>
+      </section>
+
+      <section class="space-y-1">
+        <h3 class="dp-title">Guidage</h3>
+        <label class="dp-row">
+          <span>Annoncer les lieux à voir<small>« À voir : château de… » quand on passe à côté</small></span>
+          <input id="toggle-announce-visits" type="checkbox" class="dp-switch" />
+        </label>
+        <label class="dp-row">
+          <span>Alertes points d'eau<small>avant une longue portion sans eau</small></span>
+          <input id="toggle-announce-water" type="checkbox" class="dp-switch" checked />
+        </label>
       </section>
 
       <section class="space-y-1">
@@ -1522,6 +1537,9 @@
       lastRerouteAt: 0,
       lastGuidanceRenderAt: 0,
       lastHeading: null,
+      lastGuidedLoad: null,
+      announceVisits: false,   // annonces « À voir » pendant le guidage
+      announceWater: true,     // alertes points d'eau pendant le guidage
       wakeLock: null,
       // 3D
       glOn: false,            // carte MapLibre affichée (sinon Leaflet)
@@ -1765,8 +1783,13 @@
           const c = map.getCenter();
           localStorage.setItem('abicyclette.view', JSON.stringify({ lat: c.lat, lng: c.lng, z: map.getZoom() }));
         } catch {}
-        if (AppState.isGuiding && AppState.sunMode) return; // pendant le guidage éco : pas de rechargement continu
         if (map._popup && map.hasLayer(map._popup)) return; // une fiche est ouverte : on ne touche à rien
+        if (AppState.isGuiding) {
+          const c = map.getCenter();
+          const last = AppState.lastGuidedLoad;
+          if (last && haversineDistance(last.lat, last.lng, c.lat, c.lng) < 800) return;
+          AppState.lastGuidedLoad = { lat: c.lat, lng: c.lng };
+        }
         moveTimer = setTimeout(() => {
           loadWaterPointsForCurrentView();
           loadPOIsForCurrentView();
@@ -1835,6 +1858,15 @@
           setPoiSet([...AppState.poiEnabled]);
         })
       );
+    }
+
+    function syncHudVisits() {
+      const on = AppState.announceVisits;
+      const b = document.getElementById('btn-hud-visits');
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.classList.toggle('text-slate-400', !on);
+      b.classList.toggle('text-slate-800', on);
+      document.getElementById('hud-visits-slash').style.display = on ? 'none' : '';
     }
 
     function setPoiSet(ids) {
@@ -3027,6 +3059,7 @@
       AppState.lastSpokenThreshold = null;
       AppState.guidanceStepIdx = 1;
       AppState.offRouteCount = 0;
+      AppState.lastGuidedLoad = null;
 
       document.getElementById('guidance-hud').classList.remove('hidden');
       document.body.classList.add('guiding');
@@ -3146,7 +3179,7 @@
 
       // Mode éco : on redessine l'écran au plus toutes les 3 s (hors annonces proches)
       const now = Date.now();
-      const throttle = AppState.sunMode ? 3000 : 0;
+      const throttle = AppState.sunMode ? 2000 : 0;
       if (now - AppState.lastGuidanceRenderAt >= throttle || stepDist < 60) {
         AppState.lastGuidanceRenderAt = now;
         updateGuidanceHUD(nextStep.instruction, stepDist, remDist, estSeconds, speedKmh, nextStep.turnType);
@@ -3191,7 +3224,7 @@
         const bearing = AppState.lastHeading ?? routeBearingAhead(route, snap);
         Map3D.follow(lat, lon, bearing);
       } else {
-        AppState.map.setView([lat, lon], Math.max(AppState.map.getZoom(), 16), { animate: !AppState.sunMode });
+        AppState.map.setView([lat, lon], Math.max(AppState.map.getZoom(), 16), { animate: true, duration: 0.8, easeLinearity: 1 });
       }
     }
 
@@ -3538,7 +3571,7 @@ ${trkpts}
         AppState.userMarker.setLatLng([lat, lon]);
         AppState.userAccuracyCircle.setLatLng([lat, lon]).setRadius(accuracy);
       }
-      if (AppState.glOn) Map3D.updateUser(lat, lon);
+      if (AppState.glOn && !AppState.isGuiding) Map3D.updateUser(lat, lon);
       if (Rides.isRecording()) Rides.addPoint(lat, lon, accuracy);
     }
 
@@ -3798,6 +3831,22 @@ ${trkpts}
       document.getElementById('display-backdrop').addEventListener('click', () => displayPanel.classList.add('hidden'));
       document.getElementById('layer-images').addEventListener('click', () => switchBaseLayer(AppState.lastRaster || 'cyclosm'));
       document.getElementById('toggle-color-icons').addEventListener('change', (e) => setColorIcons(e.target.checked));
+      [['toggle-announce-visits', 'announceVisits'], ['toggle-announce-water', 'announceWater']].forEach(([id, key]) =>
+        document.getElementById(id).addEventListener('change', (e) => {
+          AppState[key] = e.target.checked;
+          try {
+            localStorage.setItem('abicyclette.' + key, e.target.checked ? '1' : '0');
+          } catch {}
+          syncHudVisits();
+        })
+      );
+      // Pendant le guidage : bouton œil = annonces des lieux à voir oui/non
+      document.getElementById('btn-hud-visits').addEventListener('click', () => {
+        const t = document.getElementById('toggle-announce-visits');
+        t.checked = !t.checked;
+        t.dispatchEvent(new Event('change'));
+        showToast(t.checked ? 'Lieux à voir annoncés' : 'Plus d’annonce des lieux à voir', 'info', 1800);
+      });
       document.getElementById('toggle-color-cycleways').addEventListener('change', (e) => {
         AppState.colorCycleways = e.target.checked;
         try {
@@ -5799,6 +5848,7 @@ ${trkpts}
       }
 
       let rideCoords = null;
+      let pinsSig = '';
       function refreshOverlays() {
         const m = AppState.map3d;
         if (!m || !AppState.map3dReady || !m.getSource('route')) return;
@@ -5826,6 +5876,12 @@ ${trkpts}
         visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p), top: true, rank: 0 })));
         m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
 
+        const sig = JSON.stringify([AppState.origin, AppState.vias, AppState.dest].map((x) => x && (x.lat ? [x.lat, x.lon] : x)));
+        if (sig === pinsSig && htmlMarkers.length) {
+          if (AppState.userLocation && !AppState.isGuiding) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
+          return;
+        }
+        pinsSig = sig;
         htmlMarkers.forEach((mk) => mk.remove());
         htmlMarkers = [];
         const add = (pt, color, label) => {
@@ -5834,7 +5890,7 @@ ${trkpts}
         add(AppState.origin, '#10b981', 'D');
         AppState.vias.forEach((v, i) => add(v, '#f59e0b', String(i + 1)));
         add(AppState.dest, '#f43f5e', 'A');
-        if (AppState.userLocation) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
+        if (AppState.userLocation && !AppState.isGuiding) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
       }
 
       function updateUser(lat, lon) {
@@ -5947,20 +6003,51 @@ ${trkpts}
         return true;
       }
 
+      let lastFollowAt = 0;
+      let smoothBearing = null;
+      let markerAnim = null;
       function follow(lat, lon, bearing) {
         const m = AppState.map3d;
         if (!m) return;
-        updateUser(lat, lon);
+        const now = performance.now();
+        // Durée = temps écoulé depuis la position précédente : la carte glisse en continu jusqu'à la suivante
+        const dt = lastFollowAt ? Math.min(2500, Math.max(300, now - lastFollowAt)) : 600;
+        lastFollowAt = now;
+        // Cap lissé (le GPS tremble) ; on ignore les petites variations
+        if (smoothBearing === null) smoothBearing = bearing;
+        else {
+          let d = ((bearing - smoothBearing + 540) % 360) - 180;
+          if (Math.abs(d) < 6) d = 0;
+          smoothBearing = (smoothBearing + d * 0.5 + 360) % 360;
+        }
+        animateUser(lat, lon, dt);
         m.easeTo({
-          center: [lon, lat], bearing,
-          pitch: AppState.view3D ? 65 : 0,
-          zoom: AppState.view3D ? 17.2 : 16.5,
-          duration: AppState.sunMode ? 0 : 900,
+          center: [lon, lat], bearing: smoothBearing,
+          pitch: AppState.view3D ? 62 : 0,
+          zoom: AppState.view3D ? 17 : 16.5,
+          duration: dt, easing: (t) => t,
           padding: { top: 220, bottom: 40, left: 0, right: 0 },
+          essential: true,
         });
       }
 
+      // Le point bleu glisse au lieu de sauter
+      function animateUser(lat, lon, dt) {
+        if (!userMarker) return updateUser(lat, lon);
+        const from = userMarker.getLngLat();
+        const t0 = performance.now();
+        cancelAnimationFrame(markerAnim);
+        const step = () => {
+          const k = Math.min(1, (performance.now() - t0) / dt);
+          userMarker.setLngLat([from.lng + (lon - from.lng) * k, from.lat + (lat - from.lat) * k]);
+          if (k < 1) markerAnim = requestAnimationFrame(step);
+        };
+        markerAnim = requestAnimationFrame(step);
+      }
+
       function resetCamera() {
+        smoothBearing = null;
+        lastFollowAt = 0;
         AppState.map3d?.easeTo({ pitch: AppState.view3D ? 55 : 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
       }
 
@@ -6676,20 +6763,20 @@ ${trkpts}
         const after = ahead[1];
         const gapEnd = after ? after.along : total;
         const gap = gapEnd - next.along;
-        if (gap > 15000 && next.along - snap.along < 400 && !comp.warned.has(next.along)) {
+        if (AppState.announceWater && gap > 15000 && next.along - snap.along < 400 && !comp.warned.has(next.along)) {
           comp.warned.add(next.along);
           speakFrench(`Dernier point d'eau avant ${Math.round(gap / 1000)} kilomètres. Pensez à remplir vos bidons.`);
           showToast(`Dernier point d'eau avant ${Math.round(gap / 1000)} km`, 'warning', 5000);
         }
       } else if (remaining > 15000) {
         txt = '💧 Plus d’eau repérée sur le trajet';
-        if (!comp.warned.has('none')) {
+        if (AppState.announceWater && !comp.warned.has('none')) {
           comp.warned.add('none');
           speakFrench(`Aucun point d'eau repéré sur les ${Math.round(remaining / 1000)} prochains kilomètres.`);
         }
       }
       // Lieux à voir annoncés au passage
-      const v = comp.visits.find((x) => !comp.announced.has(x.id) && Math.abs(x.along - snap.along) < 120);
+      const v = AppState.announceVisits && comp.visits.find((x) => !comp.announced.has(x.id) && Math.abs(x.along - snap.along) < 120);
       if (v) {
         comp.announced.add(v.id);
         if (stepDist > 80) speakFrench(`À voir : ${v.name}`);
@@ -7039,6 +7126,11 @@ ${trkpts}
       document.getElementById('toggle-bike-routes').checked = AppState.showBikeRoutes;
       if (localStorage.getItem('abicyclette.colorIcons') === '1') setColorIcons(true, true);
       AppState.colorCycleways = localStorage.getItem('abicyclette.colorCycleways') !== '0';
+      AppState.announceVisits = localStorage.getItem('abicyclette.announceVisits') === '1';
+      AppState.announceWater = localStorage.getItem('abicyclette.announceWater') !== '0';
+      document.getElementById('toggle-announce-visits').checked = AppState.announceVisits;
+      document.getElementById('toggle-announce-water').checked = AppState.announceWater;
+      syncHudVisits();
       document.getElementById('toggle-color-cycleways').checked = AppState.colorCycleways;
       renderPoiToggles();
       const savedContrast = +(localStorage.getItem('abicyclette.contrast') || 0);
