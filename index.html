@@ -208,8 +208,26 @@
       #side-drawer.sheet-collapsed .sc-tile, #side-drawer.sheet-mini .sc-tile { flex: 1 0 42px; padding: 8px 0; }
       #side-drawer.sheet-collapsed .sc-edit, #side-drawer.sheet-mini .sc-edit { display: none; }
       #side-drawer:not(.sheet-collapsed):not(.sheet-mini) .sc-more { display: none; }
-      #side-drawer.sheet-collapsed #home-results { padding: 4px 4px 2px; }
-      #side-drawer.sheet-collapsed #home-route { padding: 2px 6px 4px; }
+      #side-drawer.sheet-collapsed #home-results { padding: 2px 2px 0; }
+      #side-drawer.sheet-collapsed #home-results > * + * { margin-top: 4px; }
+      #side-drawer.sheet-collapsed #home-results-title { font-size: 12px; color: #64748b; }
+      #side-drawer.sheet-collapsed #btn-close-results { width: 28px; height: 28px; font-size: 13px; }
+      #side-drawer.sheet-collapsed .res-card { width: 200px; padding: 7px 9px; gap: 4px; border-width: 1.5px; border-radius: 14px; }
+      #side-drawer.sheet-collapsed .res-card .h-10 { height: 34px; }
+      #side-drawer.sheet-collapsed .res-card .text-sm { font-size: 13px; }
+      #side-drawer.sheet-collapsed .res-card .w-11 { width: 38px; }
+      #side-drawer.sheet-collapsed #home-results-list { padding-bottom: 0; }
+      /* Trajet replié : l'essentiel seulement (choix + Démarrer) */
+      #side-drawer.sheet-collapsed #home-route { padding: 0 4px 2px; }
+      #side-drawer.sheet-collapsed #home-route > * + * { margin-top: 6px; }
+      #side-drawer.sheet-collapsed #home-weather { display: none !important; }
+      #side-drawer.sheet-collapsed #home-dest { font-size: 15px; }
+      #side-drawer.sheet-collapsed #home-dist { font-size: 12px; }
+      #side-drawer.sheet-collapsed .home-alt { padding: 5px 8px; border-radius: 13px; border-width: 1.5px; }
+      #side-drawer.sheet-collapsed .home-alt .text-lg { font-size: 15px; }
+      #side-drawer.sheet-collapsed #btn-go, #side-drawer.sheet-collapsed #btn-home-clear { height: 46px; font-size: 17px; }
+      #side-drawer.sheet-collapsed #btn-home-clear { width: 46px; }
+      #side-drawer.sheet-collapsed .sc-tile { padding: 5px 0; }
       /* Crédits de la carte : au-dessus de la pilule, pas dessous */
       body:not(.guiding) .maplibregl-ctrl-bottom-right, body:not(.guiding) .leaflet-bottom.leaflet-right { bottom: calc(96px + env(safe-area-inset-bottom)); }
       @keyframes pill-in { from { opacity: .4; transform: translateY(14px); } to { opacity: 1; transform: none; } }
