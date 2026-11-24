@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>CycloLibre — Carte Vélo, Points d'Eau & Navigation Hors Ligne</title>
+  <title>À bicyclette — Carte vélo, itinéraires, lieux & navigation hors ligne</title>
+  <meta name="theme-color" content="#059669" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
 
   <!-- Police Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -198,12 +205,84 @@
         transform: none !important;
       }
     }
+
+    /* Carte 3D (MapLibre) superposée à la carte Leaflet */
+    #map3d {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: none;
+      background: #dbe4ea;
+    }
+    body.mode-3d #map3d { display: block; }
+    body.mode-3d #map { visibility: hidden; }
+    .maplibregl-ctrl-attrib { font-size: 10px; }
+    .m3d-marker { pointer-events: auto; }
+
+    /* Puces de catégories de lieux */
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 9px; border-radius: 9999px; font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(148,163,184,.55); background: rgba(255,255,255,.75); color: #334155;
+    }
+    .chip.on { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+    .poi-icon {
+      width: 28px; height: 28px; margin-left: -14px; margin-top: -14px;
+      border-radius: 9999px; border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+
+    /* =====================================================================
+       MODE SOLEIL / ÉCONOMIE BATTERIE
+       - aucune transparence ni flou (le flou coûte cher au GPU)
+       - aucune animation
+       - contraste maximal, textes plus gros
+       ===================================================================== */
+    body.sun-mode * {
+      animation: none !important;
+      transition: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    body.sun-mode .glass-panel,
+    body.sun-mode .leaflet-popup-content-wrapper,
+    body.sun-mode .leaflet-popup-tip {
+      background: #ffffff !important;
+      border: 2px solid #000000 !important;
+      box-shadow: none !important;
+      color: #000 !important;
+    }
+    body.sun-mode .glass-dark {
+      background: #000000 !important;
+      border: 3px solid #facc15 !important;
+      box-shadow: none !important;
+    }
+    body.sun-mode .text-slate-400, body.sun-mode .text-slate-500,
+    body.sun-mode .text-slate-600, body.sun-mode .text-slate-700 { color: #111 !important; }
+    body.sun-mode .glass-dark .text-slate-300, body.sun-mode .glass-dark .text-slate-400 { color: #fff !important; }
+    body.sun-mode #hud-step-dist { color: #facc15 !important; font-size: 2.4rem; line-height: 1; }
+    body.sun-mode #hud-instruction { font-size: 1.25rem; font-weight: 800; white-space: normal; }
+    body.sun-mode #hud-icon { background: #facc15 !important; color: #000 !important; border-color: #facc15 !important; }
+    body.sun-mode .leaflet-tile-pane { filter: contrast(1.25) saturate(1.25); }
+    body.sun-mode .gps-pulse-ring { display: none; }
+    body.sun-mode #btn-sun-mode { background: #facc15 !important; color: #000 !important; border: 2px solid #000 !important; }
+    body.sun-mode .leaflet-control-attribution { background: #fff !important; }
+    body.sun-mode button { font-weight: 700; }
+    body.sun-mode .hud-label { display: none !important; }
+
+    /* Pendant le guidage, les boutons rapides passent sous le bandeau */
+    body.guiding #quick-controls { top: 196px; }
+    body.sun-mode.guiding #quick-controls { top: 232px; }
+    @media (min-width: 768px) { body.guiding #quick-controls { top: 150px; } }
   </style>
 </head>
 <body class="text-slate-800 antialiased select-none">
 
   <!-- Carte interactive plein écran -->
   <div id="map"></div>
+  <!-- Carte 3D (chargée à la demande) -->
+  <div id="map3d"></div>
 
   <!-- Bandeau supérieur de guidage GPS actif (HUD style Apple Maps) -->
   <div id="guidance-hud" class="hidden fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-40 glass-dark text-white rounded-2xl p-3.5 sm:p-4 transition-all">
@@ -218,13 +297,15 @@
         <div class="min-w-0">
           <div class="flex items-baseline gap-2">
             <span id="hud-step-dist" class="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400">-- m</span>
-            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Prochaine manœuvre</span>
+            <span class="hud-label hidden sm:inline text-xs uppercase tracking-wider text-slate-400 font-semibold">Prochaine manœuvre</span>
           </div>
           <p id="hud-instruction" class="text-sm sm:text-base font-medium text-white truncate">Suivez la piste cyclable</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2 shrink-0">
+        <!-- Bascule 2D / 3D pendant le guidage -->
+        <button id="btn-hud-3d" title="Vue 3D" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 text-xs font-bold transition">3D</button>
         <!-- Bouton synthèse vocale -->
         <button id="btn-toggle-voice" title="Activer/Couper le guidage vocal" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 transition">
           <svg id="icon-voice-on" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -278,6 +359,7 @@
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
+        <span id="eco-badge" class="hidden shrink-0 px-2 py-1 rounded-lg bg-yellow-400 text-black text-[11px] font-extrabold border-2 border-black">ÉCO</span>
         <!-- Badge statut réseau / hors-ligne -->
         <button id="btn-open-offline-badge" title="Gérer le mode hors ligne" class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 transition">
           <span id="network-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -291,11 +373,23 @@
   </div>
 
   <!-- Contrôles rapides flottants à droite -->
-  <div class="fixed right-3 top-20 md:top-4 z-20 flex flex-col gap-2">
+  <div id="quick-controls" class="fixed right-3 top-20 md:top-4 z-20 flex flex-col gap-2">
     <!-- Ma position GPS -->
     <button id="btn-locate-me" title="Ma position GPS" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
       <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+      </svg>
+    </button>
+
+    <!-- Vue 3D -->
+    <button id="btn-toggle-3d" title="Vue 3D (relief et bâtiments)" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition text-xs font-extrabold">
+      3D
+    </button>
+
+    <!-- Mode soleil / économie batterie -->
+    <button id="btn-sun-mode" title="Mode soleil & économie batterie" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-amber-600 active:scale-95 transition">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/>
       </svg>
     </button>
 
@@ -379,7 +473,7 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-base font-bold tracking-tight text-slate-900 leading-none">CycloLibre</h1>
+            <h1 class="text-base font-bold tracking-tight text-slate-900 leading-none">À bicyclette</h1>
             <p class="text-[11px] text-slate-500 font-medium mt-0.5">Carte vélo & navigation libre</p>
           </div>
         </div>
@@ -391,15 +485,18 @@
       </div>
 
       <!-- Navigation par onglets -->
-      <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
+      <div class="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
         <button data-tab="explore" class="tab-btn py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
           Explorer
         </button>
         <button data-tab="route" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
           Itinéraire
         </button>
+        <button data-tab="places" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Lieux
+        </button>
         <button data-tab="gpx" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
-          GPX & Outils
+          Outils
         </button>
       </div>
     </div>
@@ -556,6 +653,12 @@
           <div id="dest-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-40 overflow-y-auto text-xs z-30"></div>
         </div>
 
+        <!-- Étapes intermédiaires (lieux à visiter ajoutés au trajet) -->
+        <div id="vias-box" class="hidden rounded-2xl bg-white/75 border border-slate-200/80 p-3 space-y-1.5">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Étapes</div>
+          <div id="vias-list" class="space-y-1"></div>
+        </div>
+
         <!-- Sélecteur de profil vélo BRouter -->
         <div>
           <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Profil cycliste (BRouter)</label>
@@ -582,6 +685,15 @@
           </svg>
           <span>Calculer l'itinéraire vélo</span>
         </button>
+
+        <!-- Trajets proposés -->
+        <div id="route-alternatives-box" class="hidden space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Trajets proposés</h3>
+            <span class="text-[11px] text-slate-400">Touchez pour choisir</span>
+          </div>
+          <div id="route-alternatives" class="space-y-2"></div>
+        </div>
 
         <!-- Résultat de l'itinéraire : Stats, Profil SVG, Guidage, Instructions -->
         <div id="route-summary-card" class="hidden space-y-3.5">
@@ -637,6 +749,96 @@
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Feuille de route (<span id="steps-count">0</span> étapes)</h3>
             <div id="route-steps-list" class="space-y-2 max-h-60 overflow-y-auto custom-scroll pr-1"></div>
           </div>
+
+          <!-- À visiter le long du trajet -->
+          <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">À visiter sur le trajet</h3>
+                <p class="text-[11px] text-slate-600">Châteaux, points de vue, musées… à moins de 500 m</p>
+              </div>
+              <button id="btn-route-visits" class="shrink-0 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Chercher</button>
+            </div>
+            <div id="route-visits-list" class="space-y-1.5"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ONGLET LIEUX : points d'intérêt, lieux à visiter, mes lieux synchronisés -->
+      <section id="tab-places" class="hidden space-y-4">
+        <!-- Catégories de points d'intérêt -->
+        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Sur la carte</h2>
+              <p id="poi-status-text" class="text-[11px] text-slate-500">Choisissez ce que vous voulez voir</p>
+            </div>
+            <button id="btn-refresh-poi" title="Actualiser" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-amber-600 mb-1.5">À visiter</div>
+            <div id="poi-chips-visit" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-teal-700 mb-1.5">Services vélo & pratique</div>
+            <div id="poi-chips-service" class="flex flex-wrap gap-1.5"></div>
+          </div>
+        </div>
+
+        <!-- Liste des POI proches -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Autour (<span id="poi-count">0</span>)</h3>
+            <span class="text-[11px] text-slate-400">OpenStreetMap</span>
+          </div>
+          <div id="poi-list" class="space-y-2">
+            <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
+          </div>
+        </div>
+
+        <!-- Mes lieux -->
+        <div class="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Mes lieux</h2>
+              <p id="cloud-status-text" class="text-[11px] text-slate-600">Enregistrés sur cet appareil</p>
+            </div>
+            <button id="btn-cloud-sync" title="Synchroniser maintenant" class="p-2 rounded-xl bg-white/80 hover:bg-white text-rose-600 shadow-sm transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-add-place-here" class="py-2 px-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition">+ Ma position</button>
+            <button id="btn-add-place-center" class="py-2 px-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold transition">+ Centre carte</button>
+          </div>
+          <p class="text-[11px] text-slate-600">Astuce : touchez la carte puis « Ajouter à mes lieux ».</p>
+          <div id="my-places-list" class="space-y-1.5"></div>
+
+          <!-- Réglages synchronisation cloud -->
+          <details class="rounded-xl bg-white/70 border border-rose-200/70 p-2.5">
+            <summary class="text-xs font-bold text-slate-800 cursor-pointer">Synchronisation cloud (GitHub)</summary>
+            <div class="mt-2 space-y-2 text-[11px] text-slate-600">
+              <p>Vos lieux sont copiés dans un Gist <strong>privé</strong> de votre compte GitHub et retrouvés sur tous vos appareils (téléphone, ordi…).</p>
+              <ol class="list-decimal pl-4 space-y-0.5">
+                <li>Sur github.com : Settings → Developer settings → Personal access tokens → <em>Tokens (classic)</em>.</li>
+                <li>« Generate new token », cochez uniquement <strong>gist</strong>.</li>
+                <li>Collez le jeton ci-dessous, sur chaque appareil.</li>
+              </ol>
+              <input id="input-gh-token" type="password" placeholder="ghp_…" autocomplete="off" class="w-full text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 focus:outline-none focus:border-rose-500" />
+              <div class="flex gap-2">
+                <button id="btn-save-token" class="flex-1 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold">Enregistrer & synchroniser</button>
+                <button id="btn-forget-token" class="py-2 px-3 rounded-lg bg-white border border-slate-300 text-slate-700 text-xs font-semibold">Oublier</button>
+              </div>
+              <p id="cloud-gist-info" class="font-mono text-[10px] text-slate-400"></p>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -694,9 +896,28 @@
       <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
       <span>Arrivée ici</span>
     </button>
+    <button id="ctx-add-place" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-800 hover:bg-amber-500/15 hover:text-amber-700 flex items-center gap-2 transition">
+      <span class="text-sm leading-none">★</span>
+      <span>Ajouter à mes lieux</span>
+    </button>
     <button id="ctx-close" class="w-full text-left px-3 py-1.5 rounded-xl text-[11px] text-slate-400 hover:text-slate-600 mt-0.5">
       Fermer
     </button>
+  </div>
+
+  <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
+  <div id="place-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-950/45">
+    <div class="glass-panel bg-white/95 rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 id="place-modal-title" class="text-base font-bold text-slate-900">Nouveau lieu</h2>
+        <button id="btn-close-place-modal" class="p-2 rounded-xl hover:bg-slate-200/70 text-slate-500">✕</button>
+      </div>
+      <p id="place-modal-coords" class="text-[11px] font-mono text-slate-400"></p>
+      <input id="place-name" type="text" placeholder="Nom du lieu" class="w-full text-sm bg-slate-100 border border-transparent focus:border-rose-500 focus:bg-white rounded-xl px-3 py-2.5 focus:outline-none" />
+      <div id="place-cat-chips" class="flex flex-wrap gap-1.5"></div>
+      <textarea id="place-note" rows="2" placeholder="Note (facultatif)" class="w-full text-sm bg-slate-100 border border-transparent focus:border-rose-500 focus:bg-white rounded-xl px-3 py-2.5 focus:outline-none"></textarea>
+      <button id="btn-save-place" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">Enregistrer</button>
+    </div>
   </div>
 
   <!-- MODALE DÉDIÉE : MODE HORS LIGNE & TÉLÉCHARGEMENT DE ZONE -->
@@ -745,7 +966,7 @@
       <div class="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 space-y-3">
         <div>
           <h3 class="text-sm font-bold text-slate-900">Télécharger cette zone</h3>
-          <p class="text-[11px] text-slate-600">Pré-charge les tuiles CyclOSM (zooms 12 à 15), les points d'eau et les pistes cyclables autour du centre actuel de la carte.</p>
+          <p class="text-[11px] text-slate-600">Pré-charge les tuiles CyclOSM (zooms 12 à 15), les points d'eau, les lieux affichés et les pistes cyclables autour du centre actuel de la carte.</p>
         </div>
 
         <div>
@@ -824,7 +1045,7 @@
     // -------------------------------------------------------------------------
     const OfflineDB = (() => {
       const DB_NAME = 'CycloLibreOfflineDB';
-      const DB_VERSION = 1;
+      const DB_VERSION = 2;
       let dbInstance = null;
 
       function open() {
@@ -841,6 +1062,10 @@
             }
             if (!db.objectStoreNames.contains('cycleways')) {
               db.createObjectStore('cycleways', { keyPath: 'id' });
+            }
+            // v2 : points d'intérêt (services vélo, lieux à visiter)
+            if (!db.objectStoreNames.contains('poi')) {
+              db.createObjectStore('poi', { keyPath: 'id' });
             }
           };
           req.onsuccess = (e) => {
@@ -931,6 +1156,31 @@
         }
       }
 
+      async function putExtraPOIs(arr) {
+        if (!arr || !arr.length) return;
+        try {
+          const db = await open();
+          const tx = db.transaction('poi', 'readwrite');
+          const store = tx.objectStore('poi');
+          arr.forEach((p) => store.put(p));
+        } catch (err) {
+          console.warn('Erreur sauvegarde POI:', err);
+        }
+      }
+
+      async function getAllExtraPOIs() {
+        try {
+          const db = await open();
+          return new Promise((resolve) => {
+            const req = db.transaction('poi', 'readonly').objectStore('poi').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+          });
+        } catch {
+          return [];
+        }
+      }
+
       async function getStats() {
         try {
           const db = await open();
@@ -941,30 +1191,32 @@
               req.onsuccess = () => resolve(req.result || 0);
               req.onerror = () => resolve(0);
             });
-          const [tiles, pois, cycleways] = await Promise.all([
+          const [tiles, pois, cycleways, extra] = await Promise.all([
             countStore('tiles'),
             countStore('pois'),
             countStore('cycleways'),
+            countStore('poi'),
           ]);
-          return { tiles, pois, cycleways };
+          return { tiles, pois, cycleways, extra };
         } catch {
-          return { tiles: 0, pois: 0, cycleways: 0 };
+          return { tiles: 0, pois: 0, cycleways: 0, extra: 0 };
         }
       }
 
       async function clearAll() {
         const db = await open();
         return new Promise((resolve, reject) => {
-          const tx = db.transaction(['tiles', 'pois', 'cycleways'], 'readwrite');
+          const tx = db.transaction(['tiles', 'pois', 'cycleways', 'poi'], 'readwrite');
           tx.objectStore('tiles').clear();
           tx.objectStore('pois').clear();
           tx.objectStore('cycleways').clear();
+          tx.objectStore('poi').clear();
           tx.oncomplete = () => resolve(true);
           tx.onerror = (e) => reject(e.target.error);
         });
       }
 
-      return { open, getTile, putTile, putPOIs, getAllPOIs, putCycleways, getAllCycleways, getStats, clearAll };
+      return { open, getTile, putTile, putPOIs, getAllPOIs, putCycleways, getAllCycleways, putExtraPOIs, getAllExtraPOIs, getStats, clearAll };
     })();
 
     // -------------------------------------------------------------------------
@@ -1004,6 +1256,35 @@
       cancelDownloadFlag: false,
       // Clic carte temporaire
       pendingClickLatLng: null,
+      // Trajets alternatifs & étapes
+      vias: [],               // [{ lat, lon, label }]
+      alternatives: [],       // liste de routes candidates
+      selectedAltIdx: 0,
+      altPolylines: [],
+      viaMarkers: [],
+      // Guidage avancé
+      guidanceStepIdx: 1,
+      offRouteCount: 0,
+      lastRerouteAt: 0,
+      lastGuidanceRenderAt: 0,
+      lastHeading: null,
+      wakeLock: null,
+      // 3D
+      is3D: false,
+      map3d: null,
+      map3dReady: false,
+      // Mode soleil / économie batterie
+      sunMode: false,
+      // Points d'intérêt
+      poiEnabled: new Set(),
+      poiLayer: null,
+      poiPoints: [],
+      // Mes lieux (synchronisés)
+      myPlaces: [],
+      myPlacesLayer: null,
+      editingPlaceId: null,
+      pendingPlaceLatLng: null,
+      pendingPlaceCat: 'favori',
     };
 
     // -------------------------------------------------------------------------
@@ -1187,20 +1468,27 @@
       AppState.baseLayers.cyclosm.addTo(map);
       AppState.waterMarkersLayer = L.layerGroup().addTo(map);
       AppState.cyclewaysLayer = L.layerGroup().addTo(map);
+      AppState.poiLayer = L.layerGroup().addTo(map);
+      AppState.myPlacesLayer = L.layerGroup().addTo(map);
       AppState.map = map;
 
       // Chargement initial des points d'eau
       loadWaterPointsForCurrentView();
 
       // Actualisation avec anti-rebond au déplacement de la carte
-      const debouncedMoveHandler = debounce(() => {
-        loadWaterPointsForCurrentView();
-        if (AppState.cyclewaysEnabled) {
-          loadCyclewaysForCurrentView();
-        }
-      }, 750);
-
-      map.on('moveend', debouncedMoveHandler);
+      // En mode éco, on attend plus longtemps avant de recharger (moins de réseau = moins de batterie)
+      let moveTimer = null;
+      map.on('moveend', () => {
+        clearTimeout(moveTimer);
+        if (AppState.isGuiding && AppState.sunMode) return; // pendant le guidage éco : pas de rechargement continu
+        moveTimer = setTimeout(() => {
+          loadWaterPointsForCurrentView();
+          loadPOIsForCurrentView();
+          if (AppState.cyclewaysEnabled) {
+            loadCyclewaysForCurrentView();
+          }
+        }, AppState.sunMode ? 2500 : 750);
+      });
 
       // Clic sur la carte pour menu "Départ ici / Arrivée ici"
       map.on('click', (e) => {
@@ -1403,6 +1691,8 @@
         AppState.waterMarkersLayer.addLayer(marker);
       });
 
+      if (AppState.is3D) Map3D.refreshOverlays();
+
       // Mise à jour de la liste latérale
       document.getElementById('water-count').textContent = sorted.length;
       const listEl = document.getElementById('water-list');
@@ -1430,8 +1720,19 @@
     }
 
     window.focusWaterPoint = function (lat, lon) {
-      AppState.map.flyTo([lat, lon], 16, { duration: 0.8 });
+      flyToActive(lat, lon, 16);
     };
+
+    // Centre la carte affichée (2D ou 3D)
+    function flyToActive(lat, lon, zoom) {
+      if (AppState.is3D && AppState.map3d) {
+        AppState.map3d.flyTo({ center: [lon, lat], zoom, duration: AppState.sunMode ? 0 : 900 });
+      } else if (AppState.sunMode) {
+        AppState.map.setView([lat, lon], zoom, { animate: false });
+      } else {
+        AppState.map.flyTo([lat, lon], zoom, { duration: 0.8 });
+      }
+    }
 
     window.routeToWaterPoint = function (lat, lon, label) {
       AppState.map.closePopup();
@@ -1616,6 +1917,7 @@
       document.getElementById('input-origin').value = label;
       if (AppState.originMarker) AppState.map.removeLayer(AppState.originMarker);
       AppState.originMarker = L.marker([lat, lon], { icon: createPinIcon('#10b981', 'D') }).addTo(AppState.map);
+      if (AppState.is3D) Map3D.refreshOverlays();
     }
 
     function setRouteDestination(lat, lon, label) {
@@ -1623,12 +1925,13 @@
       document.getElementById('input-dest').value = label;
       if (AppState.destMarker) AppState.map.removeLayer(AppState.destMarker);
       AppState.destMarker = L.marker([lat, lon], { icon: createPinIcon('#f43f5e', 'A') }).addTo(AppState.map);
+      if (AppState.is3D) Map3D.refreshOverlays();
     }
 
     // -------------------------------------------------------------------------
     // 8. CALCUL D'ITINÉRAIRE VÉLO (BROUTER + REPLI OSRM) & PROFIL SVG
     // -------------------------------------------------------------------------
-    async function calculateBikeRoute() {
+    async function calculateBikeRoute(opts = {}) {
       if (!AppState.origin || !AppState.dest) {
         showToast('Veuillez sélectionner un point de départ et une destination.', 'warning');
         return;
@@ -1640,16 +1943,25 @@
 
       const btn = document.getElementById('btn-calculate-route');
       btn.disabled = true;
-      btn.innerHTML = `<span class="animate-pulse">Calcul de l'itinéraire vélo...</span>`;
+      btn.innerHTML = `<span class="animate-pulse">Calcul des trajets vélo...</span>`;
+
+      const points = [AppState.origin, ...AppState.vias, AppState.dest];
+      // En reroutage pendant le guidage, un seul trajet suffit (économie réseau & batterie)
+      const altCount = opts.single ? 1 : 3;
 
       try {
-        const routeData = await fetchBRouterRoute(AppState.origin, AppState.dest, AppState.selectedProfile);
-        applyCalculatedRoute(routeData);
+        const settled = await Promise.allSettled(
+          Array.from({ length: altCount }, (_, idx) => fetchBRouterRoute(points, AppState.selectedProfile, idx))
+        );
+        let routes = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+        if (!routes.length) throw new Error('BRouter : aucun trajet');
+        routes = dedupeRoutes(routes);
+        setAlternatives(routes, opts.keepView);
       } catch (brouterErr) {
         console.warn('BRouter indisponible, repli sur OSRM:', brouterErr);
         try {
-          const osrmData = await fetchOSRMFallbackRoute(AppState.origin, AppState.dest);
-          applyCalculatedRoute(osrmData);
+          const osrmRoutes = await fetchOSRMFallbackRoute(points, !opts.single);
+          setAlternatives(osrmRoutes, opts.keepView);
           showToast('Itinéraire calculé via le moteur de secours OSRM.', 'info');
         } catch (osrmErr) {
           showToast("Impossible de calculer l'itinéraire (réseau ou zone non couverte).", 'error');
@@ -1664,10 +1976,23 @@
       }
     }
 
-    async function fetchBRouterRoute(origin, dest, profile) {
-      const url = `https://brouter.de/brouter?lonlats=${origin.lon},${origin.lat}|${dest.lon},${dest.lat}&profile=${profile}&alternativeidx=0&format=geojson`;
+    // Supprime les trajets quasi identiques renvoyés par BRouter
+    function dedupeRoutes(routes) {
+      const kept = [];
+      routes.forEach((r) => {
+        const twin = kept.some(
+          (k) => Math.abs(k.distance - r.distance) / Math.max(1, k.distance) < 0.012 && Math.abs(k.ascent - r.ascent) < 8
+        );
+        if (!twin) kept.push(r);
+      });
+      return kept;
+    }
+
+    async function fetchBRouterRoute(points, profile, altIdx = 0) {
+      const lonlats = points.map((p) => `${p.lon.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
+      const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=${profile}&alternativeidx=${altIdx}&format=geojson`;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 14000);
+      const timeout = setTimeout(() => controller.abort(), 16000);
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeout);
       if (!res.ok) throw new Error('BRouter HTTP ' + res.status);
@@ -1698,45 +2023,52 @@
         ascent: Math.round(parseFloat(props['filtered ascend']) || ascent),
         descent,
         steps,
+        altIdx,
         source: `BRouter (${profile})`,
       };
     }
 
-    async function fetchOSRMFallbackRoute(origin, dest) {
-      const url = `https://router.project-osrm.org/route/v1/bike/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson&steps=true`;
+    async function fetchOSRMFallbackRoute(points, withAlternatives = true) {
+      const path = points.map((p) => `${p.lon},${p.lat}`).join(';');
+      const alt = withAlternatives && points.length === 2 ? '&alternatives=3' : '';
+      const url = `https://router.project-osrm.org/route/v1/bike/${path}?overview=full&geometries=geojson&steps=true${alt}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('OSRM HTTP ' + res.status);
       const data = await res.json();
-      const route = data.routes?.[0];
-      if (!route) throw new Error('Aucune route OSRM');
+      if (!data.routes?.length) throw new Error('Aucune route OSRM');
 
-      const rawCoords = route.geometry.coordinates.map((c) => [c[1], c[0], 0]);
-      // Enrichissement altimétrique léger via Open-Meteo (échantillonné)
-      const coords = await enrichCoordsWithElevation(rawCoords);
-      const { ascent, descent } = computeElevationGainLoss(coords);
+      const out = [];
+      for (const [idx, route] of data.routes.slice(0, 3).entries()) {
+        const rawCoords = route.geometry.coordinates.map((c) => [c[1], c[0], 0]);
+        // Enrichissement altimétrique léger via Open-Meteo (échantillonné)
+        const coords = await enrichCoordsWithElevation(rawCoords);
+        const { ascent, descent } = computeElevationGainLoss(coords);
 
-      const steps = [];
-      (route.legs || []).forEach((leg) => {
-        (leg.steps || []).forEach((s) => {
-          steps.push({
-            lat: s.maneuver.location[1],
-            lon: s.maneuver.location[0],
-            distance: s.distance,
-            instruction: formatOSRMStepFrench(s),
-            turnType: s.maneuver.modifier || s.maneuver.type || 'straight',
+        const steps = [];
+        (route.legs || []).forEach((leg) => {
+          (leg.steps || []).forEach((s) => {
+            steps.push({
+              lat: s.maneuver.location[1],
+              lon: s.maneuver.location[0],
+              distance: s.distance,
+              instruction: formatOSRMStepFrench(s),
+              turnType: s.maneuver.modifier || s.maneuver.type || 'straight',
+            });
           });
         });
-      });
 
-      return {
-        coords,
-        distance: route.distance,
-        duration: route.duration,
-        ascent,
-        descent,
-        steps,
-        source: 'OSRM Vélo',
-      };
+        out.push({
+          coords,
+          distance: route.distance,
+          duration: route.distance / 4.5, // OSRM « bike » public renvoie souvent des durées voiture
+          ascent,
+          descent,
+          steps,
+          altIdx: idx,
+          source: 'OSRM Vélo',
+        });
+      }
+      return out;
     }
 
     async function enrichCoordsWithElevation(coords) {
@@ -1855,33 +2187,136 @@
       return `Continuer tout droit${street}`;
     }
 
-    function applyCalculatedRoute(routeData) {
+    // Styles du tracé : normal ou très contrasté (mode soleil)
+    function routeStyles() {
+      if (AppState.sunMode) {
+        return {
+          outline: { color: '#000000', weight: 13, opacity: 1 },
+          main: { color: '#ff00b4', weight: 7, opacity: 1 },
+          alt: { color: '#000000', weight: 5, opacity: 0.55, dashArray: '2 9' },
+        };
+      }
+      return {
+        outline: { color: '#ffffff', weight: 9, opacity: 0.9 },
+        main: { color: '#059669', weight: 5.5, opacity: 0.95 },
+        alt: { color: '#64748b', weight: 5, opacity: 0.6, dashArray: '1 8' },
+      };
+    }
+
+    // Précalcule les distances cumulées le long du tracé (pour le guidage)
+    function computeCumDist(coords) {
+      const cum = [0];
+      for (let i = 1; i < coords.length; i++) {
+        cum.push(cum[i - 1] + haversineDistance(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]));
+      }
+      return cum;
+    }
+
+    function setAlternatives(routes, keepView = false) {
+      AppState.alternatives = routes;
+      // Étiquettes : le plus court, le plus plat, le plus rapide
+      if (routes.length > 1) {
+        const minBy = (key) => routes.reduce((best, r) => (r[key] < best[key] ? r : best), routes[0]);
+        routes.forEach((r) => (r.tags = []));
+        minBy('distance').tags.push('Le plus court');
+        minBy('ascent').tags.push('Le plus plat');
+        minBy('duration').tags.push('Le plus rapide');
+      } else if (routes[0]) {
+        routes[0].tags = [];
+      }
+      selectAlternative(0, keepView);
+    }
+
+    function selectAlternative(idx, keepView = false) {
+      const route = AppState.alternatives[idx];
+      if (!route) return;
+      AppState.selectedAltIdx = idx;
+      applyCalculatedRoute(route, keepView);
+      drawAlternativePolylines();
+      renderAlternativesList();
+      if (AppState.is3D) Map3D.refreshOverlays();
+    }
+
+    function drawAlternativePolylines() {
+      AppState.altPolylines.forEach((l) => AppState.map.removeLayer(l));
+      AppState.altPolylines = [];
+      const st = routeStyles();
+      AppState.alternatives.forEach((r, idx) => {
+        if (idx === AppState.selectedAltIdx) return;
+        const line = L.polyline(r.coords.map((c) => [c[0], c[1]]), { ...st.alt, lineCap: 'round' }).addTo(AppState.map);
+        // Zone de clic plus large, invisible
+        const hit = L.polyline(r.coords.map((c) => [c[0], c[1]]), { color: '#000', opacity: 0, weight: 22 }).addTo(AppState.map);
+        hit.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          selectAlternative(idx, true);
+        });
+        AppState.altPolylines.push(line, hit);
+      });
+      // Le trajet choisi reste au-dessus
+      AppState.routeOutlinePolyline?.bringToFront();
+      AppState.routePolyline?.bringToFront();
+    }
+
+    function renderAlternativesList() {
+      const box = document.getElementById('route-alternatives-box');
+      const list = document.getElementById('route-alternatives');
+      const alts = AppState.alternatives;
+      if (alts.length < 2) {
+        box.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+      }
+      box.classList.remove('hidden');
+      list.innerHTML = alts
+        .map((r, idx) => {
+          const sel = idx === AppState.selectedAltIdx;
+          const tags = (r.tags || [])
+            .map((t) => `<span class="px-1.5 py-0.5 rounded-md ${sel ? 'bg-white/20 text-white' : 'bg-emerald-500/15 text-emerald-700'} text-[10px] font-bold">${t}</span>`)
+            .join(' ');
+          return `
+          <button data-alt="${idx}" class="alt-card w-full text-left p-2.5 rounded-2xl border-2 transition ${sel ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white/80 border-slate-200 text-slate-800 hover:border-emerald-400'}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold">${idx === 0 ? 'Recommandé' : 'Variante ' + idx}</span>
+              <span class="text-sm font-extrabold">${formatDuration(r.duration)}</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 mt-0.5">
+              <span class="text-[11px] ${sel ? 'text-emerald-50' : 'text-slate-500'}">${formatDistance(r.distance)} • D+ ${r.ascent} m</span>
+              <span class="flex gap-1 flex-wrap justify-end">${tags}</span>
+            </div>
+          </button>`;
+        })
+        .join('');
+      list.querySelectorAll('.alt-card').forEach((b) =>
+        b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.alt, 10), true))
+      );
+    }
+
+    function clearAlternativeLayers() {
+      AppState.altPolylines.forEach((l) => AppState.map.removeLayer(l));
+      AppState.altPolylines = [];
+      AppState.alternatives = [];
+      renderAlternativesList();
+    }
+
+    function applyCalculatedRoute(routeData, keepView = false) {
+      routeData.cumDist = computeCumDist(routeData.coords);
       AppState.currentRoute = routeData;
+      AppState.guidanceStepIdx = 1;
 
       // Nettoyage tracé précédent
       if (AppState.routeOutlinePolyline) AppState.map.removeLayer(AppState.routeOutlinePolyline);
       if (AppState.routePolyline) AppState.map.removeLayer(AppState.routePolyline);
 
       const latLngs = routeData.coords.map((c) => [c[0], c[1]]);
+      const st = routeStyles();
 
-      // Tracé avec bordure blanche style Apple Maps
-      AppState.routeOutlinePolyline = L.polyline(latLngs, {
-        color: '#ffffff',
-        weight: 9,
-        opacity: 0.9,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(AppState.map);
+      // Tracé avec bordure (blanche, ou noire en mode soleil)
+      AppState.routeOutlinePolyline = L.polyline(latLngs, { ...st.outline, lineCap: 'round', lineJoin: 'round' }).addTo(AppState.map);
+      AppState.routePolyline = L.polyline(latLngs, { ...st.main, lineCap: 'round', lineJoin: 'round' }).addTo(AppState.map);
 
-      AppState.routePolyline = L.polyline(latLngs, {
-        color: '#059669',
-        weight: 5.5,
-        opacity: 0.95,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(AppState.map);
-
-      AppState.map.fitBounds(AppState.routePolyline.getBounds(), { padding: [55, 55] });
+      if (!keepView && !AppState.isGuiding) {
+        AppState.map.fitBounds(AppState.routePolyline.getBounds(), { padding: [55, 55] });
+      }
 
       // Mise à jour UI
       document.getElementById('route-summary-card').classList.remove('hidden');
@@ -1889,9 +2324,69 @@
       document.getElementById('stat-distance').textContent = formatDistance(routeData.distance);
       document.getElementById('stat-duration').textContent = formatDuration(routeData.duration);
       document.getElementById('stat-elevation').textContent = `+${routeData.ascent} / -${routeData.descent} m`;
+      document.getElementById('route-visits-list').innerHTML = '';
 
       renderElevationChart(routeData.coords, routeData.distance);
       renderRouteSteps(routeData.steps);
+      if (AppState.is3D) Map3D.refreshOverlays();
+    }
+
+    // ----- Étapes intermédiaires (via) -----
+    function addVia(lat, lon, label) {
+      if (!AppState.origin || !AppState.dest) {
+        // Pas encore de trajet : la visite devient la destination
+        setRouteDestination(lat, lon, label);
+        if (!AppState.origin) {
+          const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+          setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
+        }
+      } else {
+        // Insère l'étape là où elle rallonge le moins le trajet
+        const seq = [AppState.origin, ...AppState.vias, AppState.dest];
+        let bestPos = 0;
+        let bestCost = Infinity;
+        for (let i = 0; i < seq.length - 1; i++) {
+          const a = seq[i];
+          const b = seq[i + 1];
+          const cost =
+            haversineDistance(a.lat, a.lon, lat, lon) + haversineDistance(lat, lon, b.lat, b.lon) - haversineDistance(a.lat, a.lon, b.lat, b.lon);
+          if (cost < bestCost) {
+            bestCost = cost;
+            bestPos = i;
+          }
+        }
+        AppState.vias.splice(bestPos, 0, { lat, lon, label });
+      }
+      renderVias();
+      switchSidebarTab('route');
+      expandMobileSheetIfCollapsed();
+      calculateBikeRoute();
+    }
+
+    window.removeVia = function (idx) {
+      AppState.vias.splice(idx, 1);
+      renderVias();
+      if (AppState.origin && AppState.dest) calculateBikeRoute({ keepView: true });
+    };
+
+    function renderVias() {
+      AppState.viaMarkers.forEach((m) => AppState.map.removeLayer(m));
+      AppState.viaMarkers = AppState.vias.map((v, i) =>
+        L.marker([v.lat, v.lon], { icon: createPinIcon('#f59e0b', String(i + 1)) }).addTo(AppState.map)
+      );
+      const box = document.getElementById('vias-box');
+      box.classList.toggle('hidden', !AppState.vias.length);
+      document.getElementById('vias-list').innerHTML = AppState.vias
+        .map(
+          (v, i) => `
+          <div class="flex items-center gap-2 text-xs">
+            <span class="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>
+            <span class="flex-1 truncate font-semibold text-slate-800">${escapeHtml(v.label)}</span>
+            <button onclick="removeVia(${i})" class="px-2 py-0.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50">✕</button>
+          </div>`
+        )
+        .join('');
+      if (AppState.is3D) Map3D.refreshOverlays();
     }
 
     function renderElevationChart(coords, totalDistance) {
@@ -2019,7 +2514,7 @@
       listEl.innerHTML = steps
         .map(
           (s) => `
-          <div onclick="AppState.map.flyTo([${s.lat}, ${s.lon}], 16)" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100 cursor-pointer transition">
+          <div onclick="flyToActive(${s.lat}, ${s.lon}, 16)" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100 cursor-pointer transition">
             <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
               ${getTurnSvgIcon(s.turnType)}
             </div>
@@ -2048,6 +2543,49 @@
       }
     }
 
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator && !AppState.wakeLock) {
+          AppState.wakeLock = await navigator.wakeLock.request('screen');
+          AppState.wakeLock.addEventListener('release', () => (AppState.wakeLock = null));
+        }
+      } catch {
+        /* non supporté ou refusé : sans gravité */
+      }
+    }
+
+    function releaseWakeLock() {
+      try {
+        AppState.wakeLock?.release();
+      } catch {}
+      AppState.wakeLock = null;
+    }
+
+    function geoWatchOptions() {
+      // Mode éco : positions moins fréquentes, mais toujours GPS (indispensable à vélo)
+      return AppState.sunMode
+        ? { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        : { enableHighAccuracy: true, maximumAge: 1500, timeout: 10000 };
+    }
+
+    function startGeoWatch() {
+      if (AppState.watchId !== null) navigator.geolocation.clearWatch(AppState.watchId);
+      AppState.watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+          if (heading != null && !Number.isNaN(heading) && (speed || 0) > 1) AppState.lastHeading = heading;
+          updateUserGPSMarker(latitude, longitude, accuracy);
+          processLiveGuidancePosition(latitude, longitude, speed);
+        },
+        (err) => {
+          // Un simple délai dépassé (arrêt au feu, tunnel…) n'est pas signalé
+          if (err.code === 3) return;
+          showToast(err.code === 1 ? 'Accès au GPS refusé.' : 'Signal GPS faible.', 'warning');
+        },
+        geoWatchOptions()
+      );
+    }
+
     function startLiveGuidance() {
       if (!AppState.currentRoute) {
         showToast('Calculez ou importez un itinéraire avant de démarrer le guidage.', 'warning');
@@ -2061,29 +2599,22 @@
       AppState.isGuiding = true;
       AppState.lastSpokenStepIndex = -1;
       AppState.lastSpokenThreshold = null;
+      AppState.guidanceStepIdx = 1;
+      AppState.offRouteCount = 0;
 
       document.getElementById('guidance-hud').classList.remove('hidden');
+      document.body.classList.add('guiding');
       document.getElementById('top-search-container').classList.add('hidden');
       collapseMobileSheet();
+      requestWakeLock();
 
       const firstStep = AppState.currentRoute.steps[1] || AppState.currentRoute.steps[0];
       if (firstStep) {
-        updateGuidanceHUD(firstStep.instruction, firstStep.distance, AppState.currentRoute.distance, AppState.currentRoute.duration, 0);
+        updateGuidanceHUD(firstStep.instruction, firstStep.distance, AppState.currentRoute.distance, AppState.currentRoute.duration, 0, firstStep.turnType);
         speakFrench(`Guidage démarré. ${firstStep.instruction}`);
       }
 
-      AppState.watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const { latitude, longitude, accuracy, speed } = pos.coords;
-          updateUserGPSMarker(latitude, longitude, accuracy);
-          AppState.map.setView([latitude, longitude], Math.max(AppState.map.getZoom(), 16));
-          processLiveGuidancePosition(latitude, longitude, speed);
-        },
-        (err) => {
-          showToast('Signal GPS faible ou refusé : ' + err.message, 'warning');
-        },
-        { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
-      );
+      startGeoWatch();
     }
 
     function stopLiveGuidance() {
@@ -2093,48 +2624,132 @@
         AppState.watchId = null;
       }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      releaseWakeLock();
 
       document.getElementById('guidance-hud').classList.add('hidden');
+      document.body.classList.remove('guiding');
       document.getElementById('top-search-container').classList.remove('hidden');
+      if (AppState.is3D) Map3D.resetCamera();
       showToast('Guidage GPS arrêté.', 'info');
+    }
+
+    // Projette la position sur le tracé : index du segment le plus proche et écart en mètres
+    function snapToRoute(lat, lon, route) {
+      const coords = route.coords;
+      const kx = 111320 * Math.cos((lat * Math.PI) / 180);
+      const ky = 110540;
+      let best = { dist: Infinity, idx: 0, t: 0 };
+      for (let i = 0; i < coords.length - 1; i++) {
+        const ax = (coords[i][1] - lon) * kx;
+        const ay = (coords[i][0] - lat) * ky;
+        const bx = (coords[i + 1][1] - lon) * kx;
+        const by = (coords[i + 1][0] - lat) * ky;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const len2 = dx * dx + dy * dy || 1e-9;
+        const t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+        const px = ax + t * dx;
+        const py = ay + t * dy;
+        const d = Math.sqrt(px * px + py * py);
+        if (d < best.dist) best = { dist: d, idx: i, t };
+      }
+      const segLen = route.cumDist[best.idx + 1] - route.cumDist[best.idx];
+      best.along = route.cumDist[best.idx] + best.t * segLen;
+      return best;
+    }
+
+    // Distance le long du tracé jusqu'à chaque étape (calculée une fois)
+    function ensureStepAlong(route) {
+      if (route._stepsAlong) return;
+      route._stepsAlong = route.steps.map((s) => snapToRoute(s.lat, s.lon, route).along);
     }
 
     function processLiveGuidancePosition(lat, lon, speedMs) {
       const route = AppState.currentRoute;
       if (!route || !route.steps.length) return;
+      ensureStepAlong(route);
 
-      // Trouver la prochaine étape pertinente devant l'utilisateur
-      let nextStepIdx = 0;
-      let minDist = Infinity;
-      for (let i = 1; i < route.steps.length; i++) {
-        const d = haversineDistance(lat, lon, route.steps[i].lat, route.steps[i].lon);
-        if (d < minDist) {
-          minDist = d;
-          nextStepIdx = i;
-        }
+      const snap = snapToRoute(lat, lon, route);
+
+      // --- Hors itinéraire : recalcul automatique depuis la position actuelle ---
+      if (snap.dist > 55) AppState.offRouteCount++;
+      else AppState.offRouteCount = 0;
+      if (AppState.offRouteCount >= 3 && !isOfflineMode() && Date.now() - AppState.lastRerouteAt > 25000) {
+        AppState.lastRerouteAt = Date.now();
+        AppState.offRouteCount = 0;
+        speakFrench('Itinéraire recalculé.');
+        showToast('Vous avez quitté le tracé : recalcul…', 'warning', 2500);
+        // On retire les étapes déjà dépassées le long de l'ancien tracé
+        AppState.vias = AppState.vias.filter((v) => snapToRoute(v.lat, v.lon, route).along > snap.along);
+        renderVias();
+        setRouteOrigin(lat, lon, 'Ma position GPS');
+        calculateBikeRoute({ single: true, keepView: true });
+        return;
       }
 
-      const nextStep = route.steps[nextStepIdx];
-      const destPt = route.coords[route.coords.length - 1];
-      const remDist = haversineDistance(lat, lon, destPt[0], destPt[1]);
+      // --- Prochaine manœuvre : première étape devant nous le long du tracé ---
+      let idx = Math.max(1, AppState.guidanceStepIdx);
+      while (idx < route.steps.length - 1 && route._stepsAlong[idx] < snap.along + 8) idx++;
+      AppState.guidanceStepIdx = idx;
+      const nextStep = route.steps[idx];
+      const stepDist = Math.max(0, route._stepsAlong[idx] - snap.along);
+      const remDist = Math.max(0, route.distance - snap.along);
       const speedKmh = speedMs ? Math.round(speedMs * 3.6) : 0;
       const estSeconds = remDist / Math.max(3.5, speedMs || 4.8);
 
-      updateGuidanceHUD(nextStep.instruction, minDist, remDist, estSeconds, speedKmh);
+      // Mode éco : on redessine l'écran au plus toutes les 3 s (hors annonces proches)
+      const now = Date.now();
+      const throttle = AppState.sunMode ? 3000 : 0;
+      if (now - AppState.lastGuidanceRenderAt >= throttle || stepDist < 60) {
+        AppState.lastGuidanceRenderAt = now;
+        updateGuidanceHUD(nextStep.instruction, stepDist, remDist, estSeconds, speedKmh, nextStep.turnType);
+        followCamera(lat, lon, route, snap);
+      }
 
-      // Annonces vocales intelligentes à 200m et 40m
-      if (minDist <= 45 && (AppState.lastSpokenStepIndex !== nextStepIdx || AppState.lastSpokenThreshold !== 'now')) {
-        AppState.lastSpokenStepIndex = nextStepIdx;
+      // Arrivée
+      if (nextStep.turnType === 'arrive' && stepDist < 25) {
+        if (AppState.lastSpokenThreshold !== 'arrived') {
+          AppState.lastSpokenThreshold = 'arrived';
+          speakFrench('Vous êtes arrivé.');
+          showToast('Arrivée !', 'success');
+        }
+        return;
+      }
+
+      // Annonces vocales à ~200 m puis juste avant la manœuvre
+      if (stepDist <= 40 && (AppState.lastSpokenStepIndex !== idx || AppState.lastSpokenThreshold !== 'now')) {
+        AppState.lastSpokenStepIndex = idx;
         AppState.lastSpokenThreshold = 'now';
         speakFrench(nextStep.instruction);
-      } else if (minDist > 45 && minDist <= 200 && AppState.lastSpokenStepIndex !== nextStepIdx) {
-        AppState.lastSpokenStepIndex = nextStepIdx;
+      } else if (stepDist > 40 && stepDist <= 200 && AppState.lastSpokenStepIndex !== idx) {
+        AppState.lastSpokenStepIndex = idx;
         AppState.lastSpokenThreshold = '200m';
-        speakFrench(`Dans ${Math.round(minDist)} mètres, ${nextStep.instruction}`);
+        speakFrench(`Dans ${Math.round(stepDist / 10) * 10} mètres, ${nextStep.instruction}`);
       }
     }
 
-    function updateGuidanceHUD(instruction, stepDist, remDist, remSeconds, speedKmh) {
+    // Cap de la route devant le cycliste (sert à orienter la vue 3D)
+    function routeBearingAhead(route, snap) {
+      const target = snap.along + 40;
+      let j = snap.idx + 1;
+      while (j < route.coords.length - 1 && route.cumDist[j] < target) j++;
+      const a = route.coords[snap.idx];
+      const b = route.coords[j];
+      return computeBearing(a[0], a[1], b[0], b[1]);
+    }
+
+    function followCamera(lat, lon, route, snap) {
+      if (AppState.is3D && AppState.map3dReady) {
+        const bearing = AppState.lastHeading ?? routeBearingAhead(route, snap);
+        Map3D.follow(lat, lon, bearing);
+      } else {
+        AppState.map.setView([lat, lon], Math.max(AppState.map.getZoom(), 16), { animate: !AppState.sunMode });
+      }
+    }
+
+    function updateGuidanceHUD(instruction, stepDist, remDist, remSeconds, speedKmh, turnType = 'straight') {
+      const iconBox = document.getElementById('hud-icon');
+      iconBox.innerHTML = getTurnSvgIcon(turnType).replace('w-4 h-4', 'w-7 h-7').replace(/text-(emerald|rose|slate)-\d+/, 'text-current');
       document.getElementById('hud-step-dist').textContent = formatDistance(stepDist);
       document.getElementById('hud-instruction').textContent = instruction;
       document.getElementById('hud-rem-dist').textContent = formatDistance(remDist);
@@ -2161,9 +2776,9 @@
         .join('\n');
 
       const gpxXml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="CycloLibre" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="A bicyclette" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
-    <name>Itinéraire CycloLibre</name>
+    <name>Itinéraire À bicyclette</name>
     <time>${new Date().toISOString()}</time>
   </metadata>
   <trk>
@@ -2178,7 +2793,7 @@ ${trkpts}
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cyclolibre-itineraire-${new Date().toISOString().slice(0, 10)}.gpx`;
+      a.download = `abicyclette-itineraire-${new Date().toISOString().slice(0, 10)}.gpx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -2217,8 +2832,10 @@ ${trkpts}
           setRouteOrigin(coords[0][0], coords[0][1], `Départ (${trackName})`);
           setRouteDestination(coords[coords.length - 1][0], coords[coords.length - 1][1], `Arrivée (${trackName})`);
 
+          AppState.vias = [];
+          renderVias();
           const steps = generateTurnByTurnStepsFromCoords(coords);
-          applyCalculatedRoute({
+          setAlternatives([{
             coords,
             distance,
             duration: Math.round(distance / 4.8),
@@ -2226,7 +2843,7 @@ ${trkpts}
             descent,
             steps,
             source: 'Trace GPX importée',
-          });
+          }]);
 
           switchSidebarTab('route');
           showToast(`Trace GPX "${trackName}" chargée (${formatDistance(distance)}).`, 'success');
@@ -2373,6 +2990,13 @@ ${trkpts}
             }
           });
           await OfflineDB.putCycleways(ways);
+
+          // Lieux à visiter & services des catégories affichées
+          if (AppState.poiEnabled.size) {
+            progressLabel.textContent = 'Sauvegarde des lieux…';
+            const poiData2 = await fetchOverpassWithFallback(buildPOIQuery(s, w, n, e, 400));
+            await OfflineDB.putExtraPOIs(parsePOIElements(poiData2.elements || []));
+          }
         } catch {
           // Continue même si Overpass timeout
         }
@@ -2393,7 +3017,7 @@ ${trkpts}
     async function refreshOfflineStatsUI() {
       const stats = await OfflineDB.getStats();
       document.getElementById('cache-stat-tiles').textContent = `${stats.tiles} tuiles`;
-      document.getElementById('cache-stat-pois').textContent = `${stats.pois} points d'eau / ${stats.cycleways} pistes`;
+      document.getElementById('cache-stat-pois').textContent = `${stats.pois} points d'eau / ${stats.extra} lieux / ${stats.cycleways} pistes`;
       document.getElementById('offline-summary-mini').textContent = `${stats.tiles} tuiles et ${stats.pois} points d'eau en cache`;
     }
 
@@ -2432,7 +3056,7 @@ ${trkpts}
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
           updateUserGPSMarker(latitude, longitude, accuracy);
-          AppState.map.flyTo([latitude, longitude], 15, { duration: 1 });
+          flyToActive(latitude, longitude, 15);
         },
         (err) => {
           showToast('Impossible d’obtenir votre position GPS : ' + err.message, 'warning');
@@ -2466,6 +3090,7 @@ ${trkpts}
         AppState.userMarker.setLatLng([lat, lon]);
         AppState.userAccuracyCircle.setLatLng([lat, lon]).setRadius(accuracy);
       }
+      if (AppState.is3D) Map3D.updateUser(lat, lon);
     }
 
     // -------------------------------------------------------------------------
@@ -2479,7 +3104,7 @@ ${trkpts}
           : 'tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
       });
 
-      ['explore', 'route', 'gpx'].forEach((id) => {
+      ['explore', 'route', 'places', 'gpx'].forEach((id) => {
         const section = document.getElementById(`tab-${id}`);
         if (id === tabName) section.classList.remove('hidden');
         else section.classList.add('hidden');
@@ -2616,7 +3241,7 @@ ${trkpts}
 
       bindAutocompleteInput(globalInput, globalResults, (lat, lon, name) => {
         globalInput.value = name;
-        AppState.map.flyTo([lat, lon], 15);
+        flyToActive(lat, lon, 15);
         setRouteDestination(lat, lon, name);
         showToast(`Destination définie : ${name}`, 'info');
       });
@@ -2639,8 +3264,12 @@ ${trkpts}
       document.getElementById('btn-route-nearest-water-panel').addEventListener('click', routeToNearestWaterPoint);
       document.getElementById('btn-refresh-water').addEventListener('click', loadWaterPointsForCurrentView);
 
-      document.getElementById('btn-zoom-in').addEventListener('click', () => AppState.map.zoomIn());
-      document.getElementById('btn-zoom-out').addEventListener('click', () => AppState.map.zoomOut());
+      document.getElementById('btn-zoom-in').addEventListener('click', () =>
+        AppState.is3D && AppState.map3d ? AppState.map3d.zoomIn() : AppState.map.zoomIn()
+      );
+      document.getElementById('btn-zoom-out').addEventListener('click', () =>
+        AppState.is3D && AppState.map3d ? AppState.map3d.zoomOut() : AppState.map.zoomOut()
+      );
 
       // Sélecteur de fonds de carte
       const layerMenuBtn = document.getElementById('btn-layer-menu');
@@ -2728,6 +3357,9 @@ ${trkpts}
           AppState.dest = null;
           document.getElementById('input-dest').value = '';
         }
+        AppState.vias.reverse();
+        renderVias();
+        if (AppState.origin && AppState.dest && AppState.currentRoute) calculateBikeRoute();
       });
 
       document.getElementById('btn-clear-route').addEventListener('click', () => {
@@ -2741,6 +3373,14 @@ ${trkpts}
         if (AppState.destMarker) AppState.map.removeLayer(AppState.destMarker);
         if (AppState.routePolyline) AppState.map.removeLayer(AppState.routePolyline);
         if (AppState.routeOutlinePolyline) AppState.map.removeLayer(AppState.routeOutlinePolyline);
+        AppState.routePolyline = null;
+        AppState.routeOutlinePolyline = null;
+        AppState.originMarker = null;
+        AppState.destMarker = null;
+        AppState.vias = [];
+        renderVias();
+        clearAlternativeLayers();
+        if (AppState.is3D) Map3D.refreshOverlays();
       });
 
       // Profils BRouter
@@ -2833,9 +3473,87 @@ ${trkpts}
         showToast('Cache hors ligne vidé avec succès.', 'success');
       });
 
+      // Vue 3D
+      document.getElementById('btn-toggle-3d').addEventListener('click', () => Map3D.toggle());
+      document.getElementById('btn-hud-3d').addEventListener('click', async () => {
+        await Map3D.toggle();
+        if (AppState.userLocation && AppState.currentRoute) {
+          const u = AppState.userLocation;
+          followCamera(u.lat, u.lon, AppState.currentRoute, snapToRoute(u.lat, u.lon, AppState.currentRoute));
+        }
+      });
+
+      // Mode soleil / économie batterie
+      document.getElementById('btn-sun-mode').addEventListener('click', () => setSunMode(!AppState.sunMode));
+
+      // Lieux
+      document.getElementById('ctx-add-place').addEventListener('click', () => {
+        const ll = AppState.pendingClickLatLng;
+        document.getElementById('map-click-menu').classList.add('hidden');
+        if (ll) openPlaceModal(ll.lat, ll.lng);
+      });
+      document.getElementById('btn-refresh-poi').addEventListener('click', () => loadPOIsForCurrentView());
+      document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
+      document.getElementById('btn-add-place-center').addEventListener('click', () => {
+        const c = AppState.is3D && AppState.map3d ? AppState.map3d.getCenter() : AppState.map.getCenter();
+        openPlaceModal(c.lat, c.lng);
+      });
+      document.getElementById('btn-add-place-here').addEventListener('click', () => {
+        if (AppState.userLocation) {
+          openPlaceModal(AppState.userLocation.lat, AppState.userLocation.lon);
+          return;
+        }
+        if (!('geolocation' in navigator)) return showToast('GPS indisponible.', 'error');
+        showToast('Localisation…', 'info', 1500);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            updateUserGPSMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+            openPlaceModal(pos.coords.latitude, pos.coords.longitude);
+          },
+          (err) => showToast('Position introuvable : ' + err.message, 'warning'),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+      document.getElementById('btn-save-place').addEventListener('click', savePlaceFromModal);
+      document.getElementById('place-name').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') savePlaceFromModal();
+      });
+      document.getElementById('btn-close-place-modal').addEventListener('click', () =>
+        document.getElementById('place-modal').classList.add('hidden')
+      );
+      document.getElementById('place-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'place-modal') e.target.classList.add('hidden');
+      });
+
+      // Synchronisation cloud
+      document.getElementById('btn-cloud-sync').addEventListener('click', () => {
+        if (!localStorage.getItem('abicyclette.gh.token')) {
+          document.querySelector('#tab-places details').open = true;
+          showToast('Ajoutez d’abord un jeton GitHub (permission gist).', 'info');
+          return;
+        }
+        CloudSync.sync(false);
+      });
+      document.getElementById('btn-save-token').addEventListener('click', () => {
+        const input = document.getElementById('input-gh-token');
+        if (!input.value.trim()) return showToast('Collez votre jeton GitHub.', 'warning');
+        CloudSync.saveToken(input.value);
+        input.value = '';
+      });
+      document.getElementById('btn-forget-token').addEventListener('click', () => CloudSync.forget());
+
+      // L'écran reste allumé pendant le guidage (verrou repris au retour sur l'appli)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (AppState.isGuiding) requestWakeLock();
+          CloudSync.sync(true);
+        }
+      });
+
       // Surveillance réseau navigateur
       window.addEventListener('online', () => {
         updateNetworkBadges();
+        CloudSync.sync(true);
         showToast('Connexion internet retrouvée.', 'success');
       });
       window.addEventListener('offline', () => {
@@ -2852,15 +3570,1056 @@ ${trkpts}
     }
 
     // -------------------------------------------------------------------------
-    // 14. POINT D'ENTRÉE AU CHARGEMENT DE LA PAGE
+    // 14. POINTS D'INTÉRÊT : SERVICES VÉLO & LIEUX À VISITER (OVERPASS)
+    // -------------------------------------------------------------------------
+    const POI_CATEGORIES = [
+      // --- À visiter ---
+      {
+        id: 'heritage', group: 'visit', label: 'Châteaux & patrimoine', emoji: '🏰', color: '#b45309',
+        q: ['nwr["historic"~"^(castle|monument|ruins|archaeological_site|fort|manor|city_gate|tower)$"]'],
+        match: (t) => /^(castle|monument|ruins|archaeological_site|fort|manor|city_gate|tower)$/.test(t.historic || ''),
+      },
+      {
+        id: 'viewpoint', group: 'visit', label: 'Points de vue', emoji: '🔭', color: '#7c3aed',
+        q: ['node["tourism"="viewpoint"]'],
+        match: (t) => t.tourism === 'viewpoint',
+      },
+      {
+        id: 'museum', group: 'visit', label: 'Musées', emoji: '🏛️', color: '#be123c',
+        q: ['nwr["tourism"="museum"]'],
+        match: (t) => t.tourism === 'museum',
+      },
+      {
+        id: 'attraction', group: 'visit', label: 'Curiosités', emoji: '⭐', color: '#ca8a04',
+        q: ['nwr["tourism"="attraction"]', 'node["tourism"="artwork"]["name"]'],
+        match: (t) => t.tourism === 'attraction' || t.tourism === 'artwork',
+      },
+      {
+        id: 'worship', group: 'visit', label: 'Églises & abbayes', emoji: '⛪', color: '#475569',
+        q: ['nwr["amenity"="place_of_worship"]["name"]'],
+        match: (t) => t.amenity === 'place_of_worship',
+      },
+      {
+        id: 'nature', group: 'visit', label: 'Nature', emoji: '🌳', color: '#15803d',
+        q: ['node["natural"~"^(peak|waterfall|cave_entrance|tree)$"]["name"]', 'node["leisure"="park"]["name"]', 'way["leisure"="park"]["name"]'],
+        match: (t) => /^(peak|waterfall|cave_entrance|tree)$/.test(t.natural || '') || t.leisure === 'park',
+      },
+      // --- Services vélo & pratique ---
+      {
+        id: 'repair', group: 'service', label: 'Réparation vélo', emoji: '🔧', color: '#0f766e',
+        q: ['node["amenity"="bicycle_repair_station"]', 'nwr["shop"="bicycle"]'],
+        match: (t) => t.amenity === 'bicycle_repair_station' || t.shop === 'bicycle',
+      },
+      {
+        id: 'parking', group: 'service', label: 'Parking vélo', emoji: '🅿️', color: '#1d4ed8',
+        q: ['node["amenity"="bicycle_parking"]'],
+        match: (t) => t.amenity === 'bicycle_parking',
+      },
+      {
+        id: 'charging', group: 'service', label: 'Recharge VAE', emoji: '🔌', color: '#65a30d',
+        q: ['node["amenity"="charging_station"]["bicycle"="yes"]'],
+        match: (t) => t.amenity === 'charging_station',
+      },
+      {
+        id: 'toilets', group: 'service', label: 'Toilettes', emoji: '🚻', color: '#0369a1',
+        q: ['node["amenity"="toilets"]'],
+        match: (t) => t.amenity === 'toilets',
+      },
+      {
+        id: 'shelter', group: 'service', label: 'Abris', emoji: '🛖', color: '#78716c',
+        q: ['nwr["amenity"="shelter"]'],
+        match: (t) => t.amenity === 'shelter',
+      },
+      {
+        id: 'picnic', group: 'service', label: 'Pique-nique', emoji: '🧺', color: '#16a34a',
+        q: ['node["leisure"="picnic_table"]', 'nwr["tourism"="picnic_site"]'],
+        match: (t) => t.leisure === 'picnic_table' || t.tourism === 'picnic_site',
+      },
+      {
+        id: 'food', group: 'service', label: 'Cafés & boulangeries', emoji: '☕', color: '#ea580c',
+        q: ['nwr["amenity"="cafe"]', 'nwr["shop"="bakery"]'],
+        match: (t) => t.amenity === 'cafe' || t.shop === 'bakery',
+      },
+      {
+        id: 'camp', group: 'service', label: 'Campings', emoji: '⛺', color: '#4d7c0f',
+        q: ['nwr["tourism"~"^(camp_site|caravan_site)$"]'],
+        match: (t) => /^(camp_site|caravan_site)$/.test(t.tourism || ''),
+      },
+      {
+        id: 'station', group: 'service', label: 'Gares', emoji: '🚉', color: '#334155',
+        q: ['node["railway"~"^(station|halt)$"]'],
+        match: (t) => /^(station|halt)$/.test(t.railway || ''),
+      },
+    ];
+    const POI_BY_ID = Object.fromEntries(POI_CATEGORIES.map((c) => [c.id, c]));
+    const POI_DEFAULT = ['heritage', 'viewpoint', 'museum', 'attraction', 'repair', 'toilets'];
+    const LS_POI = 'abicyclette.poi.enabled';
+    let poiRequestSeq = 0;
+
+    function buildPOIQuery(s, w, n, e, limit = 300, catIds = [...AppState.poiEnabled]) {
+      const parts = catIds
+        .flatMap((id) => POI_BY_ID[id]?.q || [])
+        .map((q) => `${q}(${s},${w},${n},${e});`)
+        .join('\n');
+      return `[out:json][timeout:20];(${parts});out center ${limit};`;
+    }
+
+    function categorizeTags(tags, catIds) {
+      for (const c of POI_CATEGORIES) {
+        if (catIds && !catIds.includes(c.id)) continue;
+        if (c.match(tags)) return c.id;
+      }
+      return null;
+    }
+
+    function parsePOIElements(elements, catIds = null) {
+      const out = [];
+      elements.forEach((el) => {
+        const lat = el.lat ?? el.center?.lat;
+        const lon = el.lon ?? el.center?.lon;
+        if (lat == null || lon == null) return;
+        const t = el.tags || {};
+        const cat = categorizeTags(t, catIds);
+        if (!cat) return;
+        out.push({
+          id: `${el.type}_${el.id}`,
+          lat,
+          lon,
+          cat,
+          name: t.name || t['name:fr'] || POI_BY_ID[cat].label.replace(/s( &|$)/, '$1'),
+          hours: t.opening_hours || null,
+          website: t.website || t['contact:website'] || null,
+          wikipedia: t.wikipedia || null,
+          description: t.description || null,
+        });
+      });
+      return out;
+    }
+
+    function createPOIIcon(cat) {
+      const c = POI_BY_ID[cat] || { color: '#334155', emoji: '•' };
+      return L.divIcon({
+        html: `<div class="poi-icon" style="background:${c.color}">${c.emoji}</div>`,
+        className: 'custom-poi-icon',
+        iconSize: [0, 0],
+        popupAnchor: [0, -14],
+      });
+    }
+
+    async function loadPOIsForCurrentView() {
+      const statusEl = document.getElementById('poi-status-text');
+      const enabled = [...AppState.poiEnabled];
+      if (!enabled.length) {
+        AppState.poiPoints = [];
+        renderPOIs([]);
+        statusEl.textContent = 'Aucune catégorie choisie';
+        return;
+      }
+      const map = AppState.map;
+      const b = map.getBounds();
+      const inBounds = (p) => p.lat >= b.getSouth() && p.lat <= b.getNorth() && p.lon >= b.getWest() && p.lon <= b.getEast();
+
+      if (isOfflineMode()) {
+        const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => inBounds(p) && AppState.poiEnabled.has(p.cat));
+        AppState.poiPoints = cached;
+        renderPOIs(cached);
+        statusEl.textContent = `${cached.length} lieu(x) (cache hors ligne)`;
+        return;
+      }
+      if (map.getZoom() < 12) {
+        statusEl.textContent = 'Zoomez pour afficher les lieux';
+        return;
+      }
+
+      const seq = ++poiRequestSeq;
+      statusEl.textContent = 'Recherche des lieux…';
+      try {
+        const q = buildPOIQuery(b.getSouth().toFixed(4), b.getWest().toFixed(4), b.getNorth().toFixed(4), b.getEast().toFixed(4));
+        const data = await fetchOverpassWithFallback(q);
+        if (seq !== poiRequestSeq) return; // une requête plus récente est partie
+        const pts = parsePOIElements(data.elements || [], enabled);
+        AppState.poiPoints = pts;
+        OfflineDB.putExtraPOIs(pts);
+        renderPOIs(pts);
+        statusEl.textContent = `${pts.length} lieu(x) dans la zone`;
+      } catch {
+        if (seq !== poiRequestSeq) return;
+        const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => inBounds(p) && AppState.poiEnabled.has(p.cat));
+        AppState.poiPoints = cached;
+        renderPOIs(cached);
+        statusEl.textContent = cached.length ? `${cached.length} lieu(x) (secours local)` : 'Serveur occupé — réessayez';
+      }
+    }
+
+    function poiPopupHtml(p) {
+      const c = POI_BY_ID[p.cat];
+      const name = escapeJsString(p.name);
+      const web = p.website ? `<a href="${escapeHtml(p.website)}" target="_blank" rel="noopener" class="text-sky-600 underline">Site web</a>` : '';
+      const wiki = p.wikipedia
+        ? `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent((p.wikipedia.split(':')[1] || p.wikipedia))}" target="_blank" rel="noopener" class="text-sky-600 underline">Wikipédia</a>`
+        : '';
+      return `
+        <div class="p-3.5 font-sans">
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-0.5" style="color:${c.color}">${c.emoji} ${c.label}</div>
+          <div class="text-sm font-bold text-slate-900 mb-1">${escapeHtml(p.name)}</div>
+          ${p.hours ? `<div class="text-[11px] text-slate-500 mb-1">🕒 ${escapeHtml(p.hours)}</div>` : ''}
+          ${p.description ? `<div class="text-[11px] text-slate-600 mb-1">${escapeHtml(p.description)}</div>` : ''}
+          <div class="text-[11px] flex gap-3 mb-2">${web}${wiki}</div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${name}')" class="py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
+            <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${name}')" class="py-1.5 rounded-lg bg-amber-500 text-white text-[11px] font-bold">Étape</button>
+            <button onclick="savePointAsPlace(${p.lat}, ${p.lon}, '${name}', '${p.cat}')" class="py-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-bold">★ Garder</button>
+          </div>
+        </div>`;
+    }
+
+    function renderPOIs(points) {
+      AppState.poiLayer.clearLayers();
+      points.forEach((p) => {
+        const m = L.marker([p.lat, p.lon], { icon: createPOIIcon(p.cat) });
+        m.bindPopup(poiPopupHtml(p));
+        AppState.poiLayer.addLayer(m);
+      });
+
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      const sorted = points
+        .map((p) => ({ ...p, distance: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
+        .sort((a, b) => (POI_BY_ID[a.cat].group === POI_BY_ID[b.cat].group ? a.distance - b.distance : POI_BY_ID[a.cat].group === 'visit' ? -1 : 1));
+      document.getElementById('poi-count').textContent = points.length;
+      const list = document.getElementById('poi-list');
+      if (!sorted.length) {
+        list.innerHTML = `<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Aucun lieu de ces catégories ici.</div>`;
+      } else {
+        list.innerHTML = sorted
+          .slice(0, 30)
+          .map((p) => {
+            const c = POI_BY_ID[p.cat];
+            return `
+            <div class="flex items-center gap-2 p-2.5 rounded-2xl bg-white/75 hover:bg-white border border-slate-200/70">
+              <span class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-sm" style="background:${c.color}22">${c.emoji}</span>
+              <div class="min-w-0 flex-1 cursor-pointer" onclick="focusPOI('${p.id}')">
+                <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
+                <div class="text-[11px] text-slate-500">${c.label} • <span class="font-semibold">${formatDistance(p.distance)}</span></div>
+              </div>
+              <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-600 text-emerald-700 hover:text-white text-xs font-bold">Y aller</button>
+            </div>`;
+          })
+          .join('');
+      }
+      if (AppState.is3D) Map3D.refreshOverlays();
+    }
+
+    window.focusPOI = function (id) {
+      const p = AppState.poiPoints.find((x) => x.id === id);
+      if (!p) return;
+      flyToActive(p.lat, p.lon, 17);
+      if (!AppState.is3D) {
+        AppState.poiLayer.eachLayer((m) => {
+          const ll = m.getLatLng();
+          if (Math.abs(ll.lat - p.lat) < 1e-7 && Math.abs(ll.lng - p.lon) < 1e-7) setTimeout(() => m.openPopup(), 600);
+        });
+      }
+    };
+
+    window.routeToPoint = function (lat, lon, label) {
+      AppState.map.closePopup();
+      Map3D.closePopups();
+      AppState.vias = [];
+      renderVias();
+      window.routeToWaterPoint(lat, lon, label);
+    };
+
+    window.viaToPoint = function (lat, lon, label) {
+      AppState.map.closePopup();
+      Map3D.closePopups();
+      addVia(lat, lon, label);
+    };
+
+    window.savePointAsPlace = function (lat, lon, name, poiCat) {
+      AppState.map.closePopup();
+      Map3D.closePopups();
+      const cat = POI_BY_ID[poiCat]?.group === 'visit' ? 'visiter' : poiCat === 'food' ? 'manger' : 'favori';
+      openPlaceModal(lat, lon, { name, cat });
+    };
+
+    function renderPOIChips() {
+      ['visit', 'service'].forEach((group) => {
+        const box = document.getElementById(`poi-chips-${group}`);
+        box.innerHTML = POI_CATEGORIES.filter((c) => c.group === group)
+          .map((c) => `<button data-poi="${c.id}" class="chip ${AppState.poiEnabled.has(c.id) ? 'on' : ''}">${c.emoji} ${c.label}</button>`)
+          .join('');
+        box.querySelectorAll('button').forEach((b) =>
+          b.addEventListener('click', () => {
+            const id = b.dataset.poi;
+            if (AppState.poiEnabled.has(id)) AppState.poiEnabled.delete(id);
+            else AppState.poiEnabled.add(id);
+            b.classList.toggle('on', AppState.poiEnabled.has(id));
+            try {
+              localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
+            } catch {}
+            debouncedPOIReload();
+          })
+        );
+      });
+    }
+    const debouncedPOIReload = debounce(() => loadPOIsForCurrentView(), 600);
+
+    // Lieux à visiter le long du trajet (à moins de 500 m du tracé)
+    async function findVisitsAlongRoute() {
+      const route = AppState.currentRoute;
+      const listEl = document.getElementById('route-visits-list');
+      if (!route) return;
+      if (isOfflineMode()) {
+        showToast('Recherche indisponible hors ligne.', 'warning');
+        return;
+      }
+      const btn = document.getElementById('btn-route-visits');
+      btn.disabled = true;
+      btn.textContent = '…';
+      listEl.innerHTML = `<div class="text-[11px] text-slate-500">Recherche le long du tracé…</div>`;
+      try {
+        const lats = route.coords.map((c) => c[0]);
+        const lons = route.coords.map((c) => c[1]);
+        const pad = 0.006;
+        const visitIds = POI_CATEGORIES.filter((c) => c.group === 'visit').map((c) => c.id);
+        const q = buildPOIQuery(
+          (Math.min(...lats) - pad).toFixed(4), (Math.min(...lons) - pad).toFixed(4),
+          (Math.max(...lats) + pad).toFixed(4), (Math.max(...lons) + pad).toFixed(4), 1500, visitIds
+        );
+        const data = await fetchOverpassWithFallback(q);
+        const found = parsePOIElements(data.elements || [], visitIds)
+          .filter((p) => p.name && p.name !== POI_BY_ID[p.cat].label)
+          .map((p) => ({ ...p, snap: snapToRoute(p.lat, p.lon, route) }))
+          .filter((p) => p.snap.dist <= 500)
+          .sort((a, b) => a.snap.along - b.snap.along);
+
+        if (!found.length) {
+          listEl.innerHTML = `<div class="text-[11px] text-slate-500">Rien de notable repéré près du tracé.</div>`;
+          return;
+        }
+        listEl.innerHTML = found
+          .slice(0, 25)
+          .map((p) => {
+            const c = POI_BY_ID[p.cat];
+            return `
+            <div class="flex items-center gap-2 p-2 rounded-xl bg-white/80 border border-amber-200/70">
+              <span class="text-sm shrink-0">${c.emoji}</span>
+              <div class="min-w-0 flex-1 cursor-pointer" onclick="flyToActive(${p.lat}, ${p.lon}, 16)">
+                <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
+                <div class="text-[10px] text-slate-500">Au km ${(p.snap.along / 1000).toFixed(1)} • à ${Math.round(p.snap.dist)} m du tracé</div>
+              </div>
+              <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="shrink-0 px-2 py-1 rounded-lg bg-amber-500 text-white text-[11px] font-bold">+ Étape</button>
+            </div>`;
+          })
+          .join('');
+      } catch {
+        listEl.innerHTML = `<div class="text-[11px] text-rose-600">Serveur occupé, réessayez dans un instant.</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Chercher';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 15. MES LIEUX (LOCAL + SYNCHRONISATION CLOUD VIA GIST GITHUB PRIVÉ)
+    // -------------------------------------------------------------------------
+    const PLACE_CATS = {
+      favori: { label: 'Favori', emoji: '★', color: '#e11d48' },
+      visiter: { label: 'À visiter', emoji: '📍', color: '#f59e0b' },
+      eau: { label: 'Eau', emoji: '💧', color: '#0284c7' },
+      manger: { label: 'Manger', emoji: '🍴', color: '#ea580c' },
+      dormir: { label: 'Dormir', emoji: '🛏️', color: '#7c3aed' },
+      velo: { label: 'Vélo', emoji: '🚲', color: '#059669' },
+      autre: { label: 'Autre', emoji: '•', color: '#475569' },
+    };
+    const LS_PLACES = 'abicyclette.places.v1';
+
+    function loadMyPlaces() {
+      try {
+        AppState.myPlaces = JSON.parse(localStorage.getItem(LS_PLACES) || '[]');
+      } catch {
+        AppState.myPlaces = [];
+      }
+    }
+
+    function persistMyPlaces() {
+      try {
+        localStorage.setItem(LS_PLACES, JSON.stringify(AppState.myPlaces));
+      } catch {}
+    }
+
+    function newId() {
+      return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+    }
+
+    function upsertPlace(data) {
+      const now = Date.now();
+      const idx = AppState.myPlaces.findIndex((p) => p.id === data.id);
+      if (idx >= 0) AppState.myPlaces[idx] = { ...AppState.myPlaces[idx], ...data, updatedAt: now };
+      else AppState.myPlaces.push({ id: newId(), createdAt: now, ...data, updatedAt: now });
+      persistMyPlaces();
+      renderMyPlaces();
+      CloudSync.schedule();
+    }
+
+    function deletePlace(id) {
+      const p = AppState.myPlaces.find((x) => x.id === id);
+      if (!p) return;
+      // Pierre tombale : la suppression se propage aux autres appareils
+      p.deleted = true;
+      p.updatedAt = Date.now();
+      persistMyPlaces();
+      renderMyPlaces();
+      CloudSync.schedule();
+    }
+
+    function visiblePlaces() {
+      return AppState.myPlaces.filter((p) => !p.deleted);
+    }
+
+    function placePopupHtml(p) {
+      const c = PLACE_CATS[p.cat] || PLACE_CATS.autre;
+      const n = escapeJsString(p.name);
+      return `
+        <div class="p-3.5 font-sans">
+          <div class="text-[11px] font-bold uppercase tracking-wider mb-0.5" style="color:${c.color}">${c.emoji} Mes lieux • ${c.label}</div>
+          <div class="text-sm font-bold text-slate-900 mb-1">${escapeHtml(p.name)}</div>
+          ${p.note ? `<div class="text-xs text-slate-600 mb-2 whitespace-pre-line">${escapeHtml(p.note)}</div>` : ''}
+          <div class="grid grid-cols-3 gap-1.5">
+            <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${n}')" class="py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
+            <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${n}')" class="py-1.5 rounded-lg bg-amber-500 text-white text-[11px] font-bold">Étape</button>
+            <button onclick="editMyPlace('${p.id}')" class="py-1.5 rounded-lg bg-slate-800 text-white text-[11px] font-bold">Modifier</button>
+          </div>
+        </div>`;
+    }
+
+    function createPlaceIcon(cat) {
+      const c = PLACE_CATS[cat] || PLACE_CATS.autre;
+      return L.divIcon({
+        html: `<div class="poi-icon" style="background:${c.color};width:32px;height:32px;margin-left:-16px;margin-top:-16px;border-width:3px;color:#fff;font-weight:800">${c.emoji}</div>`,
+        className: 'custom-place-icon',
+        iconSize: [0, 0],
+        popupAnchor: [0, -16],
+      });
+    }
+
+    function renderMyPlaces() {
+      const places = visiblePlaces();
+      AppState.myPlacesLayer.clearLayers();
+      places.forEach((p) => {
+        const m = L.marker([p.lat, p.lon], { icon: createPlaceIcon(p.cat), zIndexOffset: 500 });
+        m.bindPopup(placePopupHtml(p));
+        AppState.myPlacesLayer.addLayer(m);
+      });
+
+      const list = document.getElementById('my-places-list');
+      if (!places.length) {
+        list.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-3 bg-white/50 rounded-xl">Aucun lieu enregistré pour l'instant.</div>`;
+      } else {
+        const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+        list.innerHTML = places
+          .map((p) => ({ ...p, distance: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
+          .sort((a, b) => a.distance - b.distance)
+          .map((p) => {
+            const c = PLACE_CATS[p.cat] || PLACE_CATS.autre;
+            return `
+            <div class="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-rose-100">
+              <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center shrink-0" style="background:${c.color}">${c.emoji}</span>
+              <div class="min-w-0 flex-1 cursor-pointer" onclick="goToMyPlace('${p.id}')">
+                <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
+                <div class="text-[10px] text-slate-500 truncate">${c.label} • ${formatDistance(p.distance)}${p.note ? ' • ' + escapeHtml(p.note) : ''}</div>
+              </div>
+              <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="shrink-0 px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 text-[11px] font-bold">Y aller</button>
+              <button onclick="confirmDeletePlace(this, '${p.id}')" class="shrink-0 px-2 py-1 rounded-lg text-slate-400 hover:text-rose-600 text-[11px] font-bold">✕</button>
+            </div>`;
+          })
+          .join('');
+      }
+      if (AppState.is3D) Map3D.refreshOverlays();
+    }
+
+    window.goToMyPlace = function (id) {
+      const p = AppState.myPlaces.find((x) => x.id === id);
+      if (!p) return;
+      flyToActive(p.lat, p.lon, 16);
+      collapseMobileSheet();
+    };
+
+    window.editMyPlace = function (id) {
+      const p = AppState.myPlaces.find((x) => x.id === id);
+      if (!p) return;
+      AppState.map.closePopup();
+      Map3D.closePopups();
+      openPlaceModal(p.lat, p.lon, p, id);
+    };
+
+    window.confirmDeletePlace = function (btn, id) {
+      if (btn.dataset.armed) {
+        deletePlace(id);
+        showToast('Lieu supprimé.', 'info', 1800);
+        return;
+      }
+      btn.dataset.armed = '1';
+      btn.textContent = 'Sûr ?';
+      btn.classList.add('bg-rose-600', 'text-white');
+      setTimeout(() => {
+        if (!btn.isConnected) return;
+        delete btn.dataset.armed;
+        btn.textContent = '✕';
+        btn.classList.remove('bg-rose-600', 'text-white');
+      }, 3000);
+    };
+
+    function openPlaceModal(lat, lon, prefill = {}, editId = null) {
+      AppState.pendingPlaceLatLng = { lat, lon };
+      AppState.editingPlaceId = editId;
+      AppState.pendingPlaceCat = prefill.cat || 'favori';
+      document.getElementById('place-modal-title').textContent = editId ? 'Modifier le lieu' : 'Nouveau lieu';
+      document.getElementById('place-modal-coords').textContent = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      document.getElementById('place-name').value = prefill.name || '';
+      document.getElementById('place-note').value = prefill.note || '';
+      renderPlaceCatChips();
+      document.getElementById('place-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('place-name').focus(), 50);
+    }
+
+    function renderPlaceCatChips() {
+      const box = document.getElementById('place-cat-chips');
+      box.innerHTML = Object.entries(PLACE_CATS)
+        .map(([id, c]) => `<button type="button" data-cat="${id}" class="chip ${id === AppState.pendingPlaceCat ? 'on' : ''}">${c.emoji} ${c.label}</button>`)
+        .join('');
+      box.querySelectorAll('button').forEach((b) =>
+        b.addEventListener('click', () => {
+          AppState.pendingPlaceCat = b.dataset.cat;
+          renderPlaceCatChips();
+        })
+      );
+    }
+
+    function savePlaceFromModal() {
+      const name = document.getElementById('place-name').value.trim();
+      if (!name) {
+        showToast('Donnez un nom au lieu.', 'warning');
+        return;
+      }
+      const { lat, lon } = AppState.pendingPlaceLatLng;
+      upsertPlace({
+        ...(AppState.editingPlaceId ? { id: AppState.editingPlaceId } : {}),
+        name,
+        note: document.getElementById('place-note').value.trim(),
+        cat: AppState.pendingPlaceCat,
+        lat,
+        lon,
+      });
+      document.getElementById('place-modal').classList.add('hidden');
+      showToast(AppState.editingPlaceId ? 'Lieu modifié.' : 'Lieu enregistré !', 'success', 2000);
+    }
+
+    const CloudSync = (() => {
+      const FILE = 'abicyclette-lieux.json';
+      const K_TOKEN = 'abicyclette.gh.token';
+      const K_GIST = 'abicyclette.gh.gist';
+      let busy = false;
+      let again = false;
+
+      const getToken = () => localStorage.getItem(K_TOKEN) || '';
+      const setStatus = (txt) => (document.getElementById('cloud-status-text').textContent = txt);
+
+      function refreshInfo() {
+        const gist = localStorage.getItem(K_GIST);
+        document.getElementById('cloud-gist-info').textContent = getToken()
+          ? `Jeton enregistré${gist ? ' • Gist ' + gist.slice(0, 8) + '…' : ''}`
+          : 'Aucun jeton : lieux seulement sur cet appareil.';
+      }
+
+      async function gh(path, opts = {}) {
+        const res = await fetch('https://api.github.com' + path, {
+          ...opts,
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            Accept: 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) {
+          const err = new Error('GitHub HTTP ' + res.status);
+          err.status = res.status;
+          throw err;
+        }
+        return res.json();
+      }
+
+      async function findOrCreateGist() {
+        let id = localStorage.getItem(K_GIST);
+        if (id) return id;
+        // Recherche d'un Gist existant (créé depuis un autre appareil)
+        for (let page = 1; page <= 5 && !id; page++) {
+          const gists = await gh(`/gists?per_page=100&page=${page}`);
+          const hit = gists.find((g) => g.files && g.files[FILE]);
+          if (hit) id = hit.id;
+          if (gists.length < 100) break;
+        }
+        if (!id) {
+          const created = await gh('/gists', {
+            method: 'POST',
+            body: JSON.stringify({
+              description: 'À bicyclette — mes lieux (synchronisation)',
+              public: false,
+              files: { [FILE]: { content: JSON.stringify({ version: 1, places: [] }) } },
+            }),
+          });
+          id = created.id;
+        }
+        localStorage.setItem(K_GIST, id);
+        return id;
+      }
+
+      function merge(local, remote) {
+        const byId = new Map();
+        [...remote, ...local].forEach((p) => {
+          const cur = byId.get(p.id);
+          if (!cur || (p.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(p.id, p);
+        });
+        // Les suppressions de plus de 90 jours sont oubliées définitivement
+        const limit = Date.now() - 90 * 86400000;
+        return [...byId.values()].filter((p) => !(p.deleted && p.updatedAt < limit));
+      }
+
+      async function sync(silent = true) {
+        if (!getToken()) {
+          setStatus(`${visiblePlaces().length} lieu(x) sur cet appareil`);
+          refreshInfo();
+          return;
+        }
+        if (isOfflineMode()) {
+          setStatus('Hors ligne — synchro au retour du réseau');
+          return;
+        }
+        if (busy) {
+          again = true;
+          return;
+        }
+        busy = true;
+        setStatus('Synchronisation…');
+        try {
+          const id = await findOrCreateGist();
+          let gist;
+          try {
+            gist = await gh(`/gists/${id}`);
+          } catch (e) {
+            if (e.status === 404) {
+              localStorage.removeItem(K_GIST);
+              busy = false;
+              return sync(silent);
+            }
+            throw e;
+          }
+          let remote = [];
+          try {
+            remote = JSON.parse(gist.files?.[FILE]?.content || '{}').places || [];
+          } catch {}
+          const merged = merge(AppState.myPlaces, remote);
+          const changed = JSON.stringify(merged) !== JSON.stringify(remote);
+          if (changed) {
+            await gh(`/gists/${id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ files: { [FILE]: { content: JSON.stringify({ version: 1, updatedAt: Date.now(), places: merged }, null, 1) } } }),
+            });
+          }
+          AppState.myPlaces = merged;
+          persistMyPlaces();
+          renderMyPlaces();
+          const t = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          setStatus(`☁️ Synchronisé à ${t} • ${visiblePlaces().length} lieu(x)`);
+          if (!silent) showToast('Lieux synchronisés.', 'success', 2000);
+        } catch (e) {
+          if (e.status === 401 || e.status === 403) {
+            setStatus('Jeton GitHub refusé — vérifiez la permission « gist »');
+            if (!silent) showToast('Jeton GitHub refusé.', 'error');
+          } else {
+            setStatus('Synchro impossible pour le moment');
+            if (!silent) showToast('Synchronisation impossible (réseau ?).', 'warning');
+          }
+        } finally {
+          busy = false;
+          refreshInfo();
+          if (again) {
+            again = false;
+            setTimeout(() => sync(true), 500);
+          }
+        }
+      }
+
+      const schedule = debounce(() => sync(true), 2500);
+
+      function saveToken(tok) {
+        localStorage.setItem(K_TOKEN, tok.trim());
+        localStorage.removeItem(K_GIST);
+        refreshInfo();
+        sync(false);
+      }
+
+      function forget() {
+        localStorage.removeItem(K_TOKEN);
+        localStorage.removeItem(K_GIST);
+        refreshInfo();
+        setStatus(`${visiblePlaces().length} lieu(x) sur cet appareil`);
+        showToast('Jeton oublié. Vos lieux restent sur cet appareil.', 'info');
+      }
+
+      return { sync, schedule, saveToken, forget, refreshInfo };
+    })();
+
+    // -------------------------------------------------------------------------
+    // 16. NAVIGATION 3D (MAPLIBRE GL, CHARGÉE À LA DEMANDE)
+    //     Fond OpenFreeMap (bâtiments 3D) + relief Terrarium (AWS Open Data)
+    // -------------------------------------------------------------------------
+    const Map3D = (() => {
+      const LIB = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl';
+      let libPromise = null;
+      let htmlMarkers = [];
+      let userMarker = null;
+      let popup = null;
+
+      function loadLib() {
+        if (window.maplibregl) return Promise.resolve();
+        if (libPromise) return libPromise;
+        libPromise = new Promise((resolve, reject) => {
+          const css = document.createElement('link');
+          css.rel = 'stylesheet';
+          css.href = LIB + '.css';
+          document.head.appendChild(css);
+          const js = document.createElement('script');
+          js.src = LIB + '.js';
+          js.onload = resolve;
+          js.onerror = () => {
+            libPromise = null;
+            reject(new Error('MapLibre indisponible'));
+          };
+          document.head.appendChild(js);
+        });
+        return libPromise;
+      }
+
+      function updateButtons() {
+        const on = AppState.is3D;
+        const b = document.getElementById('btn-toggle-3d');
+        b.classList.toggle('ring-2', on);
+        b.classList.toggle('ring-emerald-500', on);
+        b.classList.toggle('text-emerald-600', on);
+        b.textContent = on ? '2D' : '3D';
+        document.getElementById('btn-hud-3d').textContent = on ? '2D' : '3D';
+      }
+
+      function emptyFC() {
+        return { type: 'FeatureCollection', features: [] };
+      }
+
+      function setupLayers(m) {
+        const style = m.getStyle();
+        const firstSymbol = style.layers.find((l) => l.type === 'symbol')?.id;
+
+        // Relief : une source pour le terrain, une pour l'ombrage
+        const dem = {
+          type: 'raster-dem',
+          tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+          encoding: 'terrarium',
+          tileSize: 256,
+          maxzoom: 14,
+          attribution: 'Relief © Mapzen / AWS Open Data',
+        };
+        m.addSource('dem', dem);
+        m.addSource('dem-shade', { ...dem });
+        m.addLayer(
+          { id: 'hillshade', type: 'hillshade', source: 'dem-shade', paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#475569' } },
+          firstSymbol
+        );
+        m.setTerrain({ source: 'dem', exaggeration: 1.5 });
+
+        // Bâtiments 3D si le style n'en a pas déjà
+        if (!style.layers.some((l) => l.type === 'fill-extrusion') && style.sources.openmaptiles) {
+          m.addLayer(
+            {
+              id: 'buildings-3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
+              paint: {
+                'fill-extrusion-color': '#d6d3d1',
+                'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
+                'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+                'fill-extrusion-opacity': 0.85,
+              },
+            },
+            firstSymbol
+          );
+        }
+
+        // Trajets
+        m.addSource('alts', { type: 'geojson', data: emptyFC() });
+        m.addSource('route', { type: 'geojson', data: emptyFC() });
+        m.addLayer({ id: 'alts-line', type: 'line', source: 'alts', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#64748b', 'line-width': 6, 'line-opacity': 0.6, 'line-dasharray': [0.5, 2] } });
+        m.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 12 } });
+        m.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#059669', 'line-width': 7 } });
+
+        // Points (eau, lieux, mes lieux)
+        m.addSource('pts', { type: 'geojson', data: emptyFC() });
+        m.addLayer({
+          id: 'pts-circle', type: 'circle', source: 'pts',
+          paint: { 'circle-radius': ['get', 'r'], 'circle-color': ['get', 'color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+        });
+        m.addLayer({
+          id: 'pts-label', type: 'symbol', source: 'pts', minzoom: 14,
+          layout: { 'text-field': ['get', 'name'], 'text-size': 11, 'text-offset': [0, 1.3], 'text-anchor': 'top', 'text-font': ['Noto Sans Regular'], 'text-optional': true },
+          paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
+        });
+
+        m.on('click', 'alts-line', (e) => {
+          const idx = e.features?.[0]?.properties?.idx;
+          if (idx != null) selectAlternative(Number(idx), true);
+          e.preventDefault();
+        });
+        m.on('click', 'pts-circle', (e) => {
+          const f = e.features?.[0];
+          if (!f) return;
+          e.preventDefault();
+          closePopups();
+          popup = new maplibregl.Popup({ offset: 12, maxWidth: '260px' }).setLngLat(f.geometry.coordinates).setHTML(f.properties.html).addTo(m);
+        });
+        ['pts-circle', 'alts-line'].forEach((id) => {
+          m.on('mouseenter', id, () => (m.getCanvas().style.cursor = 'pointer'));
+          m.on('mouseleave', id, () => (m.getCanvas().style.cursor = ''));
+        });
+        m.on('click', (e) => {
+          if (e.defaultPrevented) return;
+          openMapClickContextMenu({ lat: e.lngLat.lat, lng: e.lngLat.lng }, e.originalEvent);
+        });
+      }
+
+      function line(coords, props = {}) {
+        return { type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords.map((c) => [c[1], c[0]]) } };
+      }
+
+      function point(lat, lon, props) {
+        return { type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [lon, lat] } };
+      }
+
+      function htmlPin(color, label) {
+        const el = document.createElement('div');
+        el.className = 'm3d-marker';
+        el.innerHTML = `<div style="width:30px;height:30px;border-radius:9999px;background:${color};border:3px solid #fff;color:#fff;font:700 12px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.35)">${label}</div>`;
+        return el;
+      }
+
+      function refreshOverlays() {
+        const m = AppState.map3d;
+        if (!m || !AppState.map3dReady) return;
+        const sun = AppState.sunMode;
+
+        // Trajet choisi + variantes
+        m.getSource('route').setData(AppState.currentRoute ? { type: 'FeatureCollection', features: [line(AppState.currentRoute.coords)] } : emptyFC());
+        m.getSource('alts').setData({
+          type: 'FeatureCollection',
+          features: AppState.alternatives.map((r, idx) => (idx === AppState.selectedAltIdx ? null : line(r.coords, { idx }))).filter(Boolean),
+        });
+        m.setPaintProperty('route-line', 'line-color', sun ? '#ff00b4' : '#059669');
+        m.setPaintProperty('route-casing', 'line-color', sun ? '#000000' : '#ffffff');
+        m.setPaintProperty('route-casing', 'line-width', sun ? 15 : 12);
+        m.setLayoutProperty('hillshade', 'visibility', sun ? 'none' : 'visible');
+
+        // Points
+        const feats = [];
+        AppState.waterPoints.forEach((p) => {
+          feats.push(point(p.lat, p.lon, {
+            r: 6, color: '#0284c7', name: p.name,
+            html: `<div class="p-3"><div class="text-xs font-bold mb-2">💧 ${escapeHtml(p.name)}</div><button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-1.5 rounded-lg bg-sky-600 text-white text-[11px] font-bold">Y aller à vélo</button></div>`,
+          }));
+        });
+        AppState.poiPoints.forEach((p) => {
+          feats.push(point(p.lat, p.lon, { r: 7, color: POI_BY_ID[p.cat]?.color || '#334155', name: p.name, html: poiPopupHtml(p) }));
+        });
+        visiblePlaces().forEach((p) => {
+          feats.push(point(p.lat, p.lon, { r: 9, color: (PLACE_CATS[p.cat] || PLACE_CATS.autre).color, name: '★ ' + p.name, html: placePopupHtml(p) }));
+        });
+        m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
+
+        // Départ, étapes, arrivée
+        htmlMarkers.forEach((mk) => mk.remove());
+        htmlMarkers = [];
+        const add = (pt, color, label) => {
+          if (pt) htmlMarkers.push(new maplibregl.Marker({ element: htmlPin(color, label) }).setLngLat([pt.lon, pt.lat]).addTo(m));
+        };
+        add(AppState.origin, '#10b981', 'D');
+        AppState.vias.forEach((v, i) => add(v, '#f59e0b', String(i + 1)));
+        add(AppState.dest, '#f43f5e', 'A');
+
+        if (AppState.userLocation) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
+      }
+
+      function updateUser(lat, lon) {
+        const m = AppState.map3d;
+        if (!m || !window.maplibregl) return;
+        if (!userMarker) {
+          const el = document.createElement('div');
+          el.innerHTML = `<div style="width:22px;height:22px;border-radius:9999px;background:#0ea5e9;border:4px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,.3)"></div>`;
+          userMarker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(m);
+        } else {
+          userMarker.setLngLat([lon, lat]);
+        }
+      }
+
+      async function enable() {
+        if (isOfflineMode()) {
+          showToast('La vue 3D a besoin du réseau (non disponible hors ligne).', 'warning');
+          return false;
+        }
+        try {
+          await loadLib();
+        } catch {
+          showToast('Impossible de charger le moteur 3D.', 'error');
+          return false;
+        }
+        const probe = document.createElement('canvas');
+        if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) {
+          showToast('WebGL indisponible : la 3D ne peut pas s’afficher sur cet appareil.', 'error');
+          return false;
+        }
+        const c = AppState.map.getCenter();
+        const z = AppState.map.getZoom() - 1; // MapLibre : tuiles 512 px
+        document.body.classList.add('mode-3d');
+        AppState.is3D = true;
+        updateButtons();
+
+        if (!AppState.map3d) {
+          const m = new maplibregl.Map({
+            container: 'map3d',
+            style: 'https://tiles.openfreemap.org/styles/liberty',
+            center: [c.lng, c.lat],
+            zoom: z,
+            pitch: 60,
+            maxPitch: 78,
+            attributionControl: { compact: true },
+          });
+          AppState.map3d = m;
+          m.on('load', () => {
+            try {
+              setupLayers(m);
+            } catch (err) {
+              console.warn('Couches 3D:', err);
+            }
+            AppState.map3dReady = true;
+            refreshOverlays();
+          });
+        } else {
+          AppState.map3d.resize();
+          AppState.map3d.jumpTo({ center: [c.lng, c.lat], zoom: z, pitch: 60 });
+          refreshOverlays();
+        }
+        if (AppState.sunMode) showToast('La 3D consomme plus de batterie que la 2D.', 'info', 2500);
+        return true;
+      }
+
+      function disable() {
+        const m = AppState.map3d;
+        if (m) {
+          const c = m.getCenter();
+          AppState.map.setView([c.lat, c.lng], Math.round(m.getZoom() + 1), { animate: false });
+        }
+        closePopups();
+        document.body.classList.remove('mode-3d');
+        AppState.is3D = false;
+        updateButtons();
+        setTimeout(() => AppState.map.invalidateSize(), 50);
+      }
+
+      function toggle() {
+        return AppState.is3D ? disable() : enable();
+      }
+
+      function follow(lat, lon, bearing) {
+        const m = AppState.map3d;
+        if (!m) return;
+        updateUser(lat, lon);
+        m.easeTo({
+          center: [lon, lat],
+          bearing,
+          pitch: 65,
+          zoom: 17.2,
+          duration: AppState.sunMode ? 0 : 900,
+          padding: { top: 220, bottom: 40, left: 0, right: 0 },
+        });
+      }
+
+      function resetCamera() {
+        AppState.map3d?.easeTo({ pitch: 55, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
+      }
+
+      function closePopups() {
+        popup?.remove();
+        popup = null;
+      }
+
+      return { toggle, enable, disable, refreshOverlays, follow, updateUser, resetCamera, closePopups };
+    })();
+
+    // -------------------------------------------------------------------------
+    // 17. MODE SOLEIL / ÉCONOMIE BATTERIE
+    // -------------------------------------------------------------------------
+    const LS_SUN = 'abicyclette.sunmode';
+
+    function setSunMode(on, silent = false) {
+      AppState.sunMode = on;
+      document.body.classList.toggle('sun-mode', on);
+      document.getElementById('eco-badge').classList.toggle('hidden', !on);
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', on ? '#000000' : '#059669');
+      try {
+        localStorage.setItem(LS_SUN, on ? '1' : '0');
+      } catch {}
+      // Redessine les tracés avec les couleurs adaptées
+      if (AppState.currentRoute) {
+        applyCalculatedRoute(AppState.currentRoute, true);
+        drawAlternativePolylines();
+      }
+      if (AppState.isGuiding) startGeoWatch(); // nouvelles options GPS
+      if (AppState.is3D) Map3D.refreshOverlays();
+      if (!silent) {
+        showToast(
+          on ? 'Mode soleil : contraste maximal, GPS et écran ménagés.' : 'Mode normal rétabli.',
+          on ? 'warning' : 'info',
+          2600
+        );
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 18. POINT D'ENTRÉE AU CHARGEMENT DE LA PAGE
     // -------------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', async () => {
-      await OfflineDB.open();
+      await OfflineDB.open().catch(() => null);
+
+      // Préférences mémorisées
+      try {
+        const saved = JSON.parse(localStorage.getItem(LS_POI) || 'null');
+        AppState.poiEnabled = new Set(Array.isArray(saved) ? saved : POI_DEFAULT);
+      } catch {
+        AppState.poiEnabled = new Set(POI_DEFAULT);
+      }
+      loadMyPlaces();
+
       initMap();
       bindUIEvents();
       initMobileBottomSheetGestures();
       updateNetworkBadges();
       refreshOfflineStatsUI();
+
+      renderPOIChips();
+      renderMyPlaces();
+      loadPOIsForCurrentView();
+      CloudSync.refreshInfo();
+      CloudSync.sync(true);
+      if (localStorage.getItem(LS_SUN) === '1') setSunMode(true, true);
+
+      // Application installable & coque disponible hors ligne
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
     });
   </script>
 </body>
