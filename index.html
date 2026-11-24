@@ -1,0 +1,2867 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CycloLibre — Carte Vélo, Points d'Eau & Navigation Hors Ligne</title>
+
+  <!-- Police Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet 1.9.4 CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            water: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Styles système type macOS / Apple Maps */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #e5e7eb;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Panneaux translucides Glassmorphism Apple-style */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.14), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
+    }
+
+    .glass-dark {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 14px 34px -6px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Masquer les contrôles par défaut de Leaflet pour nos contrôles sur mesure */
+    .leaflet-control-zoom {
+      display: none !important;
+    }
+
+    .leaflet-control-attribution {
+      background: rgba(255, 255, 255, 0.72) !important;
+      backdrop-filter: blur(8px);
+      font-size: 10px !important;
+      border-top-left-radius: 8px;
+      padding: 2px 6px !important;
+      color: #475569 !important;
+    }
+
+    /* Popups Leaflet personnalisées */
+    .leaflet-popup-content-wrapper {
+      background: rgba(255, 255, 255, 0.92) !important;
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border-radius: 16px !important;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16) !important;
+      padding: 0 !important;
+    }
+
+    .leaflet-popup-content {
+      margin: 0 !important;
+      min-width: 220px;
+    }
+
+    .leaflet-popup-tip {
+      background: rgba(255, 255, 255, 0.92) !important;
+    }
+
+    /* Pulse GPS utilisateur */
+    @keyframes gpsPulse {
+      0% {
+        transform: scale(0.85);
+        opacity: 0.75;
+      }
+      70% {
+        transform: scale(2.2);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(2.2);
+        opacity: 0;
+      }
+    }
+
+    .gps-pulse-ring {
+      animation: gpsPulse 2.2s infinite cubic-bezier(0.24, 0, 0.38, 1);
+    }
+
+    /* Scrollbar discrète */
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.65);
+    }
+
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767px) {
+      #side-drawer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: 100%;
+        max-height: 84vh;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 24px;
+        border-top-right-radius: 24px;
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        z-index: 30;
+      }
+      #side-drawer.sheet-collapsed {
+        transform: translateY(calc(100% - 134px));
+      }
+      #side-drawer.sheet-half {
+        transform: translateY(38%);
+      }
+      #side-drawer.sheet-expanded {
+        transform: translateY(0%);
+      }
+      #side-drawer.dragging {
+        transition: none !important;
+      }
+    }
+
+    /* Desktop Floating Sidebar */
+    @media (min-width: 768px) {
+      #side-drawer {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        bottom: 16px;
+        width: 400px;
+        border-radius: 24px;
+        z-index: 30;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased select-none">
+
+  <!-- Carte interactive plein écran -->
+  <div id="map"></div>
+
+  <!-- Bandeau supérieur de guidage GPS actif (HUD style Apple Maps) -->
+  <div id="guidance-hud" class="hidden fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-40 glass-dark text-white rounded-2xl p-3.5 sm:p-4 transition-all">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div id="hud-icon" class="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0 text-emerald-300">
+          <!-- Icône directionnelle dynamique -->
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-baseline gap-2">
+            <span id="hud-step-dist" class="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400">-- m</span>
+            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Prochaine manœuvre</span>
+          </div>
+          <p id="hud-instruction" class="text-sm sm:text-base font-medium text-white truncate">Suivez la piste cyclable</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Bouton synthèse vocale -->
+        <button id="btn-toggle-voice" title="Activer/Couper le guidage vocal" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-300 transition">
+          <svg id="icon-voice-on" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg id="icon-voice-off" class="w-5 h-5 hidden text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <!-- Arrêter guidage -->
+        <button id="btn-stop-guidance" class="px-3 py-2.5 rounded-xl bg-rose-500/90 hover:bg-rose-500 text-white text-xs sm:text-sm font-semibold transition">
+          Quitter
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-2.5 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+      <div class="flex items-center gap-4">
+        <span>Restant : <strong id="hud-rem-dist" class="text-white">-- km</strong></span>
+        <span>Arrivée estimée : <strong id="hud-eta" class="text-white">--:--</strong></span>
+      </div>
+      <span id="hud-speed" class="px-2 py-0.5 rounded-md bg-white/10 font-mono text-emerald-300">0 km/h</span>
+    </div>
+  </div>
+
+  <!-- Barre de recherche flottante supérieure (Desktop à droite du panneau, Mobile en haut) -->
+  <div id="top-search-container" class="fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-20 pointer-events-none">
+    <div class="max-w-xl mx-auto md:mx-0 pointer-events-auto">
+      <div class="glass-panel rounded-2xl p-1.5 flex items-center gap-2">
+        <div class="pl-2.5 text-emerald-600 shrink-0">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <input
+          id="global-search-input"
+          type="text"
+          placeholder="Rechercher un lieu, une gare, un village..."
+          class="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none py-1.5"
+          autocomplete="off"
+        />
+        <button id="global-search-clear" class="hidden p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-200/50">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <!-- Badge statut réseau / hors-ligne -->
+        <button id="btn-open-offline-badge" title="Gérer le mode hors ligne" class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 transition">
+          <span id="network-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="network-label" class="hidden sm:inline">En ligne</span>
+        </button>
+      </div>
+
+      <!-- Résultats d'autocomplétion Nominatim -->
+      <div id="global-search-results" class="hidden mt-1.5 glass-panel rounded-2xl overflow-hidden divide-y divide-slate-200/60 max-h-64 overflow-y-auto custom-scroll"></div>
+    </div>
+  </div>
+
+  <!-- Contrôles rapides flottants à droite -->
+  <div class="fixed right-3 top-20 md:top-4 z-20 flex flex-col gap-2">
+    <!-- Ma position GPS -->
+    <button id="btn-locate-me" title="Ma position GPS" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+      </svg>
+    </button>
+
+    <!-- Point d'eau le plus proche -->
+    <button id="btn-nearest-water" title="Itinéraire vers le point d'eau le plus proche" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-sky-600 hover:bg-sky-50 active:scale-95 transition relative">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+      </svg>
+      <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center shadow">+</span>
+    </button>
+
+    <!-- Calque Surligner Pistes & Véloroutes -->
+    <button id="btn-toggle-cycleways" title="Surligner pistes & véloroutes" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="5.5" cy="17.5" r="3.5"/>
+        <circle cx="18.5" cy="17.5" r="3.5"/>
+        <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/>
+      </svg>
+    </button>
+
+    <!-- Sélecteur de fonds de carte -->
+    <div class="relative">
+      <button id="btn-layer-menu" title="Fonds de carte" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      </button>
+
+      <!-- Popover choix fond de carte -->
+      <div id="layer-menu-popover" class="hidden absolute right-13 top-0 w-52 glass-panel rounded-2xl p-2 space-y-1 z-30">
+        <div class="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Fond de carte</div>
+        <button data-layer="cyclosm" class="layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700">
+          <span>CyclOSM (Vélo)</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        </button>
+        <button data-layer="osm" class="layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200/50">
+          <span>OSM Standard</span>
+          <span class="w-2 h-2 rounded-full bg-transparent"></span>
+        </button>
+        <button data-layer="opentopo" class="layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200/50">
+          <span>OpenTopoMap (Relief)</span>
+          <span class="w-2 h-2 rounded-full bg-transparent"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mode Hors Ligne -->
+    <button id="btn-offline-modal" title="Mode Hors Ligne & Téléchargement de zone" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-slate-700 hover:text-emerald-600 active:scale-95 transition">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+    </button>
+
+    <!-- Zoom + / - (Desktop) -->
+    <div class="hidden md:flex flex-col glass-panel rounded-2xl overflow-hidden">
+      <button id="btn-zoom-in" title="Zoom avant" class="w-11 h-10 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 border-b border-slate-200/60 font-bold text-lg">+</button>
+      <button id="btn-zoom-out" title="Zoom arrière" class="w-11 h-10 flex items-center justify-center text-slate-700 hover:bg-slate-200/50 font-bold text-lg">−</button>
+    </div>
+  </div>
+
+  <!-- Panneau latéral Desktop / Bottom Sheet Mobile -->
+  <aside id="side-drawer" class="glass-panel sheet-collapsed flex flex-col overflow-hidden">
+    <!-- Poignée tactile mobile -->
+    <div id="sheet-drag-handle" class="md:hidden pt-2.5 pb-1.5 flex flex-col items-center cursor-grab active:cursor-grabbing shrink-0">
+      <div class="w-10 h-1.5 rounded-full bg-slate-300/90"></div>
+    </div>
+
+    <!-- En-tête marque & onglets -->
+    <div class="px-4 pt-1 md:pt-4 pb-2.5 border-b border-slate-200/60 shrink-0">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-sm">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="5.5" cy="17.5" r="3.5"/>
+              <circle cx="18.5" cy="17.5" r="3.5"/>
+              <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-base font-bold tracking-tight text-slate-900 leading-none">CycloLibre</h1>
+            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Carte vélo & navigation libre</p>
+          </div>
+        </div>
+
+        <!-- Bouton expansion mobile rapide -->
+        <button id="btn-toggle-sheet-mobile" class="md:hidden px-2.5 py-1 rounded-xl bg-slate-200/70 text-xs font-semibold text-slate-700">
+          Panneau
+        </button>
+      </div>
+
+      <!-- Navigation par onglets -->
+      <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
+        <button data-tab="explore" class="tab-btn py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
+          Explorer
+        </button>
+        <button data-tab="route" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Itinéraire
+        </button>
+        <button data-tab="gpx" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          GPX & Outils
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenu défilant des onglets -->
+    <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4">
+
+      <!-- ONGLET 1 : EXPLORER (Points d'eau & Pistes) -->
+      <section id="tab-explore" class="space-y-4">
+        <!-- Carte résumé points d'eau -->
+        <div class="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                </svg>
+              </span>
+              <div>
+                <h2 class="text-sm font-bold text-slate-900">Points d'eau potable</h2>
+                <p id="water-status-text" class="text-[11px] text-slate-600">Chargement autour de la carte...</p>
+              </div>
+            </div>
+            <button id="btn-refresh-water" title="Actualiser les points d'eau" class="p-2 rounded-xl bg-white/80 hover:bg-white text-sky-600 shadow-sm transition">
+              <svg id="icon-refresh-water" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+          </div>
+
+          <button id="btn-route-nearest-water-panel" class="w-full py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+            <span>Aller au point d'eau le plus proche</span>
+          </button>
+        </div>
+
+        <!-- Liste des points d'eau à proximité -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">À proximité (<span id="water-count">0</span>)</h3>
+            <span class="text-[11px] text-slate-400">Données OpenStreetMap</span>
+          </div>
+          <div id="water-list" class="space-y-2">
+            <div class="text-xs text-slate-500 text-center py-6 bg-white/50 rounded-2xl">
+              Déplacez la carte pour afficher les fontaines et robinets publics.
+            </div>
+          </div>
+        </div>
+
+        <!-- Calque Pistes & Véloroutes -->
+        <div class="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M4 19L8 5M16 5l4 14M12 6v2M12 11v2M12 16v2"/>
+                </svg>
+              </span>
+              <div>
+                <h2 class="text-sm font-bold text-slate-900">Pistes & Véloroutes</h2>
+                <p class="text-[11px] text-slate-600">Surbrillance interactive Overpass</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="toggle-cycleways-checkbox" type="checkbox" class="sr-only peer" />
+              <div class="w-10 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+          <p class="text-[11px] text-slate-600 leading-relaxed">
+            Activez ce calque pour rendre les pistes cyclables et itinéraires EuroVelo cliquables (nom, réseau et revêtement).
+          </p>
+        </div>
+
+        <!-- Légende rapide CyclOSM -->
+        <div class="rounded-2xl bg-white/60 border border-slate-200/70 p-3.5 space-y-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Légende CyclOSM</h3>
+          <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-700">
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full bg-[#0073e6]"></span>
+              <span>Piste cyclable dédiée</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full bg-[#16a34a]"></span>
+              <span>Voie verte / Parc</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full border-b-2 border-dashed border-[#0073e6]"></span>
+              <span>Bande cyclable</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-1.5 rounded-full bg-[#a855f7]"></span>
+              <span>Véloroute / EuroVelo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ONGLET 2 : ITINÉRAIRE VÉLO & GUIDAGE -->
+      <section id="tab-route" class="hidden space-y-4">
+        <!-- Formulaire Départ / Arrivée -->
+        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3 space-y-2.5 shadow-sm">
+          <!-- Départ -->
+          <div class="relative flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0"></span>
+            <input
+              id="input-origin"
+              type="text"
+              placeholder="Point de départ (ou clic carte)"
+              class="w-full text-xs bg-slate-100/80 focus:bg-white border border-transparent focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-800 focus:outline-none transition"
+              autocomplete="off"
+            />
+            <button id="btn-origin-gps" title="Utiliser ma position GPS" class="p-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-emerald-600 shrink-0 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+              </svg>
+            </button>
+          </div>
+          <div id="origin-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-40 overflow-y-auto text-xs z-30"></div>
+
+          <!-- Bouton inversion & indication clic carte -->
+          <div class="flex items-center justify-between pl-5 pr-1">
+            <span class="text-[11px] text-slate-400">Astuce : cliquez sur la carte pour placer un point</span>
+            <button id="btn-swap-points" title="Inverser départ et arrivée" class="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-500 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Arrivée -->
+          <div class="relative flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 ring-4 ring-rose-500/20 shrink-0"></span>
+            <input
+              id="input-dest"
+              type="text"
+              placeholder="Destination (gare, village, fontaine...)"
+              class="w-full text-xs bg-slate-100/80 focus:bg-white border border-transparent focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-800 focus:outline-none transition"
+              autocomplete="off"
+            />
+            <button id="btn-clear-route" title="Effacer l'itinéraire" class="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 shrink-0 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div id="dest-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-40 overflow-y-auto text-xs z-30"></div>
+        </div>
+
+        <!-- Sélecteur de profil vélo BRouter -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Profil cycliste (BRouter)</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button data-profile="trekking" class="profile-btn p-2 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-emerald-800 text-center transition">
+              <div class="text-xs font-bold">Balade</div>
+              <div class="text-[10px] text-emerald-700/80">Pistes & calme</div>
+            </button>
+            <button data-profile="fastbike" class="profile-btn p-2 rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white text-center transition">
+              <div class="text-xs font-bold">Route</div>
+              <div class="text-[10px] text-slate-500">Rapide asphalte</div>
+            </button>
+            <button data-profile="mtb" class="profile-btn p-2 rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white text-center transition">
+              <div class="text-xs font-bold">VTT</div>
+              <div class="text-[10px] text-slate-500">Chemins & forêt</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bouton Calculer l'itinéraire -->
+        <button id="btn-calculate-route" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          <span>Calculer l'itinéraire vélo</span>
+        </button>
+
+        <!-- Résultat de l'itinéraire : Stats, Profil SVG, Guidage, Instructions -->
+        <div id="route-summary-card" class="hidden space-y-3.5">
+          <!-- Chiffres clés -->
+          <div class="rounded-2xl bg-slate-900 text-white p-3.5 shadow-md">
+            <div class="flex items-center justify-between mb-2">
+              <span id="route-engine-badge" class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">BRouter Vélo</span>
+              <button id="btn-export-gpx-inline" class="text-[11px] text-sky-300 hover:text-sky-200 font-semibold flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Exporter GPX</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center py-1">
+              <div>
+                <div id="stat-distance" class="text-lg font-bold text-white">-- km</div>
+                <div class="text-[10px] text-slate-400 uppercase">Distance</div>
+              </div>
+              <div class="border-x border-white/10">
+                <div id="stat-duration" class="text-lg font-bold text-emerald-400">-- min</div>
+                <div class="text-[10px] text-slate-400 uppercase">Durée vélo</div>
+              </div>
+              <div>
+                <div id="stat-elevation" class="text-sm font-bold text-sky-300 mt-1">+0 / -0 m</div>
+                <div class="text-[10px] text-slate-400 uppercase">Dénivelé</div>
+              </div>
+            </div>
+
+            <!-- Bouton Démarrer le guidage GPS -->
+            <button id="btn-start-guidance" class="mt-3 w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition shadow">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Démarrer le guidage GPS</span>
+            </button>
+          </div>
+
+          <!-- Profil altimétrique SVG interactif -->
+          <div class="rounded-2xl bg-white/80 border border-slate-200/80 p-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-slate-800">Profil altimétrique</span>
+              <span id="ele-hover-info" class="text-[11px] font-mono text-emerald-700 font-semibold">Survolez la courbe</span>
+            </div>
+            <div id="elevation-chart-container" class="w-full h-28 relative select-none cursor-crosshair">
+              <!-- SVG injecté dynamiquement -->
+            </div>
+          </div>
+
+          <!-- Liste des instructions virage par virage -->
+          <div class="rounded-2xl bg-white/80 border border-slate-200/80 p-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Feuille de route (<span id="steps-count">0</span> étapes)</h3>
+            <div id="route-steps-list" class="space-y-2 max-h-60 overflow-y-auto custom-scroll pr-1"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ONGLET 3 : GPX & OUTILS HORS LIGNE -->
+      <section id="tab-gpx" class="hidden space-y-4">
+        <!-- Import / Export GPX -->
+        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900">Traces GPX</h2>
+            <p class="text-[11px] text-slate-500">Importez une trace locale ou exportez votre itinéraire calculé.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <label class="cursor-pointer py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span>Importer GPX</span>
+              <input id="input-import-gpx" type="file" accept=".gpx,application/gpx+xml" class="hidden" />
+            </label>
+
+            <button id="btn-export-gpx-tab" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Exporter GPX</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Raccourci Mode Hors Ligne -->
+        <div class="rounded-2xl bg-indigo-500/10 border border-indigo-500/20 p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Cartes Hors Ligne (IndexedDB)</h2>
+              <p id="offline-summary-mini" class="text-[11px] text-slate-600">0 tuiles et 0 points d'eau en cache</p>
+            </div>
+          </div>
+          <button id="btn-open-offline-from-tab" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition">
+            Gérer le cache & télécharger une zone
+          </button>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- Menu contextuel flottant au clic sur la carte -->
+  <div id="map-click-menu" class="hidden fixed z-40 glass-panel rounded-2xl p-2 w-56 shadow-xl">
+    <div class="px-2.5 py-1 text-[11px] font-mono text-slate-500 border-b border-slate-200/70 mb-1" id="map-click-coords">49.4170, 2.8260</div>
+    <button id="ctx-set-origin" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-800 hover:bg-emerald-500/15 hover:text-emerald-700 flex items-center gap-2 transition">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+      <span>Départ ici</span>
+    </button>
+    <button id="ctx-set-dest" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-800 hover:bg-rose-500/15 hover:text-rose-700 flex items-center gap-2 transition">
+      <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+      <span>Arrivée ici</span>
+    </button>
+    <button id="ctx-close" class="w-full text-left px-3 py-1.5 rounded-xl text-[11px] text-slate-400 hover:text-slate-600 mt-0.5">
+      Fermer
+    </button>
+  </div>
+
+  <!-- MODALE DÉDIÉE : MODE HORS LIGNE & TÉLÉCHARGEMENT DE ZONE -->
+  <div id="offline-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
+    <div class="glass-panel bg-white/95 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Mode Hors Ligne</h2>
+            <p class="text-xs text-slate-500">Stockage local IndexedDB</p>
+          </div>
+        </div>
+        <button id="btn-close-offline-modal" class="p-2 rounded-xl hover:bg-slate-200/70 text-slate-500">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- État connexion & interrupteur forcer hors ligne -->
+      <div class="rounded-2xl bg-slate-100/90 p-3.5 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-700">État du réseau</span>
+          <span id="modal-network-status" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">Connecté</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-200/80">
+          <div>
+            <div class="text-xs font-bold text-slate-800">Forcer la lecture hors ligne</div>
+            <div class="text-[11px] text-slate-500">Utilise uniquement les tuiles et données en cache</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input id="toggle-force-offline" type="checkbox" class="sr-only peer" />
+            <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Télécharger cette zone -->
+      <div class="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 space-y-3">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Télécharger cette zone</h3>
+          <p class="text-[11px] text-slate-600">Pré-charge les tuiles CyclOSM (zooms 12 à 15), les points d'eau et les pistes cyclables autour du centre actuel de la carte.</p>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Rayon autour du centre</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button data-radius="5" class="radius-btn py-2 rounded-xl border-2 border-indigo-600 bg-indigo-600/10 text-indigo-800 text-xs font-bold">5 km</button>
+            <button data-radius="10" class="radius-btn py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold">10 km</button>
+            <button data-radius="15" class="radius-btn py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold">15 km</button>
+          </div>
+        </div>
+
+        <!-- Barre de progression -->
+        <div id="download-progress-box" class="hidden space-y-1.5">
+          <div class="flex justify-between text-xs font-semibold text-indigo-900">
+            <span id="download-progress-label">Préparation...</span>
+            <span id="download-progress-pct">0%</span>
+          </div>
+          <div class="w-full h-2.5 bg-indigo-200/80 rounded-full overflow-hidden">
+            <div id="download-progress-bar" class="h-full bg-indigo-600 rounded-full transition-all duration-150" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="btn-start-zone-download" class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">
+            Lancer le téléchargement
+          </button>
+          <button id="btn-cancel-zone-download" class="hidden py-2.5 px-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition">
+            Arrêter
+          </button>
+        </div>
+      </div>
+
+      <!-- Statistiques du cache & Vidage -->
+      <div class="rounded-2xl bg-white border border-slate-200 p-3.5 space-y-3">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 font-medium">Tuiles CyclOSM / OSM en cache</span>
+          <span id="cache-stat-tiles" class="font-bold text-slate-900">0 tuiles</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 font-medium">Points d'eau & pistes sauvegardés</span>
+          <span id="cache-stat-pois" class="font-bold text-slate-900">0 POI / 0 pistes</span>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100">
+          <button id="btn-clear-cache" class="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition">
+            Vider le cache hors ligne
+          </button>
+          <div id="confirm-clear-cache-box" class="hidden mt-2 p-2.5 rounded-xl bg-rose-100/80 flex items-center justify-between gap-2">
+            <span class="text-[11px] font-semibold text-rose-900">Supprimer toutes les cartes stockées ?</span>
+            <div class="flex gap-1.5">
+              <button id="btn-confirm-clear-yes" class="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] font-bold">Oui</button>
+              <button id="btn-confirm-clear-no" class="px-2.5 py-1 rounded-lg bg-white text-slate-700 text-[11px] font-semibold">Non</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteneur de notifications Toast (remplace tout alert()) -->
+  <div id="toast-container" class="fixed bottom-36 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4"></div>
+
+  <!-- Leaflet 1.9.4 JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <script>
+    /**
+     * =========================================================================
+     * CycloLibre — Application Web Vélo, Points d'Eau & Navigation Hors Ligne
+     * Architecture Vanilla JS modulaire en fichier unique
+     * =========================================================================
+     */
+
+    // -------------------------------------------------------------------------
+    // 1. GESTIONNAIRE INDEXEDDB (CycloLibreOfflineDB)
+    // -------------------------------------------------------------------------
+    const OfflineDB = (() => {
+      const DB_NAME = 'CycloLibreOfflineDB';
+      const DB_VERSION = 1;
+      let dbInstance = null;
+
+      function open() {
+        if (dbInstance) return Promise.resolve(dbInstance);
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('tiles')) {
+              db.createObjectStore('tiles', { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains('pois')) {
+              db.createObjectStore('pois', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('cycleways')) {
+              db.createObjectStore('cycleways', { keyPath: 'id' });
+            }
+          };
+          req.onsuccess = (e) => {
+            dbInstance = e.target.result;
+            resolve(dbInstance);
+          };
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async function getTile(key) {
+        try {
+          const db = await open();
+          return new Promise((resolve) => {
+            const tx = db.transaction('tiles', 'readonly');
+            const req = tx.objectStore('tiles').get(key);
+            req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+            req.onerror = () => resolve(null);
+          });
+        } catch {
+          return null;
+        }
+      }
+
+      async function putTile(key, layerId, z, x, y, blob) {
+        try {
+          const db = await open();
+          return new Promise((resolve) => {
+            const tx = db.transaction('tiles', 'readwrite');
+            tx.objectStore('tiles').put({ key, layerId, z, x, y, blob, timestamp: Date.now() });
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          });
+        } catch {
+          return false;
+        }
+      }
+
+      async function putPOIs(poisArray) {
+        if (!poisArray || !poisArray.length) return;
+        try {
+          const db = await open();
+          const tx = db.transaction('pois', 'readwrite');
+          const store = tx.objectStore('pois');
+          poisArray.forEach((p) => store.put(p));
+        } catch (err) {
+          console.warn('Erreur sauvegarde POIs IndexedDB:', err);
+        }
+      }
+
+      async function getAllPOIs() {
+        try {
+          const db = await open();
+          return new Promise((resolve) => {
+            const tx = db.transaction('pois', 'readonly');
+            const req = tx.objectStore('pois').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+          });
+        } catch {
+          return [];
+        }
+      }
+
+      async function putCycleways(waysArray) {
+        if (!waysArray || !waysArray.length) return;
+        try {
+          const db = await open();
+          const tx = db.transaction('cycleways', 'readwrite');
+          const store = tx.objectStore('cycleways');
+          waysArray.forEach((w) => store.put(w));
+        } catch (err) {
+          console.warn('Erreur sauvegarde cycleways IndexedDB:', err);
+        }
+      }
+
+      async function getAllCycleways() {
+        try {
+          const db = await open();
+          return new Promise((resolve) => {
+            const tx = db.transaction('cycleways', 'readonly');
+            const req = tx.objectStore('cycleways').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+          });
+        } catch {
+          return [];
+        }
+      }
+
+      async function getStats() {
+        try {
+          const db = await open();
+          const countStore = (storeName) =>
+            new Promise((resolve) => {
+              const tx = db.transaction(storeName, 'readonly');
+              const req = tx.objectStore(storeName).count();
+              req.onsuccess = () => resolve(req.result || 0);
+              req.onerror = () => resolve(0);
+            });
+          const [tiles, pois, cycleways] = await Promise.all([
+            countStore('tiles'),
+            countStore('pois'),
+            countStore('cycleways'),
+          ]);
+          return { tiles, pois, cycleways };
+        } catch {
+          return { tiles: 0, pois: 0, cycleways: 0 };
+        }
+      }
+
+      async function clearAll() {
+        const db = await open();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(['tiles', 'pois', 'cycleways'], 'readwrite');
+          tx.objectStore('tiles').clear();
+          tx.objectStore('pois').clear();
+          tx.objectStore('cycleways').clear();
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      return { open, getTile, putTile, putPOIs, getAllPOIs, putCycleways, getAllCycleways, getStats, clearAll };
+    })();
+
+    // -------------------------------------------------------------------------
+    // 2. ÉTAT GLOBAL DE L'APPLICATION
+    // -------------------------------------------------------------------------
+    const AppState = {
+      map: null,
+      activeLayerId: 'cyclosm',
+      baseLayers: {},
+      forceOffline: false,
+      userLocation: null, // { lat, lon, accuracy }
+      userMarker: null,
+      userAccuracyCircle: null,
+      waterPoints: [], // Liste des points d'eau chargés
+      waterMarkersLayer: null,
+      cyclewaysEnabled: false,
+      cyclewaysLayer: null,
+      // Routage & Navigation
+      origin: null, // { lat, lon, label }
+      dest: null,   // { lat, lon, label }
+      originMarker: null,
+      destMarker: null,
+      selectedProfile: 'trekking',
+      currentRoute: null, // { coords: [[lat, lon, ele]], distance, duration, ascent, descent, steps, source }
+      routePolyline: null,
+      routeOutlinePolyline: null,
+      hoverElevationMarker: null,
+      // Guidage temps réel
+      isGuiding: false,
+      watchId: null,
+      voiceEnabled: true,
+      lastSpokenStepIndex: -1,
+      lastSpokenThreshold: null,
+      // Téléchargement zone hors ligne
+      selectedRadiusKm: 5,
+      isDownloadingZone: false,
+      cancelDownloadFlag: false,
+      // Clic carte temporaire
+      pendingClickLatLng: null,
+    };
+
+    // -------------------------------------------------------------------------
+    // 3. UTILITAIRES GÉOGRAPHIQUES, FORMATAGE & TOASTS
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info', duration = 3400) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        info: 'bg-slate-900/90 text-white border-white/15',
+        success: 'bg-emerald-700/95 text-white border-emerald-400/30',
+        warning: 'bg-amber-600/95 text-white border-amber-300/30',
+        error: 'bg-rose-600/95 text-white border-rose-300/30',
+      };
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-2xl border backdrop-blur-md shadow-xl text-xs font-semibold flex items-center gap-2 transition-all duration-300 opacity-0 translate-y-2 ${colors[type] || colors.info}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    function isOfflineMode() {
+      return AppState.forceOffline || !navigator.onLine;
+    }
+
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // mètres
+      const toRad = (deg) => (deg * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function formatDistance(meters) {
+      if (meters < 1000) return `${Math.round(meters)} m`;
+      return `${(meters / 1000).toFixed(1)} km`;
+    }
+
+    function formatDuration(seconds) {
+      const mins = Math.round(seconds / 60);
+      if (mins < 60) return `${mins} min`;
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h ${m < 10 ? '0' : ''}${m}`;
+    }
+
+    function computeBearing(lat1, lon1, lat2, lon2) {
+      const toRad = (d) => (d * Math.PI) / 180;
+      const toDeg = (r) => (r * 180) / Math.PI;
+      const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+      const x =
+        Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+        Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+      return (toDeg(Math.atan2(y, x)) + 360) % 360;
+    }
+
+    function debounce(fn, delay) {
+      let timer = null;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. COUCHE TUILES HORS LIGNE PERSONNALISÉE (L.TileLayer + IndexedDB)
+    // -------------------------------------------------------------------------
+    const OfflineTileLayer = L.TileLayer.extend({
+      initialize: function (urlTemplate, options) {
+        this._layerId = options.layerId || 'cyclosm';
+        L.TileLayer.prototype.initialize.call(this, urlTemplate, options);
+      },
+
+      createTile: function (coords, done) {
+        const tile = document.createElement('img');
+        tile.setAttribute('role', 'presentation');
+        tile.alt = '';
+
+        const key = `${this._layerId}_${coords.z}_${coords.x}_${coords.y}`;
+        const url = this.getTileUrl(coords);
+
+        OfflineDB.getTile(key).then((cachedBlob) => {
+          if (cachedBlob) {
+            const objectUrl = URL.createObjectURL(cachedBlob);
+            tile.onload = () => {
+              URL.revokeObjectURL(objectUrl);
+              done(null, tile);
+            };
+            tile.onerror = () => done(null, tile);
+            tile.src = objectUrl;
+            return;
+          }
+
+          // Si hors-ligne et pas en cache : générer une tuile placeholder discrète
+          if (isOfflineMode()) {
+            tile.src = createOfflinePlaceholderDataUrl(coords.z, coords.x, coords.y);
+            done(null, tile);
+            return;
+          }
+
+          // En ligne : télécharger la tuile, la sauvegarder dans IndexedDB et l'afficher
+          fetch(url, { mode: 'cors' })
+            .then((res) => {
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              return res.blob();
+            })
+            .then((blob) => {
+              OfflineDB.putTile(key, this._layerId, coords.z, coords.x, coords.y, blob);
+              const objectUrl = URL.createObjectURL(blob);
+              tile.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                done(null, tile);
+              };
+              tile.onerror = () => done(null, tile);
+              tile.src = objectUrl;
+            })
+            .catch(() => {
+              // Repli direct via balise img standard si CORS bloqué
+              tile.onload = () => done(null, tile);
+              tile.onerror = () => {
+                tile.src = createOfflinePlaceholderDataUrl(coords.z, coords.x, coords.y);
+                done(null, tile);
+              };
+              tile.src = url;
+            });
+        });
+
+        return tile;
+      },
+    });
+
+    function createOfflinePlaceholderDataUrl(z, x, y) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
+        <rect width="256" height="256" fill="#f1f5f9"/>
+        <path d="M0 0h256v256H0z" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+        <text x="128" y="124" font-family="sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Hors ligne</text>
+        <text x="128" y="140" font-family="monospace" font-size="9" fill="#cbd5e1" text-anchor="middle">z${z}/${x}/${y}</text>
+      </svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. INITIALISATION DE LA CARTE LEAFLET & ICÔNES SVG
+    // -------------------------------------------------------------------------
+    function initMap() {
+      // Vue initiale centrée sur la vallée de l'Oise / Compiègne [49.417, 2.826], zoom 13
+      const map = L.map('map', {
+        center: [49.417, 2.826],
+        zoom: 13,
+        zoomControl: false,
+      });
+
+      AppState.baseLayers = {
+        cyclosm: new OfflineTileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+          layerId: 'cyclosm',
+          maxZoom: 20,
+          attribution: '© OpenStreetMap & CyclOSM',
+        }),
+        osm: new OfflineTileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          layerId: 'osm',
+          maxZoom: 19,
+          attribution: '© OpenStreetMap contributors',
+        }),
+        opentopo: new OfflineTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+          layerId: 'opentopo',
+          maxZoom: 17,
+          attribution: '© OpenStreetMap & OpenTopoMap',
+        }),
+      };
+
+      AppState.baseLayers.cyclosm.addTo(map);
+      AppState.waterMarkersLayer = L.layerGroup().addTo(map);
+      AppState.cyclewaysLayer = L.layerGroup().addTo(map);
+      AppState.map = map;
+
+      // Chargement initial des points d'eau
+      loadWaterPointsForCurrentView();
+
+      // Actualisation avec anti-rebond au déplacement de la carte
+      const debouncedMoveHandler = debounce(() => {
+        loadWaterPointsForCurrentView();
+        if (AppState.cyclewaysEnabled) {
+          loadCyclewaysForCurrentView();
+        }
+      }, 750);
+
+      map.on('moveend', debouncedMoveHandler);
+
+      // Clic sur la carte pour menu "Départ ici / Arrivée ici"
+      map.on('click', (e) => {
+        openMapClickContextMenu(e.latlng, e.originalEvent);
+      });
+    }
+
+    function switchBaseLayer(layerId) {
+      if (!AppState.baseLayers[layerId] || AppState.activeLayerId === layerId) return;
+      AppState.map.removeLayer(AppState.baseLayers[AppState.activeLayerId]);
+      AppState.baseLayers[layerId].addTo(AppState.map);
+      AppState.activeLayerId = layerId;
+
+      document.querySelectorAll('.layer-option').forEach((btn) => {
+        const active = btn.dataset.layer === layerId;
+        btn.className = active
+          ? 'layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700'
+          : 'layer-option w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200/50';
+        const dot = btn.querySelector('span:last-child');
+        dot.className = active ? 'w-2 h-2 rounded-full bg-emerald-500' : 'w-2 h-2 rounded-full bg-transparent';
+      });
+    }
+
+    function createWaterDropIcon() {
+      const html = `
+        <div class="w-8 h-8 -ml-4 -mt-8 flex items-center justify-center drop-shadow-md transition-transform hover:scale-110">
+          <svg width="30" height="36" viewBox="0 0 30 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 1.5C15 1.5 2.5 14.8 2.5 23C2.5 29.9 8.1 34.5 15 34.5C21.9 34.5 27.5 29.9 27.5 23C27.5 14.8 15 1.5 15 1.5Z" fill="#0284C7" stroke="#FFFFFF" stroke-width="2.2"/>
+            <path d="M10.5 22.5C10.5 25.2 12.6 27.2 15.2 27.2" stroke="#BAE6FD" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>`;
+      return L.divIcon({
+        html,
+        className: 'custom-water-icon',
+        iconSize: [0, 0],
+        popupAnchor: [0, -30],
+      });
+    }
+
+    function createPinIcon(colorHex, label) {
+      const html = `
+        <div class="flex flex-col items-center -ml-4 -mt-9 drop-shadow-md">
+          <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-xs shadow" style="background:${colorHex}">
+            ${label}
+          </div>
+          <div class="w-1.5 h-2 -mt-0.5 rounded-b-full" style="background:${colorHex}"></div>
+        </div>`;
+      return L.divIcon({
+        html,
+        className: 'custom-pin-icon',
+        iconSize: [0, 0],
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. API OVERPASS (POINTS D'EAU POTABLE & PISTES CYCLABLES + FALLBACK)
+    // -------------------------------------------------------------------------
+    const OVERPASS_ENDPOINTS = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+    ];
+
+    async function fetchOverpassWithFallback(query) {
+      let lastError = null;
+      for (const endpoint of OVERPASS_ENDPOINTS) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 14000);
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: 'data=' + encodeURIComponent(query),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.json();
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw lastError || new Error('Serveurs Overpass indisponibles');
+    }
+
+    function parseWaterElement(el) {
+      const lat = el.lat ?? el.center?.lat;
+      const lon = el.lon ?? el.center?.lon;
+      if (lat == null || lon == null) return null;
+      const tags = el.tags || {};
+
+      let typeLabel = "Fontaine d'eau potable";
+      if (tags.man_made === 'water_tap') typeLabel = "Robinet d'eau potable";
+      else if (tags.natural === 'spring') typeLabel = 'Source potable';
+      else if (tags.fountain === 'drinking') typeLabel = 'Fontaine publique';
+
+      const name = tags.name || tags.operator || typeLabel;
+      return {
+        id: `${el.type}_${el.id}`,
+        lat,
+        lon,
+        typeLabel,
+        name,
+        access: tags.access || 'public',
+        seasonal: tags.seasonal || null,
+      };
+    }
+
+    async function loadWaterPointsForCurrentView() {
+      const map = AppState.map;
+      const statusEl = document.getElementById('water-status-text');
+
+      if (map.getZoom() < 11 && !isOfflineMode()) {
+        statusEl.textContent = 'Zoomez davantage pour charger les fontaines';
+        return;
+      }
+
+      const bounds = map.getBounds();
+      const s = bounds.getSouth().toFixed(4);
+      const w = bounds.getWest().toFixed(4);
+      const n = bounds.getNorth().toFixed(4);
+      const e = bounds.getEast().toFixed(4);
+
+      if (isOfflineMode()) {
+        const cached = await OfflineDB.getAllPOIs();
+        const inView = cached.filter(
+          (p) => p.lat >= bounds.getSouth() && p.lat <= bounds.getNorth() && p.lon >= bounds.getWest() && p.lon <= bounds.getEast()
+        );
+        AppState.waterPoints = inView;
+        renderWaterPoints(inView);
+        statusEl.textContent = `${inView.length} point(s) d'eau (cache hors ligne)`;
+        return;
+      }
+
+      statusEl.textContent = 'Recherche via Overpass...';
+      const query = `[out:json][timeout:12];
+        (
+          node["amenity"="drinking_water"](${s},${w},${n},${e});
+          way["amenity"="drinking_water"](${s},${w},${n},${e});
+          node["man_made"="water_tap"](${s},${w},${n},${e});
+          node["natural"="spring"]["drinking_water"="yes"](${s},${w},${n},${e});
+        );
+        out center;`;
+
+      try {
+        const data = await fetchOverpassWithFallback(query);
+        const points = (data.elements || []).map(parseWaterElement).filter(Boolean);
+        AppState.waterPoints = points;
+        OfflineDB.putPOIs(points);
+        renderWaterPoints(points);
+        statusEl.textContent = `${points.length} point(s) d'eau détecté(s)`;
+      } catch (err) {
+        // Repli sur le cache IndexedDB si réseau capricieux
+        const cached = await OfflineDB.getAllPOIs();
+        const inView = cached.filter(
+          (p) => p.lat >= bounds.getSouth() && p.lat <= bounds.getNorth() && p.lon >= bounds.getWest() && p.lon <= bounds.getEast()
+        );
+        AppState.waterPoints = inView;
+        renderWaterPoints(inView);
+        statusEl.textContent = inView.length
+          ? `${inView.length} point(s) d'eau (secours local)`
+          : 'Erreur Overpass — réessayez';
+      }
+    }
+
+    function renderWaterPoints(points) {
+      AppState.waterMarkersLayer.clearLayers();
+      const refPoint = AppState.userLocation || {
+        lat: AppState.map.getCenter().lat,
+        lon: AppState.map.getCenter().lng,
+      };
+
+      // Trier par distance croissante
+      const sorted = points
+        .map((p) => ({
+          ...p,
+          distance: haversineDistance(refPoint.lat, refPoint.lon, p.lat, p.lon),
+        }))
+        .sort((a, b) => a.distance - b.distance);
+
+      const icon = createWaterDropIcon();
+
+      sorted.forEach((p) => {
+        const marker = L.marker([p.lat, p.lon], { icon });
+        const popupHtml = `
+          <div class="p-3.5 font-sans">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600">${p.typeLabel}</span>
+            </div>
+            <div class="text-sm font-bold text-slate-900 mb-1">${escapeHtml(p.name)}</div>
+            <div class="text-xs text-slate-500 mb-3">À <strong>${formatDistance(p.distance)}</strong> à vol d'oiseau</div>
+            <button onclick="routeToWaterPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              <span>Y aller à vélo</span>
+            </button>
+          </div>`;
+        marker.bindPopup(popupHtml);
+        AppState.waterMarkersLayer.addLayer(marker);
+      });
+
+      // Mise à jour de la liste latérale
+      document.getElementById('water-count').textContent = sorted.length;
+      const listEl = document.getElementById('water-list');
+
+      if (!sorted.length) {
+        listEl.innerHTML = `<div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Aucun point d'eau répertorié dans cette zone.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = sorted
+        .slice(0, 25)
+        .map(
+          (p) => `
+          <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white/75 hover:bg-white border border-slate-200/70 transition">
+            <div class="min-w-0 cursor-pointer flex-1" onclick="focusWaterPoint(${p.lat}, ${p.lon})">
+              <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-500">${p.typeLabel} • <span class="font-semibold text-sky-600">${formatDistance(p.distance)}</span></div>
+            </div>
+            <button onclick="routeToWaterPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-600 text-sky-700 hover:text-white text-xs font-bold transition">
+              Y aller
+            </button>
+          </div>`
+        )
+        .join('');
+    }
+
+    window.focusWaterPoint = function (lat, lon) {
+      AppState.map.flyTo([lat, lon], 16, { duration: 0.8 });
+    };
+
+    window.routeToWaterPoint = function (lat, lon, label) {
+      AppState.map.closePopup();
+      setRouteDestination(lat, lon, label || "Point d'eau potable");
+      if (!AppState.origin) {
+        if (AppState.userLocation) {
+          setRouteOrigin(AppState.userLocation.lat, AppState.userLocation.lon, 'Ma position GPS');
+        } else {
+          const c = AppState.map.getCenter();
+          setRouteOrigin(c.lat, c.lng, 'Centre de la carte');
+        }
+      }
+      switchSidebarTab('route');
+      expandMobileSheetIfCollapsed();
+      calculateBikeRoute();
+    };
+
+    async function routeToNearestWaterPoint() {
+      const ref = AppState.userLocation || {
+        lat: AppState.map.getCenter().lat,
+        lon: AppState.map.getCenter().lng,
+      };
+
+      if (!AppState.waterPoints.length) {
+        showToast("Recherche des points d'eau à proximité...", 'info');
+        await loadWaterPointsForCurrentView();
+      }
+
+      if (!AppState.waterPoints.length) {
+        showToast("Aucun point d'eau trouvé dans cette zone.", 'warning');
+        return;
+      }
+
+      let nearest = null;
+      let minDist = Infinity;
+      AppState.waterPoints.forEach((p) => {
+        const d = haversineDistance(ref.lat, ref.lon, p.lat, p.lon);
+        if (d < minDist) {
+          minDist = d;
+          nearest = p;
+        }
+      });
+
+      if (nearest) {
+        showToast(`Point d'eau le plus proche : ${nearest.name} (${formatDistance(minDist)})`, 'success');
+        window.routeToWaterPoint(nearest.lat, nearest.lon, nearest.name);
+      }
+    }
+
+    // Calque optionnel "Surligner pistes & véloroutes"
+    async function loadCyclewaysForCurrentView() {
+      if (!AppState.cyclewaysEnabled) {
+        AppState.cyclewaysLayer.clearLayers();
+        return;
+      }
+
+      const bounds = AppState.map.getBounds();
+      if (AppState.map.getZoom() < 11 && !isOfflineMode()) {
+        showToast('Zoomez légèrement pour afficher le surlignage des pistes.', 'info');
+        return;
+      }
+
+      if (isOfflineMode()) {
+        const cachedWays = await OfflineDB.getAllCycleways();
+        renderCycleways(cachedWays);
+        return;
+      }
+
+      const s = bounds.getSouth().toFixed(4);
+      const w = bounds.getWest().toFixed(4);
+      const n = bounds.getNorth().toFixed(4);
+      const e = bounds.getEast().toFixed(4);
+
+      const query = `[out:json][timeout:14];
+        (
+          way["highway"="cycleway"](${s},${w},${n},${e});
+          way["bicycle"="designated"](${s},${w},${n},${e});
+          relation["route"="bicycle"](${s},${w},${n},${e});
+        );
+        out geom;`;
+
+      try {
+        const data = await fetchOverpassWithFallback(query);
+        const ways = [];
+
+        (data.elements || []).forEach((el) => {
+          const tags = el.tags || {};
+          const name = tags.name || tags.ref || (tags.route === 'bicycle' ? 'Véloroute' : 'Piste cyclable');
+          const surface = tags.surface || 'Non renseigné';
+          const network = tags.network || (tags.route === 'bicycle' ? 'Itinéraire cyclable' : 'Piste locale');
+
+          if (el.type === 'way' && el.geometry) {
+            ways.push({
+              id: `way_${el.id}`,
+              coords: el.geometry.map((pt) => [pt.lat, pt.lon]),
+              name,
+              surface,
+              network,
+              isRoute: false,
+            });
+          } else if (el.type === 'relation' && el.members) {
+            el.members.forEach((m, idx) => {
+              if (m.type === 'way' && m.geometry) {
+                ways.push({
+                  id: `rel_${el.id}_${idx}`,
+                  coords: m.geometry.map((pt) => [pt.lat, pt.lon]),
+                  name,
+                  surface,
+                  network,
+                  isRoute: true,
+                });
+              }
+            });
+          }
+        });
+
+        OfflineDB.putCycleways(ways);
+        renderCycleways(ways);
+      } catch (err) {
+        const cachedWays = await OfflineDB.getAllCycleways();
+        renderCycleways(cachedWays);
+      }
+    }
+
+    function renderCycleways(ways) {
+      AppState.cyclewaysLayer.clearLayers();
+      ways.forEach((w) => {
+        if (!w.coords || w.coords.length < 2) return;
+        const line = L.polyline(w.coords, {
+          color: w.isRoute ? '#9333ea' : '#0ea5e9',
+          weight: w.isRoute ? 6 : 5,
+          opacity: 0.72,
+          lineCap: 'round',
+        });
+
+        line.bindPopup(`
+          <div class="p-3 font-sans">
+            <div class="text-[10px] font-bold uppercase tracking-wider ${w.isRoute ? 'text-purple-600' : 'text-sky-600'} mb-0.5">
+              ${escapeHtml(w.network)}
+            </div>
+            <div class="text-sm font-bold text-slate-900 mb-1">${escapeHtml(w.name)}</div>
+            <div class="text-xs text-slate-600">Revêtement : <strong>${escapeHtml(w.surface)}</strong></div>
+          </div>
+        `);
+        AppState.cyclewaysLayer.addLayer(line);
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. RECHERCHE D'ADRESSES NOMINATIM & MENU CLIC CARTE
+    // -------------------------------------------------------------------------
+    async function searchNominatim(query) {
+      if (!query || query.trim().length < 2) return [];
+      if (isOfflineMode()) {
+        showToast('Recherche d’adresse indisponible hors ligne.', 'warning');
+        return [];
+      }
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=fr&q=${encodeURIComponent(query)}`;
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        return await res.json();
+      } catch {
+        return [];
+      }
+    }
+
+    function openMapClickContextMenu(latlng, mouseEvent) {
+      AppState.pendingClickLatLng = latlng;
+      const menu = document.getElementById('map-click-menu');
+      document.getElementById('map-click-coords').textContent = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+
+      const x = Math.min(window.innerWidth - 235, Math.max(12, mouseEvent.clientX));
+      const y = Math.min(window.innerHeight - 150, Math.max(12, mouseEvent.clientY));
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
+      menu.classList.remove('hidden');
+    }
+
+    function setRouteOrigin(lat, lon, label) {
+      AppState.origin = { lat, lon, label };
+      document.getElementById('input-origin').value = label;
+      if (AppState.originMarker) AppState.map.removeLayer(AppState.originMarker);
+      AppState.originMarker = L.marker([lat, lon], { icon: createPinIcon('#10b981', 'D') }).addTo(AppState.map);
+    }
+
+    function setRouteDestination(lat, lon, label) {
+      AppState.dest = { lat, lon, label };
+      document.getElementById('input-dest').value = label;
+      if (AppState.destMarker) AppState.map.removeLayer(AppState.destMarker);
+      AppState.destMarker = L.marker([lat, lon], { icon: createPinIcon('#f43f5e', 'A') }).addTo(AppState.map);
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. CALCUL D'ITINÉRAIRE VÉLO (BROUTER + REPLI OSRM) & PROFIL SVG
+    // -------------------------------------------------------------------------
+    async function calculateBikeRoute() {
+      if (!AppState.origin || !AppState.dest) {
+        showToast('Veuillez sélectionner un point de départ et une destination.', 'warning');
+        return;
+      }
+      if (isOfflineMode()) {
+        showToast('Calcul de nouvel itinéraire impossible en mode hors ligne.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btn-calculate-route');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="animate-pulse">Calcul de l'itinéraire vélo...</span>`;
+
+      try {
+        const routeData = await fetchBRouterRoute(AppState.origin, AppState.dest, AppState.selectedProfile);
+        applyCalculatedRoute(routeData);
+      } catch (brouterErr) {
+        console.warn('BRouter indisponible, repli sur OSRM:', brouterErr);
+        try {
+          const osrmData = await fetchOSRMFallbackRoute(AppState.origin, AppState.dest);
+          applyCalculatedRoute(osrmData);
+          showToast('Itinéraire calculé via le moteur de secours OSRM.', 'info');
+        } catch (osrmErr) {
+          showToast("Impossible de calculer l'itinéraire (réseau ou zone non couverte).", 'error');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          <span>Calculer l'itinéraire vélo</span>`;
+      }
+    }
+
+    async function fetchBRouterRoute(origin, dest, profile) {
+      const url = `https://brouter.de/brouter?lonlats=${origin.lon},${origin.lat}|${dest.lon},${dest.lat}&profile=${profile}&alternativeidx=0&format=geojson`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 14000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error('BRouter HTTP ' + res.status);
+
+      const geojson = await res.json();
+      const feature = geojson.features?.[0];
+      if (!feature) throw new Error('Aucune géométrie BRouter');
+
+      // Coordonnées [lon, lat, ele] -> [lat, lon, ele]
+      const coords = feature.geometry.coordinates.map((c) => [c[1], c[0], c[2] ?? 0]);
+      const props = feature.properties || {};
+
+      let distance = parseFloat(props['track-length']) || 0;
+      if (!distance) {
+        for (let i = 1; i < coords.length; i++) {
+          distance += haversineDistance(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+        }
+      }
+
+      const duration = parseFloat(props['total-time']) || Math.round(distance / 4.8);
+      const { ascent, descent } = computeElevationGainLoss(coords);
+      const steps = generateTurnByTurnStepsFromCoords(coords, props.messages);
+
+      return {
+        coords,
+        distance,
+        duration,
+        ascent: Math.round(parseFloat(props['filtered ascend']) || ascent),
+        descent,
+        steps,
+        source: `BRouter (${profile})`,
+      };
+    }
+
+    async function fetchOSRMFallbackRoute(origin, dest) {
+      const url = `https://router.project-osrm.org/route/v1/bike/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson&steps=true`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('OSRM HTTP ' + res.status);
+      const data = await res.json();
+      const route = data.routes?.[0];
+      if (!route) throw new Error('Aucune route OSRM');
+
+      const rawCoords = route.geometry.coordinates.map((c) => [c[1], c[0], 0]);
+      // Enrichissement altimétrique léger via Open-Meteo (échantillonné)
+      const coords = await enrichCoordsWithElevation(rawCoords);
+      const { ascent, descent } = computeElevationGainLoss(coords);
+
+      const steps = [];
+      (route.legs || []).forEach((leg) => {
+        (leg.steps || []).forEach((s) => {
+          steps.push({
+            lat: s.maneuver.location[1],
+            lon: s.maneuver.location[0],
+            distance: s.distance,
+            instruction: formatOSRMStepFrench(s),
+            turnType: s.maneuver.modifier || s.maneuver.type || 'straight',
+          });
+        });
+      });
+
+      return {
+        coords,
+        distance: route.distance,
+        duration: route.duration,
+        ascent,
+        descent,
+        steps,
+        source: 'OSRM Vélo',
+      };
+    }
+
+    async function enrichCoordsWithElevation(coords) {
+      try {
+        const step = Math.max(1, Math.floor(coords.length / 40));
+        const sampled = coords.filter((_, idx) => idx % step === 0 || idx === coords.length - 1);
+        const lats = sampled.map((c) => c[0].toFixed(4)).join(',');
+        const lons = sampled.map((c) => c[1].toFixed(4)).join(',');
+        const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+        if (!res.ok) return coords;
+        const json = await res.json();
+        const eles = json.elevation || [];
+        if (eles.length !== sampled.length) return coords;
+
+        // Interpolation linéaire sur tous les points
+        let sampleIdx = 0;
+        return coords.map((c, idx) => {
+          while (sampleIdx < sampled.length - 2 && idx > (sampleIdx + 1) * step) {
+            sampleIdx++;
+          }
+          return [c[0], c[1], Math.round(eles[sampleIdx] ?? 0)];
+        });
+      } catch {
+        return coords;
+      }
+    }
+
+    function computeElevationGainLoss(coords) {
+      let ascent = 0;
+      let descent = 0;
+      for (let i = 1; i < coords.length; i++) {
+        const diff = (coords[i][2] || 0) - (coords[i - 1][2] || 0);
+        if (diff > 1.2) ascent += diff;
+        else if (diff < -1.2) descent += Math.abs(diff);
+      }
+      return { ascent: Math.round(ascent), descent: Math.round(descent) };
+    }
+
+    function generateTurnByTurnStepsFromCoords(coords, messages) {
+      const steps = [];
+      if (coords.length < 2) return steps;
+
+      steps.push({
+        lat: coords[0][0],
+        lon: coords[0][1],
+        distance: 0,
+        instruction: `Départ : ${AppState.origin?.label || 'Point de départ'}`,
+        turnType: 'depart',
+      });
+
+      let accumulatedDist = 0;
+      let prevBearing = computeBearing(coords[0][0], coords[0][1], coords[1][0], coords[1][1]);
+
+      for (let i = 1; i < coords.length - 1; i++) {
+        const segDist = haversineDistance(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+        accumulatedDist += segDist;
+
+        const nextBearing = computeBearing(coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1]);
+        let delta = ((nextBearing - prevBearing + 540) % 360) - 180;
+
+        if (Math.abs(delta) >= 38 && accumulatedDist >= 35) {
+          let dirText = 'Continuer tout droit';
+          let turnType = 'straight';
+          if (delta >= 38 && delta < 115) {
+            dirText = 'Tourner à droite';
+            turnType = 'right';
+          } else if (delta >= 115) {
+            dirText = 'Tourner fortement à droite';
+            turnType = 'sharp-right';
+          } else if (delta <= -38 && delta > -115) {
+            dirText = 'Tourner à gauche';
+            turnType = 'left';
+          } else if (delta <= -115) {
+            dirText = 'Tourner fortement à gauche';
+            turnType = 'sharp-left';
+          }
+
+          steps.push({
+            lat: coords[i][0],
+            lon: coords[i][1],
+            distance: accumulatedDist,
+            instruction: dirText,
+            turnType,
+          });
+          accumulatedDist = 0;
+        }
+        prevBearing = nextBearing;
+      }
+
+      const lastSeg = haversineDistance(
+        coords[coords.length - 2][0],
+        coords[coords.length - 2][1],
+        coords[coords.length - 1][0],
+        coords[coords.length - 1][1]
+      );
+      steps.push({
+        lat: coords[coords.length - 1][0],
+        lon: coords[coords.length - 1][1],
+        distance: accumulatedDist + lastSeg,
+        instruction: `Arrivée : ${AppState.dest?.label || 'Destination'}`,
+        turnType: 'arrive',
+      });
+
+      return steps;
+    }
+
+    function formatOSRMStepFrench(step) {
+      const type = step.maneuver?.type || '';
+      const mod = step.maneuver?.modifier || '';
+      const street = step.name ? ` sur ${step.name}` : '';
+      if (type === 'depart') return `Départ${street}`;
+      if (type === 'arrive') return `Arrivée à destination`;
+      if (type === 'roundabout') return `Prendre le rond-point${street}`;
+      if (mod.includes('left')) return `Tourner à gauche${street}`;
+      if (mod.includes('right')) return `Tourner à droite${street}`;
+      return `Continuer tout droit${street}`;
+    }
+
+    function applyCalculatedRoute(routeData) {
+      AppState.currentRoute = routeData;
+
+      // Nettoyage tracé précédent
+      if (AppState.routeOutlinePolyline) AppState.map.removeLayer(AppState.routeOutlinePolyline);
+      if (AppState.routePolyline) AppState.map.removeLayer(AppState.routePolyline);
+
+      const latLngs = routeData.coords.map((c) => [c[0], c[1]]);
+
+      // Tracé avec bordure blanche style Apple Maps
+      AppState.routeOutlinePolyline = L.polyline(latLngs, {
+        color: '#ffffff',
+        weight: 9,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(AppState.map);
+
+      AppState.routePolyline = L.polyline(latLngs, {
+        color: '#059669',
+        weight: 5.5,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(AppState.map);
+
+      AppState.map.fitBounds(AppState.routePolyline.getBounds(), { padding: [55, 55] });
+
+      // Mise à jour UI
+      document.getElementById('route-summary-card').classList.remove('hidden');
+      document.getElementById('route-engine-badge').textContent = routeData.source;
+      document.getElementById('stat-distance').textContent = formatDistance(routeData.distance);
+      document.getElementById('stat-duration').textContent = formatDuration(routeData.duration);
+      document.getElementById('stat-elevation').textContent = `+${routeData.ascent} / -${routeData.descent} m`;
+
+      renderElevationChart(routeData.coords, routeData.distance);
+      renderRouteSteps(routeData.steps);
+    }
+
+    function renderElevationChart(coords, totalDistance) {
+      const container = document.getElementById('elevation-chart-container');
+      if (!coords || coords.length < 2) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const width = 340;
+      const height = 105;
+      const padTop = 14;
+      const padBottom = 18;
+
+      const elevations = coords.map((c) => c[2] || 0);
+      const minEle = Math.min(...elevations);
+      const maxEle = Math.max(...elevations);
+      const eleSpan = Math.max(10, maxEle - minEle);
+
+      // Calcul des distances cumulées
+      const cumDist = [0];
+      for (let i = 1; i < coords.length; i++) {
+        cumDist.push(cumDist[i - 1] + haversineDistance(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]));
+      }
+      const maxDist = Math.max(1, cumDist[cumDist.length - 1]);
+
+      const points = coords.map((c, i) => {
+        const x = (cumDist[i] / maxDist) * width;
+        const y = height - padBottom - (((c[2] || 0) - minEle) / eleSpan) * (height - padTop - padBottom);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      });
+
+      const areaPath = `M 0,${height - padBottom} L ${points.join(' L ')} L ${width},${height - padBottom} Z`;
+      const linePath = `M ${points.join(' L ')}`;
+
+      container.innerHTML = `
+        <svg id="ele-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="w-full h-full overflow-visible">
+          <defs>
+            <linearGradient id="eleGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#10b981" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#10b981" stop-opacity="0.03"/>
+            </linearGradient>
+          </defs>
+          <path d="${areaPath}" fill="url(#eleGrad)"/>
+          <path d="${linePath}" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round"/>
+          <text x="4" y="11" font-size="9" fill="#64748b" font-family="monospace">Max ${Math.round(maxEle)}m</text>
+          <text x="4" y="${height - 4}" font-size="9" fill="#64748b" font-family="monospace">Min ${Math.round(minEle)}m</text>
+          <line id="ele-cursor-line" x1="0" y1="0" x2="0" y2="${height - padBottom}" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="3,2" class="hidden"/>
+          <circle id="ele-cursor-dot" cx="0" cy="0" r="4" fill="#0284c7" stroke="#fff" stroke-width="1.5" class="hidden"/>
+        </svg>`;
+
+      const svg = document.getElementById('ele-svg');
+      const cursorLine = document.getElementById('ele-cursor-line');
+      const cursorDot = document.getElementById('ele-cursor-dot');
+      const infoEl = document.getElementById('ele-hover-info');
+
+      const handlePointer = (clientX) => {
+        const rect = svg.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+        const targetDist = ratio * maxDist;
+
+        let idx = 0;
+        for (let i = 0; i < cumDist.length; i++) {
+          if (cumDist[i] >= targetDist) {
+            idx = i;
+            break;
+          }
+        }
+        const pt = coords[idx];
+        const svgX = ratio * width;
+        const svgY = height - padBottom - (((pt[2] || 0) - minEle) / eleSpan) * (height - padTop - padBottom);
+
+        cursorLine.setAttribute('x1', svgX);
+        cursorLine.setAttribute('x2', svgX);
+        cursorLine.classList.remove('hidden');
+        cursorDot.setAttribute('cx', svgX);
+        cursorDot.setAttribute('cy', svgY);
+        cursorDot.classList.remove('hidden');
+
+        infoEl.textContent = `${formatDistance(cumDist[idx])} • Alt. ${Math.round(pt[2] || 0)} m`;
+
+        if (!AppState.hoverElevationMarker) {
+          AppState.hoverElevationMarker = L.circleMarker([pt[0], pt[1]], {
+            radius: 7,
+            fillColor: '#0284c7',
+            color: '#ffffff',
+            weight: 2.5,
+            fillOpacity: 1,
+          }).addTo(AppState.map);
+        } else {
+          AppState.hoverElevationMarker.setLatLng([pt[0], pt[1]]);
+        }
+      };
+
+      svg.addEventListener('mousemove', (e) => handlePointer(e.clientX));
+      svg.addEventListener('touchmove', (e) => {
+        if (e.touches[0]) handlePointer(e.touches[0].clientX);
+      }, { passive: true });
+      svg.addEventListener('mouseleave', () => {
+        cursorLine.classList.add('hidden');
+        cursorDot.classList.add('hidden');
+        if (AppState.hoverElevationMarker) {
+          AppState.map.removeLayer(AppState.hoverElevationMarker);
+          AppState.hoverElevationMarker = null;
+        }
+      });
+    }
+
+    function getTurnSvgIcon(turnType) {
+      if (turnType.includes('left')) {
+        return `<svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>`;
+      }
+      if (turnType.includes('right')) {
+        return `<svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>`;
+      }
+      if (turnType === 'arrive') {
+        return `<svg class="w-4 h-4 text-rose-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>`;
+      }
+      return `<svg class="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+    }
+
+    function renderRouteSteps(steps) {
+      document.getElementById('steps-count').textContent = steps.length;
+      const listEl = document.getElementById('route-steps-list');
+      listEl.innerHTML = steps
+        .map(
+          (s) => `
+          <div onclick="AppState.map.flyTo([${s.lat}, ${s.lon}], 16)" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-100 cursor-pointer transition">
+            <div class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+              ${getTurnSvgIcon(s.turnType)}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(s.instruction)}</div>
+              ${s.distance > 0 ? `<div class="text-[10px] text-slate-400">Dans ${formatDistance(s.distance)}</div>` : ''}
+            </div>
+          </div>`
+        )
+        .join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. MODE GUIDAGE EN DIRECT & SYNTHÈSE VOCALE FRANÇAISE
+    // -------------------------------------------------------------------------
+    function speakFrench(text) {
+      if (!AppState.voiceEnabled || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 1.03;
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn('Synthèse vocale indisponible:', e);
+      }
+    }
+
+    function startLiveGuidance() {
+      if (!AppState.currentRoute) {
+        showToast('Calculez ou importez un itinéraire avant de démarrer le guidage.', 'warning');
+        return;
+      }
+      if (!('geolocation' in navigator)) {
+        showToast('La géolocalisation GPS n’est pas supportée par ce navigateur.', 'error');
+        return;
+      }
+
+      AppState.isGuiding = true;
+      AppState.lastSpokenStepIndex = -1;
+      AppState.lastSpokenThreshold = null;
+
+      document.getElementById('guidance-hud').classList.remove('hidden');
+      document.getElementById('top-search-container').classList.add('hidden');
+      collapseMobileSheet();
+
+      const firstStep = AppState.currentRoute.steps[1] || AppState.currentRoute.steps[0];
+      if (firstStep) {
+        updateGuidanceHUD(firstStep.instruction, firstStep.distance, AppState.currentRoute.distance, AppState.currentRoute.duration, 0);
+        speakFrench(`Guidage démarré. ${firstStep.instruction}`);
+      }
+
+      AppState.watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy, speed } = pos.coords;
+          updateUserGPSMarker(latitude, longitude, accuracy);
+          AppState.map.setView([latitude, longitude], Math.max(AppState.map.getZoom(), 16));
+          processLiveGuidancePosition(latitude, longitude, speed);
+        },
+        (err) => {
+          showToast('Signal GPS faible ou refusé : ' + err.message, 'warning');
+        },
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+      );
+    }
+
+    function stopLiveGuidance() {
+      AppState.isGuiding = false;
+      if (AppState.watchId !== null) {
+        navigator.geolocation.clearWatch(AppState.watchId);
+        AppState.watchId = null;
+      }
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      document.getElementById('guidance-hud').classList.add('hidden');
+      document.getElementById('top-search-container').classList.remove('hidden');
+      showToast('Guidage GPS arrêté.', 'info');
+    }
+
+    function processLiveGuidancePosition(lat, lon, speedMs) {
+      const route = AppState.currentRoute;
+      if (!route || !route.steps.length) return;
+
+      // Trouver la prochaine étape pertinente devant l'utilisateur
+      let nextStepIdx = 0;
+      let minDist = Infinity;
+      for (let i = 1; i < route.steps.length; i++) {
+        const d = haversineDistance(lat, lon, route.steps[i].lat, route.steps[i].lon);
+        if (d < minDist) {
+          minDist = d;
+          nextStepIdx = i;
+        }
+      }
+
+      const nextStep = route.steps[nextStepIdx];
+      const destPt = route.coords[route.coords.length - 1];
+      const remDist = haversineDistance(lat, lon, destPt[0], destPt[1]);
+      const speedKmh = speedMs ? Math.round(speedMs * 3.6) : 0;
+      const estSeconds = remDist / Math.max(3.5, speedMs || 4.8);
+
+      updateGuidanceHUD(nextStep.instruction, minDist, remDist, estSeconds, speedKmh);
+
+      // Annonces vocales intelligentes à 200m et 40m
+      if (minDist <= 45 && (AppState.lastSpokenStepIndex !== nextStepIdx || AppState.lastSpokenThreshold !== 'now')) {
+        AppState.lastSpokenStepIndex = nextStepIdx;
+        AppState.lastSpokenThreshold = 'now';
+        speakFrench(nextStep.instruction);
+      } else if (minDist > 45 && minDist <= 200 && AppState.lastSpokenStepIndex !== nextStepIdx) {
+        AppState.lastSpokenStepIndex = nextStepIdx;
+        AppState.lastSpokenThreshold = '200m';
+        speakFrench(`Dans ${Math.round(minDist)} mètres, ${nextStep.instruction}`);
+      }
+    }
+
+    function updateGuidanceHUD(instruction, stepDist, remDist, remSeconds, speedKmh) {
+      document.getElementById('hud-step-dist').textContent = formatDistance(stepDist);
+      document.getElementById('hud-instruction').textContent = instruction;
+      document.getElementById('hud-rem-dist').textContent = formatDistance(remDist);
+      document.getElementById('hud-speed').textContent = `${speedKmh} km/h`;
+
+      const eta = new Date(Date.now() + remSeconds * 1000);
+      document.getElementById('hud-eta').textContent = eta.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. IMPORT & EXPORT GPX
+    // -------------------------------------------------------------------------
+    function exportCurrentRouteGPX() {
+      if (!AppState.currentRoute || !AppState.currentRoute.coords.length) {
+        showToast('Aucun itinéraire à exporter en GPX.', 'warning');
+        return;
+      }
+
+      const trkpts = AppState.currentRoute.coords
+        .map(
+          (c) =>
+            `      <trkpt lat="${c[0].toFixed(6)}" lon="${c[1].toFixed(6)}"><ele>${Math.round(c[2] || 0)}</ele></trkpt>`
+        )
+        .join('\n');
+
+      const gpxXml = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="CycloLibre" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Itinéraire CycloLibre</name>
+    <time>${new Date().toISOString()}</time>
+  </metadata>
+  <trk>
+    <name>${escapeHtml(AppState.origin?.label || 'Départ')} → ${escapeHtml(AppState.dest?.label || 'Arrivée')}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+
+      const blob = new Blob([gpxXml], { type: 'application/gpx+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cyclolibre-itineraire-${new Date().toISOString().slice(0, 10)}.gpx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Fichier GPX téléchargé !', 'success');
+    }
+
+    function importGPXFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(e.target.result, 'application/xml');
+          const pts = Array.from(xml.querySelectorAll('trkpt, rtept'));
+          if (pts.length < 2) {
+            showToast('Ce fichier GPX ne contient pas assez de points.', 'error');
+            return;
+          }
+
+          const coords = pts.map((pt) => {
+            const lat = parseFloat(pt.getAttribute('lat'));
+            const lon = parseFloat(pt.getAttribute('lon'));
+            const eleNode = pt.querySelector('ele');
+            const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
+            return [lat, lon, ele];
+          });
+
+          let distance = 0;
+          for (let i = 1; i < coords.length; i++) {
+            distance += haversineDistance(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+          }
+          const { ascent, descent } = computeElevationGainLoss(coords);
+          const trackName = xml.querySelector('trk > name, metadata > name')?.textContent || file.name;
+
+          setRouteOrigin(coords[0][0], coords[0][1], `Départ (${trackName})`);
+          setRouteDestination(coords[coords.length - 1][0], coords[coords.length - 1][1], `Arrivée (${trackName})`);
+
+          const steps = generateTurnByTurnStepsFromCoords(coords);
+          applyCalculatedRoute({
+            coords,
+            distance,
+            duration: Math.round(distance / 4.8),
+            ascent,
+            descent,
+            steps,
+            source: 'Trace GPX importée',
+          });
+
+          switchSidebarTab('route');
+          showToast(`Trace GPX "${trackName}" chargée (${formatDistance(distance)}).`, 'success');
+        } catch (err) {
+          showToast('Erreur lors de la lecture du fichier GPX.', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. MODE HORS LIGNE & TÉLÉCHARGEMENT DE ZONE (ZOOMS 12 À 15)
+    // -------------------------------------------------------------------------
+    function latLonToTile(lat, lon, zoom) {
+      const n = Math.pow(2, zoom);
+      const x = Math.floor(((lon + 180) / 360) * n);
+      const latRad = (lat * Math.PI) / 180;
+      const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
+      return { x, y };
+    }
+
+    function getBoundingBoxAround(lat, lon, radiusKm) {
+      const latDelta = radiusKm / 111.32;
+      const lonDelta = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180));
+      return {
+        south: lat - latDelta,
+        north: lat + latDelta,
+        west: lon - lonDelta,
+        east: lon + lonDelta,
+      };
+    }
+
+    async function downloadOfflineZone() {
+      if (AppState.isDownloadingZone) return;
+      if (isOfflineMode()) {
+        showToast('Désactivez le mode hors ligne forcé et vérifiez votre connexion.', 'warning');
+        return;
+      }
+
+      const center = AppState.map.getCenter();
+      const bbox = getBoundingBoxAround(center.lat, center.lng, AppState.selectedRadiusKm);
+      const zooms = [12, 13, 14, 15];
+      const subdomains = ['a', 'b', 'c'];
+
+      const tileJobs = [];
+      zooms.forEach((z) => {
+        const topLeft = latLonToTile(bbox.north, bbox.west, z);
+        const bottomRight = latLonToTile(bbox.south, bbox.east, z);
+        for (let x = topLeft.x; x <= bottomRight.x; x++) {
+          for (let y = topLeft.y; y <= bottomRight.y; y++) {
+            const sub = subdomains[(x + y) % subdomains.length];
+            const url = `https://${sub}.tile-cyclosm.openstreetmap.fr/cyclosm/${z}/${x}/${y}.png`;
+            const key = `cyclosm_${z}_${x}_${y}`;
+            tileJobs.push({ key, z, x, y, url });
+          }
+        }
+      });
+
+      AppState.isDownloadingZone = true;
+      AppState.cancelDownloadFlag = false;
+
+      const progressBox = document.getElementById('download-progress-box');
+      const progressBar = document.getElementById('download-progress-bar');
+      const progressLabel = document.getElementById('download-progress-label');
+      const progressPct = document.getElementById('download-progress-pct');
+      const btnStart = document.getElementById('btn-start-zone-download');
+      const btnCancel = document.getElementById('btn-cancel-zone-download');
+
+      progressBox.classList.remove('hidden');
+      btnStart.classList.add('hidden');
+      btnCancel.classList.remove('hidden');
+
+      let completed = 0;
+      const total = tileJobs.length;
+      const BATCH_SIZE = 6;
+
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        if (AppState.cancelDownloadFlag) break;
+        const batch = tileJobs.slice(i, i + BATCH_SIZE);
+
+        await Promise.all(
+          batch.map(async (job) => {
+            try {
+              const existing = await OfflineDB.getTile(job.key);
+              if (!existing) {
+                const res = await fetch(job.url, { mode: 'cors' });
+                if (res.ok) {
+                  const blob = await res.blob();
+                  await OfflineDB.putTile(job.key, 'cyclosm', job.z, job.x, job.y, blob);
+                }
+              }
+            } catch {
+              // Ignorer une tuile isolée en erreur
+            } finally {
+              completed++;
+              const pct = Math.round((completed / total) * 100);
+              progressBar.style.width = `${pct}%`;
+              progressPct.textContent = `${pct}%`;
+              progressLabel.textContent = `Tuiles CyclOSM : ${completed} / ${total}`;
+            }
+          })
+        );
+      }
+
+      // Téléchargement simultané des points d'eau et pistes cyclables de la zone
+      if (!AppState.cancelDownloadFlag) {
+        progressLabel.textContent = "Sauvegarde des points d'eau et pistes...";
+        try {
+          const s = bbox.south.toFixed(4);
+          const w = bbox.west.toFixed(4);
+          const n = bbox.north.toFixed(4);
+          const e = bbox.east.toFixed(4);
+
+          const poiQuery = `[out:json][timeout:15];
+            (
+              node["amenity"="drinking_water"](${s},${w},${n},${e});
+              node["man_made"="water_tap"](${s},${w},${n},${e});
+              node["natural"="spring"]["drinking_water"="yes"](${s},${w},${n},${e});
+            );
+            out center;`;
+          const poiData = await fetchOverpassWithFallback(poiQuery);
+          const parsedPois = (poiData.elements || []).map(parseWaterElement).filter(Boolean);
+          await OfflineDB.putPOIs(parsedPois);
+
+          const wayQuery = `[out:json][timeout:15];
+            (
+              way["highway"="cycleway"](${s},${w},${n},${e});
+              relation["route"="bicycle"](${s},${w},${n},${e});
+            );
+            out geom;`;
+          const wayData = await fetchOverpassWithFallback(wayQuery);
+          const ways = [];
+          (wayData.elements || []).forEach((el) => {
+            const tags = el.tags || {};
+            if (el.type === 'way' && el.geometry) {
+              ways.push({
+                id: `way_${el.id}`,
+                coords: el.geometry.map((pt) => [pt.lat, pt.lon]),
+                name: tags.name || 'Piste cyclable',
+                surface: tags.surface || 'Non renseigné',
+                network: tags.network || 'Local',
+                isRoute: false,
+              });
+            }
+          });
+          await OfflineDB.putCycleways(ways);
+        } catch {
+          // Continue même si Overpass timeout
+        }
+      }
+
+      AppState.isDownloadingZone = false;
+      btnStart.classList.remove('hidden');
+      btnCancel.classList.add('hidden');
+      await refreshOfflineStatsUI();
+
+      if (AppState.cancelDownloadFlag) {
+        showToast('Téléchargement interrompu.', 'warning');
+      } else {
+        showToast(`Zone (${AppState.selectedRadiusKm} km) prête pour le mode hors ligne !`, 'success');
+      }
+    }
+
+    async function refreshOfflineStatsUI() {
+      const stats = await OfflineDB.getStats();
+      document.getElementById('cache-stat-tiles').textContent = `${stats.tiles} tuiles`;
+      document.getElementById('cache-stat-pois').textContent = `${stats.pois} points d'eau / ${stats.cycleways} pistes`;
+      document.getElementById('offline-summary-mini').textContent = `${stats.tiles} tuiles et ${stats.pois} points d'eau en cache`;
+    }
+
+    function updateNetworkBadges() {
+      const offline = isOfflineMode();
+      const dot = document.getElementById('network-dot');
+      const label = document.getElementById('network-label');
+      const badgeBtn = document.getElementById('btn-open-offline-badge');
+      const modalStatus = document.getElementById('modal-network-status');
+
+      if (offline) {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        label.textContent = 'Hors ligne';
+        badgeBtn.className = 'shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-800 transition';
+        modalStatus.textContent = AppState.forceOffline ? 'Hors ligne (forcé)' : 'Hors ligne';
+        modalStatus.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+        label.textContent = 'En ligne';
+        badgeBtn.className = 'shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 transition';
+        modalStatus.textContent = 'Connecté';
+        modalStatus.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. GÉOLOCALISATION GPS UTILISATEUR
+    // -------------------------------------------------------------------------
+    function locateUserOnce() {
+      if (!('geolocation' in navigator)) {
+        showToast('Géolocalisation non disponible sur cet appareil.', 'error');
+        return;
+      }
+      showToast('Localisation GPS en cours...', 'info', 2000);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          updateUserGPSMarker(latitude, longitude, accuracy);
+          AppState.map.flyTo([latitude, longitude], 15, { duration: 1 });
+        },
+        (err) => {
+          showToast('Impossible d’obtenir votre position GPS : ' + err.message, 'warning');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    function updateUserGPSMarker(lat, lon, accuracy = 25) {
+      AppState.userLocation = { lat, lon, accuracy };
+
+      if (!AppState.userMarker) {
+        const html = `
+          <div class="relative w-6 h-6 -ml-3 -mt-3 flex items-center justify-center">
+            <div class="gps-pulse-ring absolute inset-0 rounded-full bg-sky-500/40"></div>
+            <div class="w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-md z-10"></div>
+          </div>`;
+        AppState.userMarker = L.marker([lat, lon], {
+          icon: L.divIcon({ html, className: 'user-gps-marker', iconSize: [0, 0] }),
+          zIndexOffset: 1000,
+        }).addTo(AppState.map);
+
+        AppState.userAccuracyCircle = L.circle([lat, lon], {
+          radius: accuracy,
+          color: '#0ea5e9',
+          weight: 1,
+          fillColor: '#0ea5e9',
+          fillOpacity: 0.12,
+        }).addTo(AppState.map);
+      } else {
+        AppState.userMarker.setLatLng([lat, lon]);
+        AppState.userAccuracyCircle.setLatLng([lat, lon]).setRadius(accuracy);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 13. GESTION DES ONGLETS, BOTTOM SHEET MOBILE & ÉVÉNEMENTS UI
+    // -------------------------------------------------------------------------
+    function switchSidebarTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        const active = btn.dataset.tab === tabName;
+        btn.className = active
+          ? 'tab-btn py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition'
+          : 'tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
+      });
+
+      ['explore', 'route', 'gpx'].forEach((id) => {
+        const section = document.getElementById(`tab-${id}`);
+        if (id === tabName) section.classList.remove('hidden');
+        else section.classList.add('hidden');
+      });
+    }
+
+    function expandMobileSheetIfCollapsed() {
+      const drawer = document.getElementById('side-drawer');
+      if (drawer.classList.contains('sheet-collapsed')) {
+        drawer.classList.remove('sheet-collapsed');
+        drawer.classList.add('sheet-half');
+      }
+    }
+
+    function collapseMobileSheet() {
+      const drawer = document.getElementById('side-drawer');
+      drawer.classList.remove('sheet-half', 'sheet-expanded');
+      drawer.classList.add('sheet-collapsed');
+    }
+
+    function initMobileBottomSheetGestures() {
+      const drawer = document.getElementById('side-drawer');
+      const handle = document.getElementById('sheet-drag-handle');
+      const toggleBtn = document.getElementById('btn-toggle-sheet-mobile');
+
+      toggleBtn.addEventListener('click', () => {
+        if (drawer.classList.contains('sheet-collapsed')) {
+          drawer.classList.replace('sheet-collapsed', 'sheet-half');
+        } else if (drawer.classList.contains('sheet-half')) {
+          drawer.classList.replace('sheet-half', 'sheet-expanded');
+        } else {
+          collapseMobileSheet();
+        }
+      });
+
+      let startY = 0;
+      handle.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        drawer.classList.add('dragging');
+      }, { passive: true });
+
+      handle.addEventListener('touchend', (e) => {
+        drawer.classList.remove('dragging');
+        const deltaY = e.changedTouches[0].clientY - startY;
+        if (deltaY < -45) {
+          // Glissement vers le haut
+          if (drawer.classList.contains('sheet-collapsed')) {
+            drawer.classList.replace('sheet-collapsed', 'sheet-half');
+          } else {
+            drawer.classList.replace('sheet-half', 'sheet-expanded');
+          }
+        } else if (deltaY > 45) {
+          // Glissement vers le bas
+          if (drawer.classList.contains('sheet-expanded')) {
+            drawer.classList.replace('sheet-expanded', 'sheet-half');
+          } else {
+            collapseMobileSheet();
+          }
+        }
+      });
+    }
+
+    function bindAutocompleteInput(inputEl, resultsEl, onSelect) {
+      const runSearch = debounce(async () => {
+        const q = inputEl.value.trim();
+        if (q.length < 2) {
+          resultsEl.classList.add('hidden');
+          return;
+        }
+        const items = await searchNominatim(q);
+        if (!items.length) {
+          resultsEl.classList.add('hidden');
+          return;
+        }
+        resultsEl.innerHTML = items
+          .map(
+            (item) => `
+            <button type="button" data-lat="${item.lat}" data-lon="${item.lon}" data-name="${escapeHtml(item.display_name)}" class="w-full text-left px-3 py-2.5 hover:bg-emerald-50 text-xs text-slate-700 transition block">
+              <div class="font-semibold text-slate-900 truncate">${escapeHtml(item.display_name.split(',')[0])}</div>
+              <div class="text-[10px] text-slate-400 truncate">${escapeHtml(item.display_name)}</div>
+            </button>`
+          )
+          .join('');
+        resultsEl.classList.remove('hidden');
+
+        resultsEl.querySelectorAll('button').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const lat = parseFloat(btn.dataset.lat);
+            const lon = parseFloat(btn.dataset.lon);
+            const shortName = btn.dataset.name.split(',')[0];
+            resultsEl.classList.add('hidden');
+            onSelect(lat, lon, shortName);
+          });
+        });
+      }, 450);
+
+      inputEl.addEventListener('input', runSearch);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escapeJsString(str) {
+      return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function bindUIEvents() {
+      // Onglets
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          switchSidebarTab(btn.dataset.tab);
+          expandMobileSheetIfCollapsed();
+        });
+      });
+
+      // Recherche globale supérieure
+      const globalInput = document.getElementById('global-search-input');
+      const globalResults = document.getElementById('global-search-results');
+      const globalClear = document.getElementById('global-search-clear');
+
+      globalInput.addEventListener('input', () => {
+        globalClear.classList.toggle('hidden', !globalInput.value);
+      });
+      globalClear.addEventListener('click', () => {
+        globalInput.value = '';
+        globalClear.classList.add('hidden');
+        globalResults.classList.add('hidden');
+      });
+
+      bindAutocompleteInput(globalInput, globalResults, (lat, lon, name) => {
+        globalInput.value = name;
+        AppState.map.flyTo([lat, lon], 15);
+        setRouteDestination(lat, lon, name);
+        showToast(`Destination définie : ${name}`, 'info');
+      });
+
+      // Autocomplétion Départ & Arrivée
+      bindAutocompleteInput(
+        document.getElementById('input-origin'),
+        document.getElementById('origin-suggestions'),
+        (lat, lon, name) => setRouteOrigin(lat, lon, name)
+      );
+      bindAutocompleteInput(
+        document.getElementById('input-dest'),
+        document.getElementById('dest-suggestions'),
+        (lat, lon, name) => setRouteDestination(lat, lon, name)
+      );
+
+      // Boutons rapides à droite
+      document.getElementById('btn-locate-me').addEventListener('click', locateUserOnce);
+      document.getElementById('btn-nearest-water').addEventListener('click', routeToNearestWaterPoint);
+      document.getElementById('btn-route-nearest-water-panel').addEventListener('click', routeToNearestWaterPoint);
+      document.getElementById('btn-refresh-water').addEventListener('click', loadWaterPointsForCurrentView);
+
+      document.getElementById('btn-zoom-in').addEventListener('click', () => AppState.map.zoomIn());
+      document.getElementById('btn-zoom-out').addEventListener('click', () => AppState.map.zoomOut());
+
+      // Sélecteur de fonds de carte
+      const layerMenuBtn = document.getElementById('btn-layer-menu');
+      const layerPopover = document.getElementById('layer-menu-popover');
+      layerMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        layerPopover.classList.toggle('hidden');
+      });
+      document.querySelectorAll('.layer-option').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          switchBaseLayer(btn.dataset.layer);
+          layerPopover.classList.add('hidden');
+        });
+      });
+
+      // Toggle surlignage pistes & véloroutes
+      const cyclewaysCheckbox = document.getElementById('toggle-cycleways-checkbox');
+      const cyclewaysQuickBtn = document.getElementById('btn-toggle-cycleways');
+
+      const syncCyclewaysToggle = (enabled) => {
+        AppState.cyclewaysEnabled = enabled;
+        cyclewaysCheckbox.checked = enabled;
+        if (enabled) {
+          cyclewaysQuickBtn.classList.add('ring-2', 'ring-emerald-500', 'text-emerald-600');
+          loadCyclewaysForCurrentView();
+          showToast('Surlignage des pistes cyclables activé.', 'info', 2200);
+        } else {
+          cyclewaysQuickBtn.classList.remove('ring-2', 'ring-emerald-500', 'text-emerald-600');
+          AppState.cyclewaysLayer.clearLayers();
+        }
+      };
+
+      cyclewaysCheckbox.addEventListener('change', (e) => syncCyclewaysToggle(e.target.checked));
+      cyclewaysQuickBtn.addEventListener('click', () => syncCyclewaysToggle(!AppState.cyclewaysEnabled));
+
+      // Menu clic carte
+      document.getElementById('ctx-set-origin').addEventListener('click', () => {
+        if (AppState.pendingClickLatLng) {
+          const { lat, lng } = AppState.pendingClickLatLng;
+          setRouteOrigin(lat, lng, `Point carte (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          switchSidebarTab('route');
+          expandMobileSheetIfCollapsed();
+        }
+        document.getElementById('map-click-menu').classList.add('hidden');
+      });
+
+      document.getElementById('ctx-set-dest').addEventListener('click', () => {
+        if (AppState.pendingClickLatLng) {
+          const { lat, lng } = AppState.pendingClickLatLng;
+          setRouteDestination(lat, lng, `Point carte (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          switchSidebarTab('route');
+          expandMobileSheetIfCollapsed();
+          if (AppState.origin) calculateBikeRoute();
+        }
+        document.getElementById('map-click-menu').classList.add('hidden');
+      });
+
+      document.getElementById('ctx-close').addEventListener('click', () => {
+        document.getElementById('map-click-menu').classList.add('hidden');
+      });
+
+      // Contrôles itinéraire
+      document.getElementById('btn-origin-gps').addEventListener('click', () => {
+        if (AppState.userLocation) {
+          setRouteOrigin(AppState.userLocation.lat, AppState.userLocation.lon, 'Ma position GPS');
+        } else {
+          locateUserOnce();
+          setTimeout(() => {
+            if (AppState.userLocation) {
+              setRouteOrigin(AppState.userLocation.lat, AppState.userLocation.lon, 'Ma position GPS');
+            }
+          }, 1200);
+        }
+      });
+
+      document.getElementById('btn-swap-points').addEventListener('click', () => {
+        const tmp = AppState.origin;
+        if (AppState.dest) setRouteOrigin(AppState.dest.lat, AppState.dest.lon, AppState.dest.label);
+        else {
+          AppState.origin = null;
+          document.getElementById('input-origin').value = '';
+        }
+        if (tmp) setRouteDestination(tmp.lat, tmp.lon, tmp.label);
+        else {
+          AppState.dest = null;
+          document.getElementById('input-dest').value = '';
+        }
+      });
+
+      document.getElementById('btn-clear-route').addEventListener('click', () => {
+        AppState.origin = null;
+        AppState.dest = null;
+        AppState.currentRoute = null;
+        document.getElementById('input-origin').value = '';
+        document.getElementById('input-dest').value = '';
+        document.getElementById('route-summary-card').classList.add('hidden');
+        if (AppState.originMarker) AppState.map.removeLayer(AppState.originMarker);
+        if (AppState.destMarker) AppState.map.removeLayer(AppState.destMarker);
+        if (AppState.routePolyline) AppState.map.removeLayer(AppState.routePolyline);
+        if (AppState.routeOutlinePolyline) AppState.map.removeLayer(AppState.routeOutlinePolyline);
+      });
+
+      // Profils BRouter
+      document.querySelectorAll('.profile-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          AppState.selectedProfile = btn.dataset.profile;
+          document.querySelectorAll('.profile-btn').forEach((b) => {
+            const active = b.dataset.profile === AppState.selectedProfile;
+            b.className = active
+              ? 'profile-btn p-2 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-emerald-800 text-center transition'
+              : 'profile-btn p-2 rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white text-center transition';
+          });
+          if (AppState.origin && AppState.dest) calculateBikeRoute();
+        });
+      });
+
+      document.getElementById('btn-calculate-route').addEventListener('click', calculateBikeRoute);
+
+      // Guidage GPS & Voix
+      document.getElementById('btn-start-guidance').addEventListener('click', startLiveGuidance);
+      document.getElementById('btn-stop-guidance').addEventListener('click', stopLiveGuidance);
+      document.getElementById('btn-toggle-voice').addEventListener('click', () => {
+        AppState.voiceEnabled = !AppState.voiceEnabled;
+        document.getElementById('icon-voice-on').classList.toggle('hidden', !AppState.voiceEnabled);
+        document.getElementById('icon-voice-off').classList.toggle('hidden', AppState.voiceEnabled);
+        showToast(AppState.voiceEnabled ? 'Synthèse vocale activée.' : 'Synthèse vocale coupée.', 'info', 2000);
+      });
+
+      // Import / Export GPX
+      document.getElementById('btn-export-gpx-inline').addEventListener('click', exportCurrentRouteGPX);
+      document.getElementById('btn-export-gpx-tab').addEventListener('click', exportCurrentRouteGPX);
+      document.getElementById('input-import-gpx').addEventListener('change', (e) => {
+        importGPXFile(e.target.files[0]);
+        e.target.value = '';
+      });
+
+      // Modale Mode Hors Ligne
+      const offlineModal = document.getElementById('offline-modal');
+      const openOfflineModal = async () => {
+        await refreshOfflineStatsUI();
+        updateNetworkBadges();
+        offlineModal.classList.remove('hidden');
+      };
+
+      document.getElementById('btn-offline-modal').addEventListener('click', openOfflineModal);
+      document.getElementById('btn-open-offline-badge').addEventListener('click', openOfflineModal);
+      document.getElementById('btn-open-offline-from-tab').addEventListener('click', openOfflineModal);
+      document.getElementById('btn-close-offline-modal').addEventListener('click', () => {
+        offlineModal.classList.add('hidden');
+      });
+
+      document.getElementById('toggle-force-offline').addEventListener('change', (e) => {
+        AppState.forceOffline = e.target.checked;
+        updateNetworkBadges();
+        showToast(
+          AppState.forceOffline ? 'Lecture hors ligne forcée activée.' : 'Mode connecté rétabli.',
+          'info'
+        );
+      });
+
+      document.querySelectorAll('.radius-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          AppState.selectedRadiusKm = parseInt(btn.dataset.radius, 10);
+          document.querySelectorAll('.radius-btn').forEach((b) => {
+            const active = parseInt(b.dataset.radius, 10) === AppState.selectedRadiusKm;
+            b.className = active
+              ? 'radius-btn py-2 rounded-xl border-2 border-indigo-600 bg-indigo-600/10 text-indigo-800 text-xs font-bold'
+              : 'radius-btn py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold';
+          });
+        });
+      });
+
+      document.getElementById('btn-start-zone-download').addEventListener('click', downloadOfflineZone);
+      document.getElementById('btn-cancel-zone-download').addEventListener('click', () => {
+        AppState.cancelDownloadFlag = true;
+      });
+
+      // Vidage du cache avec confirmation personnalisée (sans confirm() natif)
+      const confirmBox = document.getElementById('confirm-clear-cache-box');
+      document.getElementById('btn-clear-cache').addEventListener('click', () => {
+        confirmBox.classList.remove('hidden');
+      });
+      document.getElementById('btn-confirm-clear-no').addEventListener('click', () => {
+        confirmBox.classList.add('hidden');
+      });
+      document.getElementById('btn-confirm-clear-yes').addEventListener('click', async () => {
+        await OfflineDB.clearAll();
+        confirmBox.classList.add('hidden');
+        await refreshOfflineStatsUI();
+        showToast('Cache hors ligne vidé avec succès.', 'success');
+      });
+
+      // Surveillance réseau navigateur
+      window.addEventListener('online', () => {
+        updateNetworkBadges();
+        showToast('Connexion internet retrouvée.', 'success');
+      });
+      window.addEventListener('offline', () => {
+        updateNetworkBadges();
+        showToast('Vous êtes hors ligne. Bascule sur le cache local.', 'warning');
+      });
+
+      // Fermer les popovers au clic extérieur
+      document.addEventListener('click', (e) => {
+        if (!layerMenuBtn.contains(e.target) && !layerPopover.contains(e.target)) {
+          layerPopover.classList.add('hidden');
+        }
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // 14. POINT D'ENTRÉE AU CHARGEMENT DE LA PAGE
+    // -------------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', async () => {
+      await OfflineDB.open();
+      initMap();
+      bindUIEvents();
+      initMobileBottomSheetGestures();
+      updateNetworkBadges();
+      refreshOfflineStatsUI();
+    });
+  </script>
+</body>
+</html>
