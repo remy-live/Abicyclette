@@ -333,6 +333,10 @@
     body.bw-mode .nb-row .nb-add, body.bw-mode .nb-chip.on { background: #000; color: #fff; }
     body.noir-mode .nb-pill, body.noir-mode #nearby-sheet { filter: invert(1); }
     body:not(.guiding) #hud-nearby, body:not(.guiding) #nearby-sheet { display: none !important; }
+    #photo-viewer { position: fixed; inset: 0; z-index: 60; background: #000; display: flex; flex-direction: column; color: #fff; }
+    #photo-viewer.hidden { display: none; }
+    #photo-viewer button { color: #fff; }
+    #btn-photo-close, #btn-photo-share-all { background: rgba(255,255,255,.16); }
     .photo-pin { width: 40px; height: 40px; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); background-size: cover; background-position: center; cursor: pointer; }
     #photo-strip img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; opacity: .6; }
     #photo-strip img.on { opacity: 1; outline: 3px solid #fff; }
