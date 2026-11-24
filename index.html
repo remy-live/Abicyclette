@@ -308,6 +308,30 @@
     #hud-icon svg { width: 48px !important; height: 48px !important; }
     #hud-step-dist { font-size: 46px; line-height: 1; }
     #hud-instruction { font-size: 20px; font-weight: 800; line-height: 1.15; }
+    #hud-nearby { position: fixed; z-index: 40; left: 12px; display: flex; gap: 8px; }
+    #hud-nearby.pos-bas { bottom: 104px; flex-direction: column-reverse; align-items: flex-start; }
+    #hud-nearby.pos-haut { flex-direction: column; align-items: flex-start; }
+    #hud-nearby.pos-bandeau { right: 12px; }
+    .nb-pill { height: 52px; padding: 0 16px 0 7px; border-radius: 999px; background: #fff; color: #0f172a; box-shadow: 0 4px 14px rgba(15,23,42,.24); display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 800; animation: pill-in .25s ease; }
+    .nb-pill .nb-ico { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--c) 14%, #fff); color: var(--c); flex: none; }
+    .nb-pill .nb-more { font-size: 12px; font-weight: 800; color: #64748b; }
+    #hud-nearby.pos-bandeau .nb-pill { flex: 1; border-radius: 18px; font-size: 17px; }
+    #nearby-sheet { position: fixed; z-index: 41; left: 12px; right: 12px; bottom: 104px; border-radius: 20px; background: #fff; color: #0f172a; padding: 12px 14px; box-shadow: 0 8px 26px rgba(15,23,42,.26); max-height: 56vh; overflow-y: auto; animation: pill-in .2s ease; }
+    @media (min-width: 768px) { #nearby-sheet { left: auto; right: 16px; width: 428px; } }
+    .nb-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+    .nb-row .nb-ico { width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--c) 14%, #fff); color: var(--c); flex: none; }
+    .nb-row .nb-add { width: 46px; height: 46px; border-radius: 14px; background: #059669; color: #fff; font-size: 24px; font-weight: 800; flex: none; }
+    .nb-chip { width: 46px; height: 46px; border-radius: 14px; background: #f1f5f9; color: var(--c); display: flex; align-items: center; justify-content: center; flex: none; }
+    .nb-chip.on { background: #0f172a; color: #fff; }
+    .nb-bar { height: 3px; border-radius: 9px; background: #94a3b8; width: 100%; transform-origin: left; animation: nb-count 12s linear forwards; }
+    @keyframes nb-count { to { transform: scaleX(0); } }
+    body.night-mode .nb-pill, body.night-mode #nearby-sheet { background: #0d1117; color: #e6edf3; border: 1px solid #2a3440; }
+    body.night-mode .nb-pill .nb-ico, body.night-mode .nb-row .nb-ico, body.night-mode .nb-chip { background: #161b22; }
+    body.bw-mode .nb-pill, body.bw-mode #nearby-sheet { border: 3px solid #000; }
+    body.bw-mode .nb-pill .nb-ico, body.bw-mode .nb-row .nb-ico, body.bw-mode .nb-chip { background: #fff; color: #000; }
+    body.bw-mode .nb-row .nb-add, body.bw-mode .nb-chip.on { background: #000; color: #fff; }
+    body.noir-mode .nb-pill, body.noir-mode #nearby-sheet { filter: invert(1); }
+    body:not(.guiding) #hud-nearby, body:not(.guiding) #nearby-sheet { display: none !important; }
     .dp-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 700; color: #0f172a; }
     .dp-seg { display: flex; gap: 4px; }
     .dp-seg .seg { height: 38px; padding: 0 14px; }
@@ -365,8 +389,8 @@
     body.night-mode .home-alt .alt-name { color: #9aa6b2; }
 
     /* Pendant le guidage : seuls le bandeau, la barre du bas et deux boutons restent */
-    body.guiding #side-drawer, body.guiding #quick-controls, body.guiding #top-search-container,
-    body.guiding #display-panel { display: none !important; }
+    body.guiding #side-drawer, body.guiding #quick-controls, body.guiding #top-search-container { display: none !important; }
+    body.nb-open #hud-side, body.nb-open #hud-nearby.pos-bas { display: none !important; }
 
     /* Carte 3D (MapLibre) superposée à la carte Leaflet */
     #map3d {
@@ -583,8 +607,12 @@
       </div>
     </div>
 
+    <div id="hud-nearby" class="hidden"></div>
+    <div id="nearby-sheet" class="hidden glass-panel"></div>
     <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col items-end gap-2">
-      <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-extrabold text-slate-800">3D</button>
+      <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="hidden">3D</button>
+      <button id="btn-hud-display" aria-label="Affichage : style de carte, contraste, 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+      <button id="btn-hud-onroute" aria-label="Chercher sur mon trajet" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
       <button id="btn-hud-recenter" aria-label="Recentrer sur ma position" class="hidden h-14 px-4 rounded-2xl bg-sky-600 text-white text-sm font-extrabold items-center gap-2 shadow-lg"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>Recentrer</button>
       <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="hidden glass-panel w-14 h-14 rounded-2xl items-center justify-center text-slate-400">
         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path id="hud-visits-slash" d="M3 3l18 18"/></svg>
@@ -703,6 +731,20 @@
           <span>Annoncer les lieux à voir</span>
           <input id="toggle-announce-visits" type="checkbox" class="dp-switch" />
         </label>
+        <label class="dp-row">
+          <span>Lieux à proximité<small>pastille silencieuse quand un lieu choisi approche</small></span>
+          <input id="toggle-nearby" type="checkbox" class="dp-switch" checked />
+        </label>
+        <div id="nearby-opts" class="space-y-2 pb-2">
+          <div id="nearby-cats" class="grid grid-cols-4 gap-1.5"></div>
+          <div class="dp-line"><span>Affichage</span>
+            <div class="dp-seg"><button data-nbpos="bas" class="nbpos seg sm">Bas</button><button data-nbpos="haut" class="nbpos seg sm">Haut</button><button data-nbpos="bandeau" class="nbpos seg sm">Bandeau</button></div>
+          </div>
+          <label class="dp-row">
+            <span>Seulement les lieux ouverts</span>
+            <input id="toggle-nearby-open" type="checkbox" class="dp-switch" checked />
+          </label>
+        </div>
         <label class="dp-row">
           <span>Alertes points d'eau<small>avant une longue portion sans eau</small></span>
           <input id="toggle-announce-water" type="checkbox" class="dp-switch" checked />
@@ -3199,6 +3241,9 @@
 
     function stopLiveGuidance() {
       AppState.isGuiding = false;
+      closeNearbySheet();
+      document.getElementById('hud-nearby').classList.add('hidden');
+      Nearby.sig = '';
       AppState.followPaused = false;
       clearTimeout(followResumeTimer);
       document.getElementById('btn-hud-recenter').classList.add('hidden');
@@ -3984,6 +4029,7 @@ ${trkpts}
       );
       // Pendant le guidage : bouton œil = annonces des lieux à voir oui/non
       document.getElementById('btn-hud-recenter').addEventListener('click', resumeFollow);
+      initNearby();
       AppState.map.on('dragstart', pauseFollow);
       document.getElementById('btn-hud-visits').addEventListener('click', () => {
         const t = document.getElementById('toggle-announce-visits');
@@ -6913,7 +6959,8 @@ ${trkpts}
     // 17 sexies. COMPAGNON DE ROUTE : eau sur le trajet & lieux annoncés
     // -------------------------------------------------------------------------
     async function loadCompanion(route) {
-      const comp = { water: [], visits: [], announced: new Set(), warned: new Set() };
+      const comp = { water: [], visits: [], pois: [], ignored: new Set(), announced: new Set(), warned: new Set() };
+      let allPois = [];
       route._comp = comp;
       const lats = route.coords.map((c) => c[0]);
       const lons = route.coords.map((c) => c[1]);
@@ -6944,6 +6991,7 @@ ${trkpts}
           ok.forEach((r) => {
             water = water.concat(r.water);
             visits = visits.concat(r.pois.filter((p) => POI_BY_ID[p.cat]?.group === 'visit'));
+            allPois = allPois.concat(r.pois);
           });
         } catch {
         try {
@@ -6973,8 +7021,19 @@ ${trkpts}
         if (seen.has(p.id)) return;
         seen.add(p.id);
         const sn = snapToRoute(p.lat, p.lon, route);
-        if (sn.dist <= 250) comp.water.push({ along: sn.along, name: p.name });
+        if (sn.dist <= 250) {
+          comp.water.push({ along: sn.along, name: p.name });
+          comp.pois.push({ id: p.id, cat: 'water', name: p.name || 'Point d’eau', lat: p.lat, lon: p.lon, along: sn.along, off: sn.dist, ref: null });
+        }
       });
+      const seenP = new Set();
+      allPois.concat(visits).forEach((p) => {
+        if (seenP.has(p.id) || !POI_BY_ID[p.cat]) return;
+        seenP.add(p.id);
+        const sn = snapToRoute(p.lat, p.lon, route);
+        if (sn.dist <= 300) comp.pois.push({ id: p.id, cat: p.cat, name: p.name || SHORT_LABEL[p.cat] || POI_BY_ID[p.cat].label, lat: p.lat, lon: p.lon, along: sn.along, off: sn.dist, ref: p });
+      });
+      comp.pois.sort((a, b) => a.along - b.along);
       visits.forEach((p) => {
         if (seen.has(p.id) || !p.name) return;
         seen.add(p.id);
@@ -7021,6 +7080,206 @@ ${trkpts}
       }
       extra.textContent = txt;
       extra.classList.toggle('hidden', !txt);
+      nearbyTick(comp, snap);
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 sexies bis. LIEUX À PROXIMITÉ PENDANT LE GUIDAGE (pastilles silencieuses)
+    // -------------------------------------------------------------------------
+    const NB_CATS = ['heritage', 'viewpoint', 'museum', 'attraction', 'water', 'bakery', 'cafe', 'restaurant', 'grocery', 'toilets', 'repair', 'pharmacy'];
+    const nbColor = (cat) => (cat === 'water' ? '#0284c7' : POI_BY_ID[cat]?.color || '#475569');
+    const nbLabel = (cat) => (cat === 'water' ? 'Eau' : SHORT_LABEL[cat] || POI_BY_ID[cat]?.label || cat);
+    const Nearby = { on: true, openOnly: true, pos: 'bas', cats: new Set(['heritage', 'viewpoint', 'water']), sig: '', groups: [], timer: null, sheet: null, routeCat: 'bakery' };
+    try {
+      const sv = JSON.parse(localStorage.getItem('abicyclette.nearby') || 'null');
+      if (sv) Object.assign(Nearby, { on: sv.on !== false, openOnly: sv.openOnly !== false, pos: sv.pos || 'bas', cats: new Set(sv.cats || [...Nearby.cats]), routeCat: sv.routeCat || 'bakery' });
+    } catch {}
+    function saveNearby() {
+      try {
+        localStorage.setItem('abicyclette.nearby', JSON.stringify({ on: Nearby.on, openOnly: Nearby.openOnly, pos: Nearby.pos, cats: [...Nearby.cats], routeCat: Nearby.routeCat }));
+      } catch {}
+    }
+    const NB_WATER = '<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>';
+    const nbSvg = (cat, size = 22, color = 'currentColor') =>
+      cat === 'water' ? `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NB_WATER}</svg>` : poiSvg(cat, size, color);
+    const nbClosed = (x) => x.ref && x.ref.hours && hoursStatus(x.ref.hours)?.open === false;
+    const nbDetour = (x) => Math.max(0, Math.round((2 * x.off) / 250));
+
+    function nearbyTick(comp, snap) {
+      const box = document.getElementById('hud-nearby');
+      if (!Nearby.on || !comp.pois.length) {
+        box.classList.add('hidden');
+        Nearby.sig = '';
+        return;
+      }
+      const cands = comp.pois.filter((x) => Nearby.cats.has(x.cat) && !comp.ignored.has(x.id) && x.along - snap.along > 15 && x.along - snap.along < 600);
+      // Horaires demandés une seule fois par lieu, pour masquer ce qui est fermé
+      const need = cands.filter((x) => x.ref && x.ref.osmId && !x._asked).map((x) => ((x._asked = true), x.ref));
+      if (need.length) fetchOSMDetails(need).then(() => (Nearby.sig = ''));
+      const shown = cands.filter((x) => !(Nearby.openOnly && nbClosed(x)));
+      // Un groupe par type (le plus proche d'abord), 3 pastilles au plus
+      const byCat = new Map();
+      shown.forEach((x) => (byCat.get(x.cat) || byCat.set(x.cat, []).get(x.cat)).push(x));
+      const groups = [...byCat.values()].sort((a, b) => a[0].along - b[0].along);
+      Nearby.groups = groups;
+      Nearby.along = snap.along;
+      const d10 = (x) => Math.max(10, Math.round((x.along - snap.along) / 10) * 10);
+      const sig = Nearby.pos + '|' + groups.map((g) => `${g[0].id}:${d10(g[0])}:${g.length}`).join(',');
+      if (sig === Nearby.sig) return;
+      Nearby.sig = sig;
+      box.className = `pos-${Nearby.pos}` + (groups.length ? '' : ' hidden');
+      if (Nearby.pos !== 'bas') box.style.top = `${Math.round(document.getElementById('hud-band').getBoundingClientRect().bottom + 8)}px`;
+      else box.style.top = '';
+      if (Nearby.pos === 'bandeau') {
+        const g = groups[0];
+        const others = shown.length - 1;
+        box.innerHTML = g
+          ? `<button class="nb-pill" data-nb="all" style="--c:${nbColor(g[0].cat)}"><span class="nb-ico">${nbSvg(g[0].cat, 22)}</span><span class="truncate">${escapeHtml(nbLabel(g[0].cat))} à ${formatDistance(d10(g[0]))}</span>${others > 0 ? `<span class="nb-more" style="margin-left:auto">+${others}</span>` : ''}</button>`
+          : '';
+      } else {
+        box.innerHTML = groups
+          .slice(0, 3)
+          .map((g) => `<button class="nb-pill" data-nb="${g[0].cat}" style="--c:${nbColor(g[0].cat)}" aria-label="${escapeHtml(nbLabel(g[0].cat))} à ${formatDistance(d10(g[0]))}"><span class="nb-ico">${nbSvg(g[0].cat, 22)}</span>${formatDistance(d10(g[0]))}${g.length > 1 ? `<span class="nb-more">+${g.length - 1}</span>` : ''}</button>`)
+          .join('');
+      }
+      box.querySelectorAll('[data-nb]').forEach((b) => b.addEventListener('click', () => openNearbySheet(b.dataset.nb)));
+      if (Nearby.sheet === 'near') renderNearbySheet();
+    }
+
+    function nbRow(x, along) {
+      const st = x.ref && x.ref.hours ? hoursStatus(x.ref.hours) : null;
+      const stHtml = st ? ` · <span style="color:${st.open === true ? '#059669' : st.open === false ? '#dc2626' : '#64748b'}">${st.open === true ? 'ouvert' : st.open === false ? 'fermé' : ''}</span>` : '';
+      const det = nbDetour(x);
+      return `<div class="nb-row" style="--c:${nbColor(x.cat)}"><span class="nb-ico">${nbSvg(x.cat, 22)}</span>
+        <div style="flex:1;min-width:0"><div class="truncate" style="font-size:15.5px;font-weight:800">${escapeHtml(x.name)}</div>
+        <div style="font-size:12.5px;font-weight:700;color:#64748b">dans ${formatDistance(Math.max(10, x.along - along))} · ${det ? `détour ${det} min` : 'sur le trajet'}${stHtml}</div></div>
+        <button class="nb-add" data-nbadd="${x.id}" aria-label="Ajouter en étape">+</button></div>`;
+    }
+    function renderNearbySheet() {
+      const el = document.getElementById('nearby-sheet');
+      const comp = AppState.currentRoute?._comp;
+      if (!comp || !Nearby.sheet) return closeNearbySheet();
+      const along = AppState.currentRoute._lastAlong || 0;
+      let rows = [];
+      let head = '';
+      let foot = '';
+      if (Nearby.sheet === 'near') {
+        const all = Nearby.groups.flat();
+        rows = (Nearby.sheetCat === 'all' ? all : all.filter((x) => x.cat === Nearby.sheetCat)).filter((x) => x.along > along).slice(0, 4);
+        if (!rows.length) return closeNearbySheet();
+        head = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><span style="font-size:13px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em">À proximité</span><button data-nbclose style="font-size:13px;font-weight:800;color:#475569;padding:6px 4px">Ignorer</button></div>`;
+        foot = '<div style="height:3px;border-radius:9px;background:#e2e8f0;margin-top:6px;overflow:hidden"><div class="nb-bar"></div></div>';
+      } else {
+        rows = comp.pois.filter((x) => x.cat === Nearby.routeCat && x.along > along + 15 && !(Nearby.openOnly && nbClosed(x))).slice(0, 4);
+        head = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:16px;font-weight:800">Sur mon trajet</span><button data-nbclose aria-label="Fermer" style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;color:#334155;font-weight:800">✕</button></div>
+          <div class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:4px">${NB_CATS.map((c) => `<button class="nb-chip ${c === Nearby.routeCat ? 'on' : ''}" data-nbcat="${c}" style="--c:${nbColor(c)}" aria-label="${escapeHtml(nbLabel(c))}">${nbSvg(c, 22)}</button>`).join('')}</div>`;
+        if (!rows.length) foot = `<div style="font-size:13.5px;font-weight:700;color:#64748b;padding:10px 0">Rien de repéré devant vous pour « ${escapeHtml(nbLabel(Nearby.routeCat))} ».</div>`;
+        const need = rows.filter((x) => x.ref && x.ref.osmId && !x._asked).map((x) => ((x._asked = true), x.ref));
+        if (need.length) fetchOSMDetails(need).then(() => Nearby.sheet === 'route' && renderNearbySheet());
+      }
+      const ids = rows.map((x) => x.id);
+      el.innerHTML = head + rows.map((x) => nbRow(x, along)).join('') + foot;
+      el.classList.remove('hidden');
+      document.body.classList.add('nb-open');
+      el.querySelector('[data-nbclose]').addEventListener('click', () => {
+        if (Nearby.sheet === 'near') {
+          ids.forEach((id) => comp.ignored.add(id));
+          Nearby.sig = '';
+        }
+        closeNearbySheet();
+      });
+      el.querySelectorAll('[data-nbcat]').forEach((b) =>
+        b.addEventListener('click', () => {
+          Nearby.routeCat = b.dataset.nbcat;
+          saveNearby();
+          renderNearbySheet();
+        })
+      );
+      el.querySelectorAll('[data-nbadd]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const x = comp.pois.find((q) => q.id === b.dataset.nbadd);
+          closeNearbySheet();
+          if (x) addViaWhileGuiding(x);
+        })
+      );
+    }
+    function openNearbySheet(cat) {
+      Nearby.sheet = 'near';
+      Nearby.sheetCat = cat;
+      renderNearbySheet();
+      clearTimeout(Nearby.timer);
+      Nearby.timer = setTimeout(() => Nearby.sheet === 'near' && closeNearbySheet(), 12000); // se referme seule
+    }
+    function openRouteSearch() {
+      clearTimeout(Nearby.timer);
+      if (Nearby.sheet === 'route') return closeNearbySheet();
+      Nearby.sheet = 'route';
+      renderNearbySheet();
+    }
+    function closeNearbySheet() {
+      clearTimeout(Nearby.timer);
+      Nearby.sheet = null;
+      document.body.classList.remove('nb-open');
+      document.getElementById('nearby-sheet').classList.add('hidden');
+    }
+    // Ajoute une étape en roulant : on repart de la position actuelle, sans changer la destination
+    function addViaWhileGuiding(x) {
+      const route = AppState.currentRoute;
+      const u = AppState.userLocation;
+      const along = route?._lastAlong || 0;
+      if (route) {
+        AppState.vias = AppState.vias.filter((v) => snapToRoute(v.lat, v.lon, route).along > along);
+        route._comp?.ignored.add(x.id);
+      }
+      // À sa place le long du trajet
+      const pos = route ? AppState.vias.filter((v) => snapToRoute(v.lat, v.lon, route).along < x.along).length : AppState.vias.length;
+      AppState.vias.splice(pos, 0, { lat: x.lat, lon: x.lon, label: x.name });
+      renderVias();
+      if (u) setRouteOrigin(u.lat, u.lon, 'Ma position GPS');
+      AppState.lastRerouteAt = Date.now();
+      showToast(`Étape ajoutée : ${x.name}`, 'success', 3000);
+      calculateBikeRoute({ single: true, keepView: true });
+    }
+    function renderNearbySettings() {
+      document.getElementById('toggle-nearby').checked = Nearby.on;
+      document.getElementById('toggle-nearby-open').checked = Nearby.openOnly;
+      document.getElementById('nearby-opts').classList.toggle('hidden', !Nearby.on);
+      document.querySelectorAll('.nbpos').forEach((b) => b.classList.toggle('on', b.dataset.nbpos === Nearby.pos));
+      const box = document.getElementById('nearby-cats');
+      box.innerHTML = NB_CATS.map((c) => `<button data-nbset="${c}" class="poi-tg ${Nearby.cats.has(c) ? 'on' : ''}" style="--c:${nbColor(c)}">${nbSvg(c, 22, nbColor(c))}<span>${escapeHtml(nbLabel(c))}</span></button>`).join('');
+      box.querySelectorAll('[data-nbset]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const c = b.dataset.nbset;
+          Nearby.cats.has(c) ? Nearby.cats.delete(c) : Nearby.cats.add(c);
+          Nearby.sig = '';
+          saveNearby();
+          renderNearbySettings();
+        })
+      );
+    }
+    function initNearby() {
+      renderNearbySettings();
+      document.getElementById('toggle-nearby').addEventListener('change', (e) => {
+        Nearby.on = e.target.checked;
+        Nearby.sig = '';
+        saveNearby();
+        renderNearbySettings();
+      });
+      document.getElementById('toggle-nearby-open').addEventListener('change', (e) => {
+        Nearby.openOnly = e.target.checked;
+        Nearby.sig = '';
+        saveNearby();
+      });
+      document.querySelectorAll('.nbpos').forEach((b) =>
+        b.addEventListener('click', () => {
+          Nearby.pos = b.dataset.nbpos;
+          Nearby.sig = '';
+          saveNearby();
+          renderNearbySettings();
+        })
+      );
+      document.getElementById('btn-hud-onroute').addEventListener('click', openRouteSearch);
+      document.getElementById('btn-hud-display').addEventListener('click', () => document.getElementById('btn-display').click());
     }
 
     // -------------------------------------------------------------------------
