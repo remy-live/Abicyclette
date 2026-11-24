@@ -228,6 +228,12 @@
     .pg-btn.on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
     body.night-mode .pg-btn.on { background: #0f2a20 !important; color: #34d399 !important; }
     body.sun-mode .pg-btn.on { background: #000 !important; color: #fff !important; }
+    .sc-tile { flex: 1 0 58px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; font-size: 11px; font-weight: 700; color: #1e293b; background: transparent; border: 0; }
+    .sc-tile .sc-ico { color: var(--c); height: 28px; display: flex; align-items: center; }
+    body.bw-mode .sc-tile .sc-ico { color: #000 !important; }
+    body.night-mode .sc-tile { color: #e6edf3; }
+    body.contrast-1 .sc-tile, body.contrast-2 .sc-tile { font-size: 12px; font-weight: 800; }
+    body.contrast-1 .sc-tile svg, body.contrast-2 .sc-tile svg { stroke-width: 2.8; }
     .home-alt { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border-radius: 16px; border: 2px solid #e2e8f0; background: rgba(255,255,255,.85); }
     .home-alt.on { border-color: #059669; background: rgba(16,185,129,.1); }
 
@@ -256,7 +262,15 @@
     }
     .chip.on { background: #0f172a; color: #fff; border-color: #0f172a; }
 
-    .custom-poi-icon { cursor: pointer; }
+    .custom-poi-icon, .custom-place-icon { cursor: pointer; }
+    /* Icônes « pures » : trait de couleur sur liseré */
+    .poi-pure .h { stroke: #fff; stroke-width: 6.4; }
+    .poi-pure .c { stroke: var(--c); stroke-width: 2.4; }
+    body.bw-mode .poi-pure .c { stroke: #000; }
+    body.night-mode .poi-pure .h { stroke: #000; }
+    body.contrast-1 .poi-pure .c, body.contrast-2 .poi-pure .c { stroke-width: 2.9; }
+    body.contrast-1 .poi-pure .h, body.contrast-2 .poi-pure .h { stroke-width: 7.4; }
+
     .poi-icon {
       width: 30px; height: 30px;
       border-radius: 9999px; border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
@@ -294,7 +308,6 @@
     body.sun-mode #hud-step-dist { color: #facc15 !important; font-size: 2.4rem; line-height: 1; }
     body.sun-mode #hud-instruction { font-size: 1.25rem; font-weight: 800; white-space: normal; }
     body.sun-mode #hud-icon { background: #facc15 !important; color: #000 !important; border-color: #facc15 !important; }
-    body.sun-mode .leaflet-tile-pane { filter: contrast(1.25) saturate(1.25); }
     body.eco .gps-pulse-ring { display: none; }
     body.sun-mode #btn-sun-mode { background: #facc15 !important; color: #000 !important; border: 2px solid #000 !important; }
     body.sun-mode .leaflet-control-attribution { background: #fff !important; }
@@ -305,9 +318,7 @@
        MODE NOIR & BLANC CONTRASTÉ : noir, blanc et deux gris seulement.
        Règle : fond clair => texte noir ; fond noir => texte blanc.
        ===================================================================== */
-    body.bw-mode .leaflet-tile-pane { filter: grayscale(1) contrast(1.35) brightness(1.04); }
     body.bw-mode .leaflet-marker-pane, body.bw-mode #map3d .maplibregl-marker { filter: grayscale(1) contrast(1.4); }
-    body.bw-mode #map3d canvas { filter: grayscale(1) contrast(1.3); }
     body.bw-mode .glass-panel, body.bw-mode .leaflet-popup-content-wrapper, body.bw-mode .leaflet-popup-tip {
       background: #fff !important; border: 3px solid #000 !important; color: #000 !important; box-shadow: none !important;
     }
@@ -375,12 +386,34 @@
     body.sun-mode .home-alt, body.sun-mode .seg, body.sun-mode .theme-btn { border: 2px solid #000; }
 
     /* =====================================================================
+       MODE NOIR : le noir & blanc inversé (fond noir, tout le reste en blanc)
+       ===================================================================== */
+    body.noir-mode { background: #000; }
+    body.noir-mode .leaflet-container { background: #000; }
+    body.noir-mode #side-drawer, body.noir-mode #top-search-container, body.noir-mode #quick-controls,
+    body.noir-mode #display-panel, body.noir-mode #map-click-menu, body.noir-mode #toast-container,
+    body.noir-mode #guidance-hud > *, body.noir-mode #map-status, body.noir-mode #place-modal > div,
+    body.noir-mode #offline-modal > div, body.noir-mode #shortcuts-modal > div, body.noir-mode .leaflet-popup,
+    body.noir-mode .maplibregl-popup, body.noir-mode .leaflet-overlay-pane {
+      filter: invert(1);
+    }
+    body.noir-mode .leaflet-marker-pane { filter: grayscale(1) invert(1); }
+    body.noir-mode .sw { filter: invert(1); }
+
+    /* =====================================================================
+       CONTRASTE RENFORCÉ (bouton ◐) : textes plus épais et plus sombres
+       ===================================================================== */
+    body.contrast-1 .glass-panel, body.contrast-1 #side-drawer, body.contrast-1 .leaflet-popup-content { -webkit-text-stroke: 0.25px currentColor; }
+    body.contrast-2 .glass-panel, body.contrast-2 #side-drawer, body.contrast-2 .leaflet-popup-content { -webkit-text-stroke: 0.5px currentColor; }
+    body.contrast-2:not(.night-mode):not(.bw-mode) [class~="text-slate-400"], body.contrast-2:not(.night-mode):not(.bw-mode) [class~="text-slate-500"],
+    body.contrast-2:not(.night-mode):not(.bw-mode) [class~="text-slate-600"] { color: #1e293b !important; }
+    body.contrast-1 .chip, body.contrast-2 .chip, body.contrast-1 .seg, body.contrast-2 .seg { border-width: 2px; }
+
+    /* =====================================================================
        MODE NUIT (OLED) : fond noir, peu de lumière émise
        ===================================================================== */
     body.night-mode { background: #000; color: #e6edf3; }
     body.night-mode .leaflet-container { background: #000; }
-    body.night-mode .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.78) contrast(0.92) saturate(0.7); }
-    body.night-mode #map3d canvas { filter: invert(1) hue-rotate(180deg) brightness(0.8) saturate(0.7); }
     body.night-mode .glass-panel, body.night-mode .leaflet-popup-content-wrapper, body.night-mode .leaflet-popup-tip {
       background: #0d1117 !important; border: 1px solid #222b36 !important; color: #e6edf3 !important; box-shadow: none !important;
     }
@@ -509,20 +542,38 @@
         <button data-theme="normal" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#eef1ea 50%,#0b7a55 50%)"></span>Clair</button>
         <button data-theme="sun" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#ff00b4 50%);outline:2px solid #000"></span>Soleil</button>
         <button data-theme="bw" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#ffffff 50%,#000000 50%);outline:2px solid #000"></span>Noir & blanc</button>
-        <button data-theme="night" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#000000 50%,#34d399 50%)"></span>Nuit</button>
+        <button data-theme="noir" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#000000 50%,#ffffff 50%);outline:2px solid #000"></span>Noir</button>
+        <button data-theme="night" class="theme-btn"><span class="sw" style="background:linear-gradient(135deg,#0b0f14 50%,#34d399 50%)"></span>Nuit</button>
       </div>
-      <p class="text-[11px] text-slate-500 mt-1.5">Soleil, Noir & blanc et Nuit économisent aussi la batterie.</p>
+      <p class="text-[11px] text-slate-500 mt-1.5">Tous les styles sauf Clair économisent aussi la batterie.</p>
+    </div>
+    <div>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Contraste</div>
+      <div class="grid grid-cols-3 gap-2">
+        <button data-contrast="0" class="contrast-btn seg on">Normal</button>
+        <button data-contrast="1" class="contrast-btn seg">Fort</button>
+        <button data-contrast="2" class="contrast-btn seg">Maximum</button>
+      </div>
     </div>
     <div>
       <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fond de carte</div>
-      <div class="grid grid-cols-3 gap-2">
-        <button data-layer="cyclosm" class="layer-option seg on">Vélo</button>
-        <button data-layer="osm" class="layer-option seg">Standard</button>
-        <button data-layer="opentopo" class="layer-option seg">Relief</button>
+      <div class="grid grid-cols-2 gap-2">
+        <button data-layer="vector" class="layer-option seg on">Vectoriel net</button>
+        <button data-layer="cyclosm" class="layer-option seg">Vélo (images)</button>
+        <button data-layer="osm" class="layer-option seg">Standard (images)</button>
+        <button data-layer="opentopo" class="layer-option seg">Relief (images)</button>
       </div>
+      <p class="text-[11px] text-slate-500 mt-1.5">Vectoriel : pistes cyclables surlignées, couleurs du style choisi. Hors ligne, la carte passe en images (zones téléchargées).</p>
     </div>
     <label class="flex items-center justify-between gap-3 cursor-pointer">
-      <span><span class="block text-sm font-bold text-slate-900">Surligner les pistes</span><span class="block text-[11px] text-slate-500">Pistes et véloroutes cliquables</span></span>
+      <span><span class="block text-sm font-bold text-slate-900">Véloroutes & EuroVelo</span><span class="block text-[11px] text-slate-500">Itinéraires vélo balisés par-dessus la carte</span></span>
+      <span class="relative inline-flex items-center">
+        <input id="toggle-bike-routes" type="checkbox" class="sr-only peer" checked />
+        <span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></span>
+      </span>
+    </label>
+    <label class="flex items-center justify-between gap-3 cursor-pointer">
+      <span><span class="block text-sm font-bold text-slate-900">Pistes cliquables</span><span class="block text-[11px] text-slate-500">Nom, réseau et revêtement au toucher</span></span>
       <span class="relative inline-flex items-center">
         <input id="toggle-cycleways-checkbox" type="checkbox" class="sr-only peer" />
         <span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></span>
@@ -543,14 +594,19 @@
 
     <!-- ACCUEIL : puces, trajet en cours, onglets -->
     <div id="sheet-home" class="shrink-0 px-4 pt-1 md:pt-4 pb-3 space-y-3 border-b border-slate-200/60">
-      <div id="home-chips" class="flex gap-1.5 overflow-x-auto no-scrollbar">
+      <div class="flex gap-1.5 items-center">
+      <div id="home-chips" class="flex-1 min-w-0 flex gap-1.5 overflow-x-auto no-scrollbar">
         <button id="chip-pistes" class="chip big on" aria-pressed="true"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="16" r="4"/><circle cx="18" cy="16" r="4"/><path d="M6 16l4-8h5l3 8M10 8l4 8"/></svg>Pistes</button>
         <button id="chip-visit" class="chip big" aria-pressed="false"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>À voir</button>
         <button id="chip-eat" class="chip big" aria-pressed="false"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-3 4-3 7h3v11"/></svg>Manger</button>
         <button id="chip-water" class="chip big on" aria-pressed="true"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></svg>Eau</button>
       </div>
+        <button id="btn-contrast" aria-label="Contraste" class="chip big shrink-0" style="width:44px;padding:0;justify-content:center">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>
+        </button>
+      </div>
 
-      <div id="home-shortcuts" class="flex gap-1.5 overflow-x-auto no-scrollbar -mt-1"></div>
+      <div id="home-shortcuts" class="flex gap-0.5 overflow-x-auto no-scrollbar -mt-1"></div>
 
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
@@ -1396,7 +1452,11 @@
       lastHeading: null,
       wakeLock: null,
       // 3D
-      is3D: false,
+      glOn: false,            // carte MapLibre affichée (sinon Leaflet)
+      view3D: false,          // vue inclinée avec relief
+      base: 'vector',         // vector | cyclosm | osm | opentopo
+      contrast: 0,            // 0 normal, 1 fort, 2 maximum
+      showBikeRoutes: true,   // itinéraires vélo balisés (Waymarked Trails)
       map3d: null,
       map3dReady: false,
       // Mode soleil / économie batterie
@@ -1590,6 +1650,7 @@
         zoom: startView.z,
         zoomControl: false,
         tapHold: true, // appui long = « clic droit » sur mobile
+        zoomSnap: 0.25,
       });
 
       AppState.baseLayers = {
@@ -1648,28 +1709,36 @@
       map.on('contextmenu', (e) => openMapClickContextMenu(e.latlng, e.originalEvent));
     }
 
+    // Fond de carte : « vector » (MapLibre) ou une couche de tuiles images
     function switchBaseLayer(layerId) {
-      if (!AppState.baseLayers[layerId] || AppState.activeLayerId === layerId) return;
-      AppState.map.removeLayer(AppState.baseLayers[AppState.activeLayerId]);
-      AppState.baseLayers[layerId].addTo(AppState.map);
-      AppState.activeLayerId = layerId;
+      AppState.base = layerId;
+      try {
+        localStorage.setItem('abicyclette.base', layerId);
+      } catch {}
+      if (AppState.baseLayers[layerId] && AppState.activeLayerId !== layerId) {
+        const lm = AppState.map;
+        const old = AppState.baseLayers[AppState.activeLayerId];
+        const had = lm.hasLayer(old);
+        if (had) lm.removeLayer(old);
+        AppState.activeLayerId = layerId;
+        if (had) AppState.baseLayers[layerId].addTo(lm);
+      }
+      updateLayerButtons();
+      applyEngine();
+    }
 
-      document.querySelectorAll('.layer-option').forEach((btn) => btn.classList.toggle('on', btn.dataset.layer === layerId));
+    function updateLayerButtons() {
+      const shown = AppState.glOn || isOfflineMode() ? AppState.base : AppState.base === 'vector' ? AppState.activeLayerId : AppState.base;
+      document.querySelectorAll('.layer-option').forEach((btn) => btn.classList.toggle('on', btn.dataset.layer === shown));
     }
 
     function createWaterDropIcon() {
-      const html = `
-        <div class="w-8 h-8 -ml-4 -mt-8 flex items-center justify-center drop-shadow-md transition-transform hover:scale-110">
-          <svg width="30" height="36" viewBox="0 0 30 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 1.5C15 1.5 2.5 14.8 2.5 23C2.5 29.9 8.1 34.5 15 34.5C21.9 34.5 27.5 29.9 27.5 23C27.5 14.8 15 1.5 15 1.5Z" fill="#0284C7" stroke="#FFFFFF" stroke-width="2.2"/>
-            <path d="M10.5 22.5C10.5 25.2 12.6 27.2 15.2 27.2" stroke="#BAE6FD" stroke-width="2.2" stroke-linecap="round"/>
-          </svg>
-        </div>`;
       return L.divIcon({
-        html,
-        className: 'custom-water-icon',
-        iconSize: [0, 0],
-        popupAnchor: [0, -30],
+        html: pureIconHtml(PURE_EXTRA.water, '#0284c7', 32),
+        className: 'custom-poi-icon',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -14],
       });
     }
 
@@ -1869,7 +1938,7 @@
         AppState.waterMarkersLayer.addLayer(marker);
       });
 
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
 
       // Mise à jour de la liste latérale
       document.getElementById('water-count').textContent = sorted.length;
@@ -1903,7 +1972,7 @@
 
     // Centre la carte affichée (2D ou 3D)
     function flyToActive(lat, lon, zoom) {
-      if (AppState.is3D && AppState.map3d) {
+      if (AppState.glOn && AppState.map3d) {
         AppState.map3d.flyTo({ center: [lon, lat], zoom, duration: AppState.sunMode ? 0 : 900 });
       } else if (AppState.sunMode) {
         AppState.map.setView([lat, lon], zoom, { animate: false });
@@ -2114,7 +2183,7 @@
       document.getElementById('input-origin').value = label;
       if (AppState.originMarker) AppState.map.removeLayer(AppState.originMarker);
       AppState.originMarker = L.marker([lat, lon], { icon: createPinIcon('#10b981', 'D') }).addTo(AppState.map);
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     function setRouteDestination(lat, lon, label) {
@@ -2122,7 +2191,7 @@
       document.getElementById('input-dest').value = label;
       if (AppState.destMarker) AppState.map.removeLayer(AppState.destMarker);
       AppState.destMarker = L.marker([lat, lon], { icon: createPinIcon('#f43f5e', 'A') }).addTo(AppState.map);
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     // -------------------------------------------------------------------------
@@ -2393,6 +2462,21 @@
 
     // Styles du tracé : normal ou très contrasté (mode soleil)
     function routeStyles() {
+      const st = routeStylesBase();
+      const k = [1, 1.3, 1.6][AppState.contrast] || 1;
+      ['outline', 'main', 'alt'].forEach((n) => (st[n] = { ...st[n], weight: Math.round(st[n].weight * k) }));
+      return st;
+    }
+
+    function routeStylesBase() {
+      if (AppState.theme === 'noir') {
+        // Le calque des tracés est inversé par le filtre du mode Noir : on dessine en « noir & blanc »
+        return {
+          outline: { color: '#ffffff', weight: 15, opacity: 1 },
+          main: { color: '#000000', weight: 8, opacity: 1 },
+          alt: { color: '#000000', weight: 4, opacity: 0.8, dashArray: '2 8' },
+        };
+      }
       if (AppState.theme === 'night') {
         return {
           outline: { color: '#000000', weight: 11, opacity: 1 },
@@ -2452,7 +2536,7 @@
       applyCalculatedRoute(route, keepView);
       drawAlternativePolylines();
       renderAlternativesList();
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     function drawAlternativePolylines() {
@@ -2534,7 +2618,8 @@
       AppState.routePolyline = L.polyline(latLngs, { ...st.main, lineCap: 'round', lineJoin: 'round' }).addTo(AppState.map);
 
       if (!keepView && !AppState.isGuiding) {
-        AppState.map.fitBounds(AppState.routePolyline.getBounds(), { padding: [55, 55] });
+        if (AppState.glOn) Map3D.fitBounds(AppState.routePolyline.getBounds());
+        else AppState.map.fitBounds(AppState.routePolyline.getBounds(), { padding: [55, 55] });
       }
 
       // Mise à jour UI
@@ -2547,7 +2632,7 @@
 
       renderElevationChart(routeData.coords, routeData.distance);
       renderRouteSteps(routeData.steps);
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
       if (AppState.isGuiding) loadCompanion(routeData);
       else if (!routeData._weatherDone) {
         routeData._weatherDone = true;
@@ -2608,7 +2693,7 @@
           </div>`
         )
         .join('');
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     function renderElevationChart(coords, totalDistance) {
@@ -2841,7 +2926,7 @@
       if (!Rides.isRecording()) Rides.start(true);
 
       // Navigation 3D par défaut (désactivable : bouton 2D du bandeau)
-      if (!AppState.is3D && !isOfflineMode() && localStorage.getItem('abicyclette.nav3d') !== '0') {
+      if (!AppState.view3D && !isOfflineMode() && localStorage.getItem('abicyclette.nav3d') !== '0') {
         Map3D.enable();
       }
     }
@@ -2859,7 +2944,7 @@
       document.getElementById('guidance-hud').classList.add('hidden');
       document.body.classList.remove('guiding');
       document.getElementById('top-search-container').classList.remove('hidden');
-      if (AppState.is3D) Map3D.resetCamera();
+      if (AppState.glOn) Map3D.resetCamera();
       showToast('Guidage GPS arrêté.', 'info');
     }
 
@@ -2983,7 +3068,7 @@
     }
 
     function followCamera(lat, lon, route, snap) {
-      if (AppState.is3D && AppState.map3dReady) {
+      if (AppState.glOn && AppState.map3dReady) {
         const bearing = AppState.lastHeading ?? routeBearingAhead(route, snap);
         Map3D.follow(lat, lon, bearing);
       } else {
@@ -3334,7 +3419,7 @@ ${trkpts}
         AppState.userMarker.setLatLng([lat, lon]);
         AppState.userAccuracyCircle.setLatLng([lat, lon]).setRadius(accuracy);
       }
-      if (AppState.is3D) Map3D.updateUser(lat, lon);
+      if (AppState.glOn) Map3D.updateUser(lat, lon);
       if (Rides.isRecording()) Rides.addPoint(lat, lon, accuracy);
     }
 
@@ -3551,10 +3636,10 @@ ${trkpts}
       document.getElementById('btn-refresh-water').addEventListener('click', loadWaterPointsForCurrentView);
 
       document.getElementById('btn-zoom-in').addEventListener('click', () =>
-        AppState.is3D && AppState.map3d ? AppState.map3d.zoomIn() : AppState.map.zoomIn()
+        AppState.glOn && AppState.map3d ? AppState.map3d.zoomIn() : AppState.map.zoomIn()
       );
       document.getElementById('btn-zoom-out').addEventListener('click', () =>
-        AppState.is3D && AppState.map3d ? AppState.map3d.zoomOut() : AppState.map.zoomOut()
+        AppState.glOn && AppState.map3d ? AppState.map3d.zoomOut() : AppState.map.zoomOut()
       );
 
       // Panneau Affichage
@@ -3568,9 +3653,19 @@ ${trkpts}
       document.getElementById('btn-close-display').addEventListener('click', () => displayPanel.classList.add('hidden'));
       document.getElementById('btn-sheet-close').addEventListener('click', collapseMobileSheet);
       document.querySelectorAll('.layer-option').forEach((btn) => btn.addEventListener('click', () => switchBaseLayer(btn.dataset.layer)));
-      document.getElementById('view-2d').addEventListener('click', () => AppState.is3D && Map3D.disable());
-      document.getElementById('view-3d').addEventListener('click', () => !AppState.is3D && Map3D.enable());
+      document.getElementById('view-2d').addEventListener('click', () => AppState.view3D && Map3D.set3D(false));
+      document.getElementById('view-3d').addEventListener('click', () => !AppState.view3D && Map3D.set3D(true));
       document.querySelectorAll('.theme-btn').forEach((btn) => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
+      document.querySelectorAll('.contrast-btn').forEach((btn) => btn.addEventListener('click', () => setContrast(+btn.dataset.contrast)));
+      document.getElementById('btn-contrast').addEventListener('click', () => setContrast((AppState.contrast + 1) % 3));
+      document.getElementById('toggle-bike-routes').addEventListener('change', (e) => {
+        AppState.showBikeRoutes = e.target.checked;
+        try {
+          localStorage.setItem('abicyclette.bikeRoutes', e.target.checked ? '1' : '0');
+        } catch {}
+        updateLeafletBikeRoutes();
+        if (AppState.glOn) Map3D.applyStyle();
+      });
 
       // Toggle surlignage pistes & véloroutes
       const cyclewaysCheckbox = document.getElementById('toggle-cycleways-checkbox');
@@ -3671,7 +3766,7 @@ ${trkpts}
         renderVias();
         clearAlternativeLayers();
         ['route-weather', 'route-weather-advice', 'home-weather'].forEach((id) => document.getElementById(id).classList.add('hidden'));
-        if (AppState.is3D) Map3D.refreshOverlays();
+        if (AppState.glOn) Map3D.refreshOverlays();
       });
 
       // Profils BRouter
@@ -3729,6 +3824,7 @@ ${trkpts}
       document.getElementById('toggle-force-offline').addEventListener('change', (e) => {
         AppState.forceOffline = e.target.checked;
         updateNetworkBadges();
+        applyEngine();
         showToast(
           AppState.forceOffline ? 'Lecture hors ligne forcée activée.' : 'Mode connecté rétabli.',
           'info'
@@ -3795,7 +3891,7 @@ ${trkpts}
       document.getElementById('btn-hud-3d').addEventListener('click', async () => {
         await Map3D.toggle();
         try {
-          localStorage.setItem('abicyclette.nav3d', AppState.is3D ? '1' : '0');
+          localStorage.setItem('abicyclette.nav3d', AppState.view3D ? '1' : '0');
         } catch {}
         if (AppState.userLocation && AppState.currentRoute) {
           const u = AppState.userLocation;
@@ -3840,7 +3936,7 @@ ${trkpts}
       });
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
       document.getElementById('btn-add-place-center').addEventListener('click', () => {
-        const c = AppState.is3D && AppState.map3d ? AppState.map3d.getCenter() : AppState.map.getCenter();
+        const c = AppState.glOn && AppState.map3d ? AppState.map3d.getCenter() : AppState.map.getCenter();
         openPlaceModal(c.lat, c.lng);
       });
       document.getElementById('btn-add-place-here').addEventListener('click', () => {
@@ -3898,11 +3994,13 @@ ${trkpts}
       // Surveillance réseau navigateur
       window.addEventListener('online', () => {
         updateNetworkBadges();
+        applyEngine();
         CloudSync.sync(true);
         showToast('Connexion internet retrouvée.', 'success');
       });
       window.addEventListener('offline', () => {
         updateNetworkBadges();
+        applyEngine();
         showToast('Vous êtes hors ligne. Bascule sur le cache local.', 'warning');
       });
 
@@ -4039,6 +4137,15 @@ ${trkpts}
       camp: '<path d="M3 20L12 4l9 16zM12 20l-3-6M12 20l3-6"/>',
       station: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M8 21l2-4M16 21l-2-4"/>',
     };
+    const PURE_EXTRA = {
+      water: '<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>',
+      star: '<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>',
+    };
+    // Icône « pure » pour Leaflet : trait de couleur + liseré (couleurs selon le style, via CSS)
+    function pureIconHtml(paths, color, size = 30) {
+      return `<svg class="poi-pure" style="--c:${color}" width="${size}" height="${size}" viewBox="-4 -4 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="h">${paths}</g><g class="c">${paths}</g></svg>`;
+    }
+
     function poiSvg(cat, size = 16, color = 'currentColor') {
       return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${POI_ICONS[cat] || POI_ICONS.attraction}</svg>`;
     }
@@ -4454,10 +4561,10 @@ ${trkpts}
     function createPOIIcon(cat) {
       const c = POI_BY_ID[cat] || { color: '#334155' };
       return L.divIcon({
-        html: `<div class="poi-icon" style="background:${c.color};color:#fff">${poiSvg(cat, 15, '#fff')}</div>`,
+        html: pureIconHtml(POI_ICONS[cat] || POI_ICONS.attraction, c.color, 32),
         className: 'custom-poi-icon',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
         popupAnchor: [0, -14],
       });
     }
@@ -4618,7 +4725,7 @@ ${trkpts}
         AppState.poiLayer.addLayer(m);
       });
       renderPOIList(points);
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     function renderPOIList(points) {
@@ -4656,14 +4763,14 @@ ${trkpts}
           })
           .join('');
       }
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     window.focusPOI = function (id) {
       const p = AppState.poiPoints.find((x) => x.id === id);
       if (!p) return;
       flyToActive(p.lat, p.lon, 17);
-      if (!AppState.is3D) {
+      if (!AppState.glOn) {
         AppState.poiLayer.eachLayer((m) => {
           const ll = m.getLatLng();
           if (Math.abs(ll.lat - p.lat) < 1e-7 && Math.abs(ll.lng - p.lon) < 1e-7) setTimeout(() => m.openPopup(), 600);
@@ -4858,9 +4965,10 @@ ${trkpts}
     function createPlaceIcon(cat) {
       const c = PLACE_CATS[cat] || PLACE_CATS.autre;
       return L.divIcon({
-        html: `<div class="poi-icon" style="background:${c.color};width:32px;height:32px;margin-left:-16px;margin-top:-16px;border-width:3px;color:#fff;font-weight:800">${c.emoji}</div>`,
+        html: pureIconHtml(PURE_EXTRA.star, c.color, 36),
         className: 'custom-place-icon',
-        iconSize: [0, 0],
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
         popupAnchor: [0, -16],
       });
     }
@@ -4897,7 +5005,7 @@ ${trkpts}
           })
           .join('');
       }
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     window.goToMyPlace = function (id) {
@@ -5151,11 +5259,19 @@ ${trkpts}
     //     Fond OpenFreeMap (bâtiments 3D) + relief Terrarium (AWS Open Data)
     // -------------------------------------------------------------------------
     const Map3D = (() => {
+      // ---------------------------------------------------------------------
+      // Moteur de carte principal (MapLibre GL) : 2D ou 3D, fond vectoriel
+      // ou tuiles images. Leaflet reste derrière, invisible, comme « modèle »
+      // de la vue (zone visible, centre) et comme carte de secours hors ligne.
+      // ---------------------------------------------------------------------
       const LIB = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl';
       let libPromise = null;
       let htmlMarkers = [];
       let userMarker = null;
       let popup = null;
+      let liberty = null;
+      const iconImages = {}; // id -> ImageData (thème courant)
+      let iconKey = '';
 
       function loadLib() {
         if (window.maplibregl) return Promise.resolve();
@@ -5177,86 +5293,216 @@ ${trkpts}
         return libPromise;
       }
 
-      function updateButtons() {
-        const on = AppState.is3D;
-        document.getElementById('view-2d').classList.toggle('on', !on);
-        document.getElementById('view-3d').classList.toggle('on', on);
-        document.getElementById('btn-hud-3d').textContent = on ? '2D' : '3D';
+      // Paramètres du serveur OpenFreeMap (polices, source vectorielle), lus dans son style public
+      async function getLiberty() {
+        if (liberty) return liberty;
+        try {
+          const saved = JSON.parse(localStorage.getItem('abicyclette.liberty') || 'null');
+          if (saved && Date.now() - saved.at < 86400000 * 3) return (liberty = saved);
+        } catch {}
+        const st = await (await fetch('https://tiles.openfreemap.org/styles/liberty')).json();
+        const fonts = st.layers.flatMap((l) => l.layout?.['text-font'] || []).filter((f) => typeof f === 'string');
+        liberty = {
+          at: Date.now(),
+          glyphs: st.glyphs,
+          omt: Object.values(st.sources).find((s) => s.type === 'vector')?.url || 'https://tiles.openfreemap.org/planet',
+          fontR: fonts.find((f) => /Regular/.test(f)) || fonts[0] || 'Noto Sans Regular',
+          fontB: fonts.find((f) => /Bold/.test(f)) || fonts.find((f) => /Regular/.test(f)) || 'Noto Sans Bold',
+        };
+        try {
+          localStorage.setItem('abicyclette.liberty', JSON.stringify(liberty));
+        } catch {}
+        return liberty;
+      }
+
+      const RASTER = {
+        cyclosm: { tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png`), maxzoom: 20, attribution: '© OpenStreetMap · CyclOSM' },
+        osm: { tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], maxzoom: 19, attribution: '© OpenStreetMap' },
+        opentopo: { tiles: ['a', 'b', 'c'].map((s) => `https://${s}.tile.opentopomap.org/{z}/{x}/{y}.png`), maxzoom: 17, attribution: '© OpenStreetMap · OpenTopoMap' },
+      };
+
+      // Couleurs du fond vectoriel, par style
+      const PAL = {
+        normal: { bg: '#eef1ea', wood: '#cfe3c4', grass: '#e1edd3', res: '#e7e4dd', water: '#a7d2ec', bld: '#dad5cb', road: '#ffffff', casing: '#c4bdb1', path: '#857f71', cyc: '#0b8f7f', cycCasing: '#ffffff', rail: '#9aa0a6', text: '#27313c', halo: '#ffffff', route: '#059669', routeCasing: '#ffffff' },
+        sun: { bg: '#fffdf4', wood: '#b6db9d', grass: '#d6edc0', res: '#efeadf', water: '#5db4ec', bld: '#cfc8b8', road: '#ffffff', casing: '#3f3f3f', path: '#4a4033', cyc: '#0052d4', cycCasing: '#ffffff', rail: '#555', text: '#000000', halo: '#ffffff', route: '#ff00b4', routeCasing: '#000000' },
+        bw: { bg: '#ffffff', wood: '#d7d7d7', grass: '#ebebeb', res: '#f2f2f2', water: '#bcbcbc', bld: '#e3e3e3', road: '#ffffff', casing: '#000000', path: '#4d4d4d', cyc: '#000000', cycCasing: '#ffffff', rail: '#555', text: '#000000', halo: '#ffffff', route: '#000000', routeCasing: '#ffffff' },
+        noir: { bg: '#000000', wood: '#1d1d1d', grass: '#141414', res: '#0d0d0d', water: '#333333', bld: '#1a1a1a', road: '#000000', casing: '#e6e6e6', path: '#bdbdbd', cyc: '#ffffff', cycCasing: '#000000', rail: '#aaa', text: '#ffffff', halo: '#000000', route: '#ffffff', routeCasing: '#000000' },
+        night: { bg: '#0b0f14', wood: '#0f1d15', grass: '#0d1912', res: '#10151b', water: '#0b2236', bld: '#151b23', road: '#222c37', casing: '#0b0f14', path: '#56606b', cyc: '#2fbf8f', cycCasing: '#0b0f14', rail: '#3a434d', text: '#c3ccd5', halo: '#0b0f14', route: '#34d399', routeCasing: '#000000' },
+      };
+
+      const W = (k, z10, z14, z18) => ['interpolate', ['exponential', 1.6], ['zoom'], 10, z10 * k, 14, z14 * k, 18, z18 * k];
+
+      function vectorLayers(P, k, L) {
+        const cls = (list) => ['match', ['get', 'class'], list, true, false];
+        const isCycle = ['any', ['==', ['get', 'subclass'], 'cycleway'], ['==', ['get', 'bicycle'], 'designated']];
+        const name = ['coalesce', ['get', 'name:fr'], ['get', 'name']];
+        const T = (size) => size * (1 + (k - 1) * 0.6);
+        return [
+          { id: 'bg', type: 'background', paint: { 'background-color': P.bg } },
+          { id: 'landcover-grass', type: 'fill', source: 'omt', 'source-layer': 'landcover', filter: cls(['grass', 'wetland', 'farmland']), paint: { 'fill-color': P.grass } },
+          { id: 'landuse-res', type: 'fill', source: 'omt', 'source-layer': 'landuse', filter: cls(['residential', 'suburb', 'neighbourhood', 'commercial', 'retail']), paint: { 'fill-color': P.res } },
+          { id: 'landcover-wood', type: 'fill', source: 'omt', 'source-layer': 'landcover', filter: cls(['wood', 'forest']), paint: { 'fill-color': P.wood } },
+          { id: 'park', type: 'fill', source: 'omt', 'source-layer': 'park', paint: { 'fill-color': P.grass, 'fill-opacity': 0.7 } },
+          { id: 'water', type: 'fill', source: 'omt', 'source-layer': 'water', paint: { 'fill-color': P.water } },
+          { id: 'waterway', type: 'line', source: 'omt', 'source-layer': 'waterway', paint: { 'line-color': P.water, 'line-width': W(1, 1, 2, 5) } },
+          { id: 'building', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 13, paint: { 'fill-color': P.bld, 'fill-outline-color': P.casing } },
+          // Chemins et pistes
+          { id: 'tr-track', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['all', cls(['track', 'path']), ['!', isCycle]], minzoom: 12, paint: { 'line-color': P.path, 'line-width': W(k, 0.5, 1.2, 2.5), 'line-dasharray': [2, 1.5] } },
+          { id: 'tr-rail', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['rail', 'transit']), paint: { 'line-color': P.rail, 'line-width': W(k, 0.8, 1.5, 3), 'line-dasharray': [3, 2] } },
+          // Routes : bordure puis remplissage
+          { id: 'tr-minor-casing', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['minor', 'service']), minzoom: 12, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.casing, 'line-width': W(k, 1, 4, 14) } },
+          { id: 'tr-sec-casing', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['secondary', 'tertiary']), layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.casing, 'line-width': W(k, 1.5, 6, 20) } },
+          { id: 'tr-pri-casing', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['primary', 'trunk', 'motorway']), layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.casing, 'line-width': W(k, 2, 8, 24) } },
+          { id: 'tr-minor', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['minor', 'service']), minzoom: 12, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.road, 'line-width': W(k, 0.5, 2.6, 11) } },
+          { id: 'tr-sec', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['secondary', 'tertiary']), layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.road, 'line-width': W(k, 1, 4.5, 17) } },
+          { id: 'tr-pri', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: cls(['primary', 'trunk', 'motorway']), layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.road, 'line-width': W(k, 1.4, 6, 20) } },
+          // PISTES CYCLABLES : bien visibles (liseré + couleur franche)
+          { id: 'cyc-ok', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: ['all', cls(['path', 'track']), ['==', ['get', 'bicycle'], 'yes']], minzoom: 12, layout: { 'line-cap': 'round' }, paint: { 'line-color': P.cyc, 'line-width': W(k, 0.8, 2, 4), 'line-dasharray': [1.5, 1.2] } },
+          { id: 'cyc-casing', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: isCycle, minzoom: 10, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.cycCasing, 'line-width': W(k, 3, 7, 14) } },
+          { id: 'cyc', type: 'line', source: 'omt', 'source-layer': 'transportation', filter: isCycle, minzoom: 10, layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.cyc, 'line-width': W(k, 1.6, 4, 8) } },
+          // Noms
+          { id: 'lbl-water', type: 'symbol', source: 'omt', 'source-layer': 'water_name', layout: { 'text-field': name, 'text-font': [L.fontR], 'text-size': T(12) }, paint: { 'text-color': P.text, 'text-halo-color': P.halo, 'text-halo-width': 1.5 * k } },
+          { id: 'lbl-road', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name', minzoom: 14, layout: { 'symbol-placement': 'line', 'text-field': name, 'text-font': [L.fontR], 'text-size': T(12) }, paint: { 'text-color': P.text, 'text-halo-color': P.halo, 'text-halo-width': 2 * k } },
+          { id: 'lbl-place', type: 'symbol', source: 'omt', 'source-layer': 'place', filter: cls(['city', 'town', 'village', 'suburb', 'hamlet']), layout: { 'text-field': name, 'text-font': [L.fontB], 'text-size': ['match', ['get', 'class'], 'city', T(18), 'town', T(15), 'village', T(13), T(11.5)], 'text-max-width': 8 }, paint: { 'text-color': P.text, 'text-halo-color': P.halo, 'text-halo-width': 2 * k } },
+        ];
+      }
+
+      // Fond en tuiles images : couleurs réglées dans MapLibre selon le style
+      function rasterPaint(theme, contrast) {
+        const c = [0, 0.2, 0.4][contrast] || 0;
+        if (theme === 'bw') return { 'raster-saturation': -1, 'raster-contrast': 0.25 + c };
+        if (theme === 'noir') return { 'raster-saturation': -1, 'raster-contrast': 0.25 + c, 'raster-brightness-min': 1, 'raster-brightness-max': 0 };
+        if (theme === 'night') return { 'raster-hue-rotate': 180, 'raster-brightness-min': 0.85, 'raster-brightness-max': 0.05, 'raster-saturation': -0.3 };
+        if (theme === 'sun') return { 'raster-contrast': 0.2 + c, 'raster-saturation': 0.25 };
+        return { 'raster-contrast': c };
       }
 
       function emptyFC() {
         return { type: 'FeatureCollection', features: [] };
       }
 
-      function setupLayers(m) {
-        const style = m.getStyle();
-        const firstSymbol = style.layers.find((l) => l.type === 'symbol')?.id;
-
-        // Relief : une source pour le terrain, une pour l'ombrage
-        const dem = {
-          type: 'raster-dem',
-          tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-          encoding: 'terrarium',
-          tileSize: 256,
-          maxzoom: 14,
-          attribution: 'Relief © Mapzen / AWS Open Data',
+      async function buildStyle() {
+        const L = await getLiberty();
+        const theme = AppState.theme;
+        const P = PAL[theme] || PAL.normal;
+        const k = [1, 1.3, 1.6][AppState.contrast] || 1;
+        const base = AppState.base;
+        const threeD = AppState.view3D;
+        const dem = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 14, attribution: 'Relief © Mapzen / AWS Open Data' };
+        const sources = {
+          omt: { type: 'vector', url: L.omt, attribution: '© OpenStreetMap · OpenFreeMap' },
+          alts: { type: 'geojson', data: emptyFC() },
+          route: { type: 'geojson', data: emptyFC() },
+          ride: { type: 'geojson', data: emptyFC() },
+          pts: { type: 'geojson', data: emptyFC() },
         };
-        m.addSource('dem', dem);
-        m.addSource('dem-shade', { ...dem });
-        m.addLayer(
-          { id: 'hillshade', type: 'hillshade', source: 'dem-shade', paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#475569' } },
-          firstSymbol
-        );
-        m.setTerrain({ source: 'dem', exaggeration: 1.5 });
-
-        // Bâtiments 3D si le style n'en a pas déjà
-        if (!style.layers.some((l) => l.type === 'fill-extrusion') && style.sources.openmaptiles) {
-          m.addLayer(
-            {
-              id: 'buildings-3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
-              paint: {
-                'fill-extrusion-color': '#d6d3d1',
-                'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
-                'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-                'fill-extrusion-opacity': 0.85,
-              },
-            },
-            firstSymbol
-          );
+        let layers;
+        if (base === 'vector') layers = vectorLayers(P, k, L);
+        else {
+          const R = RASTER[base] || RASTER.cyclosm;
+          sources.raster = { type: 'raster', tiles: R.tiles, tileSize: 256, maxzoom: R.maxzoom, attribution: R.attribution };
+          layers = [{ id: 'bg', type: 'background', paint: { 'background-color': P.bg } }, { id: 'raster', type: 'raster', source: 'raster', paint: rasterPaint(theme, AppState.contrast) }];
         }
+        if (threeD) {
+          sources.dem = dem;
+          if (theme === 'normal' || theme === 'sun') {
+            sources['dem-shade'] = { ...dem };
+            layers.splice(1, 0, { id: 'hillshade', type: 'hillshade', source: 'dem-shade', paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#475569' } });
+          }
+          if (base === 'vector') {
+            const at = layers.findIndex((l) => l.id === 'building');
+            layers.splice(at, 1, { id: 'buildings-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 14, paint: { 'fill-extrusion-color': P.bld, 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.85 } });
+          }
+        }
+        // Itinéraires vélo balisés (EuroVelo, véloroutes) par-dessus le fond
+        if (AppState.showBikeRoutes) {
+          sources.wmt = { type: 'raster', tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 18, attribution: 'Itinéraires © Waymarked Trails' };
+          layers.push({ id: 'wmt', type: 'raster', source: 'wmt', paint: { 'raster-opacity': theme === 'night' || theme === 'noir' ? 0.55 : 0.85 } });
+        }
+        layers.push(
+          { id: 'alts-line', type: 'line', source: 'alts', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': theme === 'noir' ? '#bdbdbd' : theme === 'bw' ? '#000' : '#64748b', 'line-width': 6 * k, 'line-opacity': 0.7, 'line-dasharray': [0.5, 2] } },
+          { id: 'ride-line', type: 'line', source: 'ride', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#7c3aed', 'line-width': 5 * k } },
+          { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.routeCasing, 'line-width': 13 * k } },
+          { id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': P.route, 'line-width': 7 * k } },
+          {
+            id: 'pts-icons', type: 'symbol', source: 'pts',
+            layout: { 'icon-image': ['get', 'icon'], 'icon-size': (AppState.contrast ? 1.15 : 1) * 1, 'icon-allow-overlap': true, 'icon-padding': 0 },
+          },
+          {
+            id: 'pts-label', type: 'symbol', source: 'pts', minzoom: 15,
+            layout: { 'text-field': ['get', 'name'], 'text-font': [L.fontB], 'text-size': 11.5 * (1 + (k - 1) * 0.6), 'text-offset': [0, 1.5], 'text-anchor': 'top', 'text-optional': true, 'text-max-width': 9 },
+            paint: { 'text-color': P.text, 'text-halo-color': P.halo, 'text-halo-width': 1.8 * k },
+          }
+        );
+        // Le relief est activé après le chargement du style (setTerrain), plus stable que dans le style
+        return { version: 8, glyphs: L.glyphs, sources, layers };
+      }
 
-        // Trajets
-        m.addSource('alts', { type: 'geojson', data: emptyFC() });
-        m.addSource('route', { type: 'geojson', data: emptyFC() });
-        m.addLayer({ id: 'alts-line', type: 'line', source: 'alts', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#64748b', 'line-width': 6, 'line-opacity': 0.6, 'line-dasharray': [0.5, 2] } });
-        m.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 12 } });
-        m.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#059669', 'line-width': 7 } });
+      // ----- Icônes « pures » (trait + liseré), dessinées pour le style courant -----
+      function iconColors(color) {
+        const t = AppState.theme;
+        if (t === 'bw') return { c: '#000000', h: '#ffffff' };
+        if (t === 'noir') return { c: '#ffffff', h: '#000000' };
+        if (t === 'night') return { c: color, h: '#000000' };
+        return { c: color, h: '#ffffff' };
+      }
 
-        // Points (eau, lieux, mes lieux)
-        m.addSource('pts', { type: 'geojson', data: emptyFC() });
-        m.addLayer({
-          id: 'pts-circle', type: 'circle', source: 'pts',
-          paint: { 'circle-radius': ['get', 'r'], 'circle-color': ['get', 'color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+      function drawIcon(paths, color) {
+        const { c, h } = iconColors(color);
+        const sw = AppState.contrast ? 2.9 : 2.4;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="-4 -4 32 32"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="${h}" stroke-width="${sw + 4}">${paths}</g><g stroke="${c}" stroke-width="${sw}">${paths}</g></g></svg>`;
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const cv = document.createElement('canvas');
+            cv.width = cv.height = 64;
+            const ctx = cv.getContext('2d');
+            ctx.drawImage(img, 0, 0, 64, 64);
+            resolve(ctx.getImageData(0, 0, 64, 64));
+          };
+          img.onerror = () => resolve(null);
+          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         });
-        m.addLayer({
-          id: 'pts-label', type: 'symbol', source: 'pts', minzoom: 14,
-          layout: { 'text-field': ['get', 'name'], 'text-size': 11, 'text-offset': [0, 1.3], 'text-anchor': 'top', 'text-font': ['Noto Sans Regular'], 'text-optional': true },
-          paint: { 'text-color': '#0f172a', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
-        });
+      }
 
+      async function ensureIcons() {
+        const key = `${AppState.theme}|${AppState.contrast}`;
+        if (key === iconKey) return;
+        const jobs = POI_CATEGORIES.map(async (c) => (iconImages['ico-' + c.id] = await drawIcon(POI_ICONS[c.id], c.color)));
+        jobs.push((async () => (iconImages['ico-water'] = await drawIcon(PURE_EXTRA.water, '#0284c7')))());
+        Object.entries(PLACE_CATS).forEach(([id, pc]) => jobs.push((async () => (iconImages['ico-place-' + id] = await drawIcon(PURE_EXTRA.star, pc.color)))()));
+        await Promise.all(jobs);
+        iconKey = key;
+      }
+
+      function addIcons(m) {
+        Object.entries(iconImages).forEach(([id, data]) => {
+          if (!data) return;
+          if (m.hasImage(id)) m.updateImage(id, data);
+          else m.addImage(id, data, { pixelRatio: 2 });
+        });
+      }
+
+      function updateButtons() {
+        const on = AppState.view3D;
+        document.getElementById('view-2d').classList.toggle('on', !on);
+        document.getElementById('view-3d').classList.toggle('on', on);
+        document.getElementById('btn-hud-3d').textContent = on ? '2D' : '3D';
+      }
+
+      function bindEvents(m) {
         m.on('click', 'alts-line', (e) => {
           const idx = e.features?.[0]?.properties?.idx;
           if (idx != null) selectAlternative(Number(idx), true);
           e.preventDefault();
         });
-        m.on('click', 'pts-circle', (e) => {
+        m.on('click', 'pts-icons', (e) => {
           const f = e.features?.[0];
           if (!f) return;
           e.preventDefault();
-          closePopups();
-          popup = new maplibregl.Popup({ offset: 12, maxWidth: '260px' }).setLngLat(f.geometry.coordinates).setHTML(f.properties.html).addTo(m);
+          openPointPopup(f);
         });
-        ['pts-circle', 'alts-line'].forEach((id) => {
+        ['pts-icons', 'alts-line'].forEach((id) => {
           m.on('mouseenter', id, () => (m.getCanvas().style.cursor = 'pointer'));
           m.on('mouseleave', id, () => (m.getCanvas().style.cursor = ''));
         });
@@ -5286,16 +5532,48 @@ ${trkpts}
           if (lpStart && Math.hypot(t.clientX - lpStart.x, t.clientY - lpStart.y) > 10) clearTimeout(lpTimer);
         }, { passive: true });
         cont.addEventListener('touchend', () => clearTimeout(lpTimer), { passive: true });
+
+        // La carte Leaflet (invisible) suit la vue : elle sert au chargement des lieux
+        m.on('moveend', () => {
+          if (!AppState.glOn) return;
+          const c = m.getCenter();
+          AppState.map.setView([c.lat, c.lng], m.getZoom() + 1, { animate: false });
+        });
+        m.on('style.load', async () => {
+          try {
+            m.setTerrain(AppState.view3D && m.getSource('dem') ? { source: 'dem', exaggeration: 1.5 } : null);
+          } catch {}
+          const quick = AppState.sunMode ? 0 : 500;
+          if (AppState.view3D) m.easeTo({ pitch: Math.max(55, m.getPitch()), duration: quick });
+          else if (m.getPitch() > 0) m.easeTo({ pitch: 0, duration: quick });
+          await ensureIcons();
+          addIcons(m);
+          AppState.map3dReady = true;
+          refreshOverlays();
+        });
+        m.on('styleimagemissing', (e) => {
+          if (iconImages[e.id]) m.addImage(e.id, iconImages[e.id], { pixelRatio: 2 });
+        });
+      }
+
+      function openPointPopup(f) {
+        closePopups();
+        const m = AppState.map3d;
+        const p = f.properties;
+        popup = new maplibregl.Popup({ offset: 14, maxWidth: '270px' }).setLngLat(f.geometry.coordinates).setHTML(p.html).addTo(m);
+        // Lieu : horaires à l'ouverture de la fiche
+        const poi = p.poiId && AppState.poiPoints.find((x) => x.id === p.poiId);
+        if (poi?.osmId) {
+          fetchOSMDetails([poi]).then(() => popup?.isOpen() && popup.setHTML(poiPopupHtml(poi)));
+        }
       }
 
       function line(coords, props = {}) {
         return { type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords.map((c) => [c[1], c[0]]) } };
       }
-
       function point(lat, lon, props) {
         return { type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [lon, lat] } };
       }
-
       function htmlPin(color, label) {
         const el = document.createElement('div');
         el.className = 'm3d-marker';
@@ -5303,42 +5581,28 @@ ${trkpts}
         return el;
       }
 
+      let rideCoords = null;
       function refreshOverlays() {
         const m = AppState.map3d;
-        if (!m || !AppState.map3dReady) return;
-        const sun = AppState.theme === 'sun';
-
-        // Trajet choisi + variantes
+        if (!m || !AppState.map3dReady || !m.getSource('route')) return;
         m.getSource('route').setData(AppState.currentRoute ? { type: 'FeatureCollection', features: [line(AppState.currentRoute.coords)] } : emptyFC());
         m.getSource('alts').setData({
           type: 'FeatureCollection',
           features: AppState.alternatives.map((r, idx) => (idx === AppState.selectedAltIdx ? null : line(r.coords, { idx }))).filter(Boolean),
         });
-        const bw = AppState.theme === 'bw';
-        const night = AppState.theme === 'night';
-        // En nuit, le canvas 3D est inversé par filtre CSS : on prend les couleurs « inverses »
-        m.setPaintProperty('route-line', 'line-color', bw ? '#000000' : night ? '#cb2c66' : sun ? '#ff00b4' : '#059669');
-        m.setPaintProperty('route-casing', 'line-color', bw ? '#ffffff' : night ? '#ffffff' : sun ? '#000000' : '#ffffff');
-        m.setPaintProperty('route-casing', 'line-width', sun ? 15 : 12);
-        m.setLayoutProperty('hillshade', 'visibility', AppState.theme === 'normal' ? 'visible' : 'none');
+        m.getSource('ride').setData(rideCoords ? { type: 'FeatureCollection', features: [line(rideCoords)] } : emptyFC());
 
-        // Points
         const feats = [];
         (AppState.showWater ? AppState.waterPoints : []).forEach((p) => {
           feats.push(point(p.lat, p.lon, {
-            r: 6, color: '#0284c7', name: p.name,
-            html: `<div class="p-3"><div class="text-xs font-bold mb-2">💧 ${escapeHtml(p.name)}</div><button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-1.5 rounded-lg bg-sky-600 text-white text-[11px] font-bold">Y aller à vélo</button></div>`,
+            icon: 'ico-water', name: p.name,
+            html: `<div class="p-3"><div class="text-xs font-bold mb-2">${escapeHtml(p.name)}</div><button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="w-full py-1.5 rounded-lg bg-sky-600 text-white text-[11px] font-bold">Y aller à vélo</button></div>`,
           }));
         });
-        AppState.poiPoints.forEach((p) => {
-          feats.push(point(p.lat, p.lon, { r: 7, color: POI_BY_ID[p.cat]?.color || '#334155', name: p.name, html: poiPopupHtml(p) }));
-        });
-        visiblePlaces().forEach((p) => {
-          feats.push(point(p.lat, p.lon, { r: 9, color: (PLACE_CATS[p.cat] || PLACE_CATS.autre).color, name: '★ ' + p.name, html: placePopupHtml(p) }));
-        });
+        AppState.poiPoints.forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id })));
+        visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p) })));
         m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
 
-        // Départ, étapes, arrivée
         htmlMarkers.forEach((mk) => mk.remove());
         htmlMarkers = [];
         const add = (pt, color, label) => {
@@ -5347,7 +5611,6 @@ ${trkpts}
         add(AppState.origin, '#10b981', 'D');
         AppState.vias.forEach((v, i) => add(v, '#f59e0b', String(i + 1)));
         add(AppState.dest, '#f43f5e', 'A');
-
         if (AppState.userLocation) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
       }
 
@@ -5358,77 +5621,107 @@ ${trkpts}
           const el = document.createElement('div');
           el.innerHTML = `<div style="width:22px;height:22px;border-radius:9999px;background:#0ea5e9;border:4px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,.3)"></div>`;
           userMarker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(m);
-        } else {
-          userMarker.setLngLat([lon, lat]);
-        }
+        } else userMarker.setLngLat([lon, lat]);
       }
 
-      async function enable() {
-        if (isOfflineMode()) {
-          showToast('La vue 3D a besoin du réseau (non disponible hors ligne).', 'warning');
-          return false;
-        }
+      function setLeafletBase(visible) {
+        const lm = AppState.map;
+        const layer = AppState.baseLayers[AppState.activeLayerId];
+        if (visible && !lm.hasLayer(layer)) layer.addTo(lm);
+        if (!visible && lm.hasLayer(layer)) lm.removeLayer(layer);
+        updateLeafletBikeRoutes();
+      }
+
+      // Affiche la carte MapLibre (au lieu de Leaflet)
+      async function show() {
         try {
           await loadLib();
         } catch {
-          showToast('Impossible de charger le moteur 3D.', 'error');
+          showToast('Impossible de charger le moteur de carte vectoriel : tuiles images à la place.', 'warning');
           return false;
         }
         const probe = document.createElement('canvas');
         if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) {
-          showToast('WebGL indisponible : la 3D ne peut pas s’afficher sur cet appareil.', 'error');
+          showToast('WebGL indisponible : carte en tuiles images.', 'warning');
+          return false;
+        }
+        let style;
+        try {
+          style = await buildStyle();
+        } catch {
+          showToast('Style vectoriel indisponible (réseau ?) : tuiles images.', 'warning');
           return false;
         }
         const c = AppState.map.getCenter();
-        const z = AppState.map.getZoom() - 1; // MapLibre : tuiles 512 px
+        const z = AppState.map.getZoom() - 1; // MapLibre : tuiles de 512 px
         document.body.classList.add('mode-3d');
-        AppState.is3D = true;
-        updateButtons();
-
+        AppState.glOn = true;
         if (!AppState.map3d) {
           const m = new maplibregl.Map({
-            container: 'map3d',
-            style: 'https://tiles.openfreemap.org/styles/liberty',
-            center: [c.lng, c.lat],
-            zoom: z,
-            pitch: 60,
-            maxPitch: 78,
-            attributionControl: { compact: true },
+            container: 'map3d', style, center: [c.lng, c.lat], zoom: z,
+            pitch: 0, maxPitch: AppState.view3D ? 78 : 0,
+            attributionControl: { compact: true }, dragRotate: true,
           });
           AppState.map3d = m;
-          m.on('load', () => {
-            try {
-              setupLayers(m);
-            } catch (err) {
-              console.warn('Couches 3D:', err);
-            }
-            AppState.map3dReady = true;
-            refreshOverlays();
-          });
+          bindEvents(m);
         } else {
           AppState.map3d.resize();
-          AppState.map3d.jumpTo({ center: [c.lng, c.lat], zoom: z, pitch: 60 });
-          refreshOverlays();
+          AppState.map3d.jumpTo({ center: [c.lng, c.lat], zoom: z });
+          await applyStyle();
         }
-        if (AppState.sunMode) showToast('La 3D consomme plus de batterie que la 2D.', 'info', 2500);
+        setLeafletBase(false);
+        updateButtons();
         return true;
       }
 
-      function disable() {
+      function hide() {
         const m = AppState.map3d;
-        if (m) {
+        if (m && AppState.glOn) {
           const c = m.getCenter();
-          AppState.map.setView([c.lat, c.lng], Math.round(m.getZoom() + 1), { animate: false });
+          AppState.map.setView([c.lat, c.lng], m.getZoom() + 1, { animate: false });
         }
         closePopups();
         document.body.classList.remove('mode-3d');
-        AppState.is3D = false;
+        AppState.glOn = false;
+        setLeafletBase(true);
         updateButtons();
         setTimeout(() => AppState.map.invalidateSize(), 50);
       }
 
-      function toggle() {
-        return AppState.is3D ? disable() : enable();
+      // Reconstruit le style (thème, contraste, fond, 2D/3D)
+      let styleSeq = 0;
+      async function applyStyle() {
+        const m = AppState.map3d;
+        if (!m || !AppState.glOn) return;
+        const seq = ++styleSeq;
+        const style = await buildStyle();
+        if (seq !== styleSeq) return;
+        AppState.map3dReady = false;
+        m.stop(); // pas d'animation de caméra pendant le changement de style
+        try {
+          m.setTerrain(null);
+        } catch {}
+        if (!AppState.view3D) m.jumpTo({ pitch: 0 });
+        m.setMaxPitch(AppState.view3D ? 78 : 0);
+        m.setStyle(style, { diff: false });
+      }
+
+      // Bascule 2D / 3D
+      async function set3D(on) {
+        AppState.view3D = on;
+        try {
+          localStorage.setItem('abicyclette.view3d', on ? '1' : '0');
+        } catch {}
+        if (on && isOfflineMode()) {
+          AppState.view3D = false;
+          showToast('La 3D a besoin du réseau.', 'warning');
+          updateButtons();
+          return false;
+        }
+        if (on && AppState.sunMode) showToast('La 3D consomme plus de batterie que la 2D.', 'info', 2500);
+        await applyEngine(); // affiche MapLibre si besoin, ou reconstruit le style
+        updateButtons();
+        return true;
       }
 
       function follow(lat, lon, bearing) {
@@ -5436,17 +5729,31 @@ ${trkpts}
         if (!m) return;
         updateUser(lat, lon);
         m.easeTo({
-          center: [lon, lat],
-          bearing,
-          pitch: 65,
-          zoom: 17.2,
+          center: [lon, lat], bearing,
+          pitch: AppState.view3D ? 65 : 0,
+          zoom: AppState.view3D ? 17.2 : 16.5,
           duration: AppState.sunMode ? 0 : 900,
           padding: { top: 220, bottom: 40, left: 0, right: 0 },
         });
       }
 
       function resetCamera() {
-        AppState.map3d?.easeTo({ pitch: 55, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
+        AppState.map3d?.easeTo({ pitch: AppState.view3D ? 55 : 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
+      }
+
+      function fitBounds(latLngBounds) {
+        const m = AppState.map3d;
+        if (!m) return;
+        const b = latLngBounds;
+        m.fitBounds([[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], {
+          padding: { top: 100, bottom: window.innerWidth < 768 ? 280 : 40, left: window.innerWidth < 768 ? 30 : 440, right: 40 },
+          duration: AppState.sunMode ? 0 : 700,
+        });
+      }
+
+      function setRide(coords) {
+        rideCoords = coords;
+        refreshOverlays();
       }
 
       function closePopups() {
@@ -5454,15 +5761,58 @@ ${trkpts}
         popup = null;
       }
 
-      return { toggle, enable, disable, refreshOverlays, follow, updateUser, resetCamera, closePopups };
+      return {
+        show, hide, applyStyle, set3D, refreshOverlays, follow, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
+        enable: () => set3D(true),
+        disable: () => set3D(false),
+        toggle: () => set3D(!AppState.view3D),
+      };
     })();
+
+    // Choix du moteur : MapLibre (vectoriel, ou tuiles en 3D) sauf hors ligne → Leaflet + cache
+    async function applyEngine() {
+      const wantGL = !isOfflineMode() && (AppState.base === 'vector' || AppState.view3D);
+      if (wantGL && !AppState.glOn) {
+        const ok = await Map3D.show();
+        if (!ok && AppState.base === 'vector') updateLayerButtons(); // repli sur les tuiles
+      } else if (!wantGL && AppState.glOn) {
+        Map3D.hide();
+      } else if (AppState.glOn) {
+        await Map3D.applyStyle();
+      }
+      applyLeafletFilters();
+    }
+
+    // Véloroutes (Waymarked Trails) aussi sur la carte Leaflet
+    let leafletBikeRoutes = null;
+    function updateLeafletBikeRoutes() {
+      const lm = AppState.map;
+      if (!leafletBikeRoutes) leafletBikeRoutes = L.tileLayer('https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png', { maxZoom: 18, opacity: 0.85, attribution: 'Itinéraires © Waymarked Trails' });
+      const want = AppState.showBikeRoutes && !AppState.glOn && !isOfflineMode();
+      if (want && !lm.hasLayer(leafletBikeRoutes)) leafletBikeRoutes.addTo(lm);
+      if (!want && lm.hasLayer(leafletBikeRoutes)) lm.removeLayer(leafletBikeRoutes);
+    }
+
+    // Couleurs des tuiles images (Leaflet) selon le style et le contraste
+    function applyLeafletFilters() {
+      const f = {
+        normal: '',
+        sun: 'contrast(1.25) saturate(1.25)',
+        bw: 'grayscale(1) contrast(1.35) brightness(1.04)',
+        noir: 'grayscale(1) invert(1) contrast(1.3)',
+        night: 'invert(1) hue-rotate(180deg) brightness(0.78) contrast(0.92) saturate(0.7)',
+      }[AppState.theme] || '';
+      const c = ['', ' contrast(1.2)', ' contrast(1.45)'][AppState.contrast] || '';
+      const pane = document.querySelector('.leaflet-tile-pane');
+      if (pane) pane.style.filter = (f + c).trim();
+    }
 
     // -------------------------------------------------------------------------
     // 17. MODE SOLEIL / ÉCONOMIE BATTERIE
     // -------------------------------------------------------------------------
     const LS_THEME = 'abicyclette.theme';
-    const THEMES = ['normal', 'sun', 'bw', 'night'];
-    const THEME_LABEL = { normal: 'Style clair', sun: 'Soleil : couleurs fortes, batterie ménagée', bw: 'Noir & blanc contrasté, batterie ménagée', night: 'Nuit : écran sombre, batterie ménagée' };
+    const THEMES = ['normal', 'sun', 'bw', 'noir', 'night'];
+    const THEME_LABEL = { normal: 'Style clair', sun: 'Soleil : couleurs fortes, batterie ménagée', bw: 'Noir & blanc contrasté, batterie ménagée', noir: 'Noir : fond noir, tout en blanc, batterie ménagée', night: 'Nuit : écran sombre, batterie ménagée' };
 
     function setTheme(theme, silent = false) {
       if (!THEMES.includes(theme)) theme = 'normal';
@@ -5470,13 +5820,14 @@ ${trkpts}
       // Soleil, noir & blanc et nuit économisent la batterie (GPS, rafraîchissement, effets)
       AppState.sunMode = theme !== 'normal';
       document.body.classList.toggle('eco', theme !== 'normal');
-      document.body.classList.toggle('sun-mode', theme === 'sun' || theme === 'bw');
-      document.body.classList.toggle('bw-mode', theme === 'bw');
+      document.body.classList.toggle('sun-mode', theme === 'sun' || theme === 'bw' || theme === 'noir');
+      document.body.classList.toggle('bw-mode', theme === 'bw' || theme === 'noir');
+      document.body.classList.toggle('noir-mode', theme === 'noir');
       document.body.classList.toggle('night-mode', theme === 'night');
       document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('on', b.dataset.theme === theme));
       const badge = document.getElementById('eco-badge');
       badge.classList.toggle('hidden', theme === 'normal');
-      badge.textContent = { sun: 'SOLEIL', bw: 'N&B', night: 'NUIT' }[theme] || '';
+      badge.textContent = { sun: 'SOLEIL', bw: 'N&B', noir: 'NOIR', night: 'NUIT' }[theme] || '';
       document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'normal' ? '#059669' : '#000000');
       try {
         localStorage.setItem(LS_THEME, theme);
@@ -5486,8 +5837,29 @@ ${trkpts}
         drawAlternativePolylines();
       }
       if (AppState.isGuiding) startGeoWatch();
-      if (AppState.is3D) Map3D.refreshOverlays();
+      applyLeafletFilters();
+      if (AppState.glOn) Map3D.applyStyle();
       if (!silent) showToast(THEME_LABEL[theme], 'info', 2200);
+    }
+
+    // Contraste : 0 normal, 1 fort, 2 maximum (carte, textes, icônes)
+    function setContrast(level, silent = false) {
+      AppState.contrast = level;
+      document.body.classList.toggle('contrast-1', level === 1);
+      document.body.classList.toggle('contrast-2', level === 2);
+      document.querySelectorAll('.contrast-btn').forEach((b) => b.classList.toggle('on', +b.dataset.contrast === level));
+      const hb = document.getElementById('btn-contrast');
+      if (hb) hb.classList.toggle('on', level > 0);
+      try {
+        localStorage.setItem('abicyclette.contrast', String(level));
+      } catch {}
+      if (AppState.currentRoute) {
+        applyCalculatedRoute(AppState.currentRoute, true);
+        drawAlternativePolylines();
+      }
+      applyLeafletFilters();
+      if (AppState.glOn) Map3D.applyStyle();
+      if (!silent) showToast(['Contraste normal', 'Contraste fort', 'Contraste maximum'][level], 'info', 1600);
     }
 
     // Compatibilité : ancien interrupteur soleil
@@ -5590,7 +5962,7 @@ ${trkpts}
       // Les résultats rejoignent aussi la vue 3D
       const known = new Set(AppState.poiPoints.map((p) => p.id));
       sorted.forEach((p) => !known.has(p.id) && AppState.poiPoints.push(p));
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
 
       if (!sorted.length) {
         resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-slate-500">Rien trouvé à proximité${offline ? ' (cache hors ligne)' : ''}.</div>`;
@@ -5618,7 +5990,7 @@ ${trkpts}
     window.focusSearchResult = function (lat, lon) {
       document.getElementById('global-search-results').classList.add('hidden');
       flyToActive(lat, lon, 17);
-      if (!AppState.is3D && AppState.searchLayer) {
+      if (!AppState.glOn && AppState.searchLayer) {
         AppState.searchLayer.eachLayer((m) => {
           const ll = m.getLatLng();
           if (Math.abs(ll.lat - lat) < 1e-7 && Math.abs(ll.lng - lon) < 1e-7) setTimeout(() => m.openPopup(), 700);
@@ -5815,8 +6187,8 @@ ${trkpts}
       box.innerHTML =
         AppState.shortcuts
           .filter((c) => POI_BY_ID[c])
-          .map((c) => `<button data-sc="${c}" class="chip big" style="height:40px">${poiSvg(c, 15)}${SHORT_LABEL[c] || POI_BY_ID[c].label}</button>`)
-          .join('') + `<button id="btn-edit-shortcuts" aria-label="Choisir mes raccourcis" class="chip big" style="height:40px">✎</button>`;
+          .map((c) => `<button data-sc="${c}" class="sc-tile"><span class="sc-ico" style="--c:${POI_BY_ID[c].color}">${poiSvg(c, 26)}</span><span>${SHORT_LABEL[c] || POI_BY_ID[c].label}</span></button>`)
+          .join('') + `<button id="btn-edit-shortcuts" aria-label="Choisir mes raccourcis" class="sc-tile"><span class="sc-ico" style="--c:#64748b;font-size:20px;line-height:26px">✎</span><span>Choisir</span></button>`;
       box.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => showCategoryNearby(b.dataset.sc)));
       document.getElementById('btn-edit-shortcuts').addEventListener('click', openShortcutsModal);
     }
@@ -5933,7 +6305,7 @@ ${trkpts}
         localStorage.setItem('abicyclette.showWater', on ? '1' : '0');
       } catch {}
       syncHomeChips();
-      if (AppState.is3D) Map3D.refreshOverlays();
+      if (AppState.glOn) Map3D.refreshOverlays();
     }
 
     function openSheetAt(tab, elementId) {
@@ -6294,10 +6666,11 @@ ${trkpts}
       function show(id) {
         const r = list.find((x) => x.id === id);
         if (!r) return;
-        if (AppState.is3D) Map3D.disable();
         if (showLayer) AppState.map.removeLayer(showLayer);
         showLayer = L.polyline(r.pts.map((p) => [p[0], p[1]]), { color: '#7c3aed', weight: 5, opacity: 0.9 }).addTo(AppState.map);
-        AppState.map.fitBounds(showLayer.getBounds(), { padding: [40, 40] });
+        Map3D.setRide(r.pts);
+        if (AppState.glOn) Map3D.fitBounds(showLayer.getBounds());
+        else AppState.map.fitBounds(showLayer.getBounds(), { padding: [40, 40] });
         collapseMobileSheet();
       }
 
@@ -6384,6 +6757,20 @@ ${trkpts}
       CloudSync.sync(true);
       const savedTheme = localStorage.getItem(LS_THEME) || (localStorage.getItem('abicyclette.sunmode') === '1' ? 'sun' : 'normal');
       if (savedTheme !== 'normal') setTheme(savedTheme, true);
+      AppState.base = localStorage.getItem('abicyclette.base') || 'vector';
+      if (AppState.base !== 'vector' && AppState.baseLayers[AppState.base]) {
+        AppState.map.removeLayer(AppState.baseLayers[AppState.activeLayerId]);
+        AppState.activeLayerId = AppState.base;
+        AppState.baseLayers[AppState.base].addTo(AppState.map);
+      }
+      AppState.view3D = localStorage.getItem('abicyclette.view3d') === '1';
+      AppState.showBikeRoutes = localStorage.getItem('abicyclette.bikeRoutes') !== '0';
+      document.getElementById('toggle-bike-routes').checked = AppState.showBikeRoutes;
+      const savedContrast = +(localStorage.getItem('abicyclette.contrast') || 0);
+      if (savedContrast) setContrast(savedContrast, true);
+      updateLayerButtons();
+      applyLeafletFilters();
+      applyEngine();
       AppState.preferCycleways = localStorage.getItem('abicyclette.preferCycleways') !== '0';
       document.getElementById('toggle-prefer-cycleways').checked = AppState.preferCycleways;
       if (localStorage.getItem('abicyclette.showWater') === '0') setShowWater(false);

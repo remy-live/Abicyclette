@@ -8,7 +8,9 @@ Une barre « Où va-t-on ? » (lieu, ville, ou « boulangerie », « restaurant 
 
 Pendant le guidage : la manœuvre en grand en haut, l'arrivée, la distance restante et la vitesse en bas, et deux boutons (2D/3D, voix).
 
-**Quatre styles** (bouton Affichage) : Clair, Soleil, Noir & blanc contrasté, Nuit. Les trois derniers ménagent la batterie.
+**Carte vectorielle** (MapLibre, données OpenFreeMap) par défaut, en 2D comme en 3D, avec un style maison où les **pistes cyclables** ressortent (liseré + couleur franche) et les **véloroutes / EuroVelo** en surimpression (Waymarked Trails). Les **tuiles images** restent au choix (Vélo CyclOSM, Standard, Relief) ; hors ligne, la carte bascule sur les tuiles téléchargées.
+
+**Cinq styles** (bouton Affichage) : Clair, Soleil, Noir & blanc, Noir (fond noir, tout en blanc), Nuit — et un **bouton Contraste ◐** à trois niveaux (Normal, Fort, Maximum). Les lieux s'affichent en **icônes pures** à liseré.
 
 ## Fonctions
 
