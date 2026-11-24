@@ -184,18 +184,38 @@
       }
       #side-drawer.sheet-half { transform: translateY(0%); }
       /* Panneau ouvert : l'accueil se réduit aux onglets, tout l'espace va au contenu */
-      #side-drawer.sheet-expanded #home-chips-row, #side-drawer.sheet-expanded #home-shortcuts,
+      #side-drawer.sheet-expanded #home-shortcuts,
       #side-drawer.sheet-expanded #home-results, #side-drawer.sheet-mini #home-results,
-      #side-drawer.sheet-expanded #home-chips, #side-drawer.sheet-expanded #home-route,
+      #side-drawer.sheet-expanded #home-route,
       #side-drawer.sheet-expanded #home-idle, #side-drawer.sheet-half #home-chips,
       #side-drawer.sheet-half #home-route, #side-drawer.sheet-half #home-idle { display: none !important; }
       #side-drawer.sheet-expanded #btn-sheet-close { display: flex !important; }
-      /* Tiroir réduit au minimum : poignée + puces */
-      #side-drawer.sheet-mini { transform: translateY(calc(100% - var(--mini, 84px))); }
-      #side-drawer.sheet-mini #home-shortcuts, #side-drawer.sheet-mini #home-route, #side-drawer.sheet-mini #home-idle,
-      #side-drawer.sheet-mini #sheet-tabs-row { visibility: hidden; }
+      /* Accueil = pilule flottante : icônes des raccourcis, résultats ou trajet. Rien d'autre. */
+      #side-drawer.sheet-collapsed, #side-drawer.sheet-mini {
+        transform: none; left: 10px; right: 10px; width: auto; top: auto;
+        bottom: calc(12px + env(safe-area-inset-bottom)); height: auto; max-height: 62vh;
+        border-radius: 22px; box-shadow: 0 6px 22px rgba(15,23,42,.16); animation: pill-in .22s ease;
+      }
+      #side-drawer.sheet-collapsed > .overflow-y-auto, #side-drawer.sheet-mini > .overflow-y-auto,
+      #side-drawer.sheet-collapsed #home-chips-row, #side-drawer.sheet-mini #home-chips-row,
+      #side-drawer.sheet-collapsed #home-idle, #side-drawer.sheet-mini #home-idle,
+      #side-drawer.sheet-collapsed #sheet-tabs-row, #side-drawer.sheet-mini #sheet-tabs-row,
+      #side-drawer.sheet-mini #home-route { display: none !important; }
+      #side-drawer.sheet-collapsed #sheet-home, #side-drawer.sheet-mini #sheet-home { border-bottom: 0; padding: 0 8px 6px; }
+      #side-drawer.sheet-collapsed #sheet-drag-handle, #side-drawer.sheet-mini #sheet-drag-handle { padding: 6px 0 2px; }
+      #side-drawer.sheet-collapsed #home-shortcuts, #side-drawer.sheet-mini #home-shortcuts { margin-top: 0; }
+      #side-drawer.sheet-collapsed .sc-tile > span:last-child, #side-drawer.sheet-mini .sc-tile > span:last-child { display: none; }
+      #side-drawer.sheet-collapsed .sc-tile, #side-drawer.sheet-mini .sc-tile { flex: 1 0 42px; padding: 8px 0; }
+      #side-drawer.sheet-collapsed .sc-edit, #side-drawer.sheet-mini .sc-edit { display: none; }
+      #side-drawer:not(.sheet-collapsed):not(.sheet-mini) .sc-more { display: none; }
+      #side-drawer.sheet-collapsed #home-results { padding: 4px 4px 2px; }
+      #side-drawer.sheet-collapsed #home-route { padding: 2px 6px 4px; }
+      /* Crédits de la carte : au-dessus de la pilule, pas dessous */
+      body:not(.guiding) .maplibregl-ctrl-bottom-right, body:not(.guiding) .leaflet-bottom.leaflet-right { bottom: calc(96px + env(safe-area-inset-bottom)); }
+      @keyframes pill-in { from { opacity: .4; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+      @keyframes sheet-up { from { transform: translateY(35%); } to { transform: translateY(0); } }
       #side-drawer.sheet-expanded {
-        transform: translateY(0%);
+        transform: translateY(0%); animation: sheet-up .28s cubic-bezier(0.22, 1, 0.36, 1);
       }
       #side-drawer.dragging {
         transition: none !important;
@@ -204,6 +224,7 @@
 
     /* Desktop Floating Sidebar */
     @media (min-width: 768px) {
+      .sc-more { display: none !important; }
       #side-drawer {
         position: fixed;
         top: 16px;
@@ -282,6 +303,11 @@
     body.bw-mode .res-card { border-color: #000; }
     .home-alt { flex: 1; min-width: 0; text-align: left; padding: 8px 10px; border-radius: 16px; border: 2px solid #e2e8f0; background: rgba(255,255,255,.85); }
     .home-alt.on { border-color: #059669; background: rgba(16,185,129,.1); }
+    .home-alt .alt-name { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+    .home-alt.on .alt-name { color: #047857; }
+    .home-alt .alt-cyc { font-size: 11px; font-weight: 800; color: #0f9f8f; }
+    body.bw-mode .home-alt .alt-name, body.bw-mode .home-alt .alt-cyc { color: inherit !important; }
+    body.night-mode .home-alt .alt-name { color: #9aa6b2; }
 
     /* Pendant le guidage : seuls le bandeau, la barre du bas et deux boutons restent */
     body.guiding #side-drawer, body.guiding #quick-controls, body.guiding #top-search-container,
@@ -626,6 +652,7 @@
       <section class="space-y-2">
         <h3 class="dp-title">Lieux affichés</h3>
         <div id="poi-toggles" class="grid grid-cols-4 gap-1.5"></div>
+        <button id="btn-dp-shortcuts" class="w-full seg sm">Choisir les icônes du bas</button>
         <div class="flex gap-2">
           <button id="btn-poi-fewer" class="flex-1 seg sm">Essentiels</button>
           <button id="btn-poi-none" class="flex-1 seg sm">Aucun</button>
@@ -684,16 +711,16 @@
         </button>
       </div>
 
-      <div id="home-shortcuts" class="flex gap-0.5 overflow-x-auto no-scrollbar -mt-1"></div>
-
       <!-- Résultats d'un raccourci (Restaurant, Boulangerie…) : sur la carte + fiches ici -->
       <div id="home-results" class="hidden space-y-2">
         <div class="flex items-center justify-between gap-2">
           <div id="home-results-title" class="text-sm font-extrabold text-slate-900 truncate"></div>
-          <button id="btn-close-results" aria-label="Fermer les résultats" class="shrink-0 h-9 px-3 rounded-xl bg-slate-200/70 text-slate-700 text-xs font-bold">✕ Fermer</button>
+          <button id="btn-close-results" aria-label="Fermer les résultats" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 text-base font-bold">✕</button>
         </div>
         <div id="home-results-list" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
       </div>
+
+      <div id="home-shortcuts" class="flex gap-0.5 overflow-x-auto no-scrollbar -mt-1"></div>
 
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
@@ -703,7 +730,7 @@
         <div id="home-alts" class="flex gap-2"></div>
         <p id="home-weather" class="hidden text-[12px] font-semibold text-slate-600"></p>
         <div class="flex gap-2">
-          <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Partir</button>
+          <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Démarrer</button>
           <button id="btn-home-clear" aria-label="Effacer le trajet" class="w-14 h-14 rounded-2xl bg-slate-200/70 text-slate-600 text-lg font-bold">✕</button>
         </div>
       </div>
@@ -2444,12 +2471,31 @@
         coords,
         distance,
         duration,
+        cycleShare: cycleShareFromMessages(props.messages),
         ascent: Math.round(parseFloat(props['filtered ascend']) || ascent),
         descent,
         steps,
         altIdx,
         source: profile === 'safety' ? 'BRouter · pistes d’abord' : `BRouter (${profile})`,
       };
+    }
+
+    // Part du trajet sur piste / voie cyclable (colonne WayTags des messages BRouter)
+    function cycleShareFromMessages(messages) {
+      if (!Array.isArray(messages) || messages.length < 2) return null;
+      const head = messages[0];
+      const iD = head.indexOf('Distance');
+      const iT = head.indexOf('WayTags');
+      if (iD < 0 || iT < 0) return null;
+      const re = /highway=cycleway|cycleway(:(left|right|both))?=(lane|track|opposite_lane|opposite_track|shared_busway)|bicycle=designated|bicycle_road=yes|cyclestreet=yes/;
+      let tot = 0;
+      let cyc = 0;
+      for (let i = 1; i < messages.length; i++) {
+        const d = parseFloat(messages[i][iD]) || 0;
+        tot += d;
+        if (re.test(messages[i][iT] || '')) cyc += d;
+      }
+      return tot > 0 ? Math.round((100 * cyc) / tot) : null;
     }
 
     async function fetchOSRMFallbackRoute(points, withAlternatives = true) {
@@ -2674,8 +2720,19 @@
         minBy('distance').tags.push('Le plus court');
         minBy('ascent').tags.push('Le plus plat');
         minBy('duration').tags.push('Le plus rapide');
+        // Un nom simple par choix
+        routes[0].name = 'Conseillé';
+        const rest = routes.slice(1);
+        const calm = rest.filter((r) => r.cycleShare != null).sort((a, b) => b.cycleShare - a.cycleShare)[0];
+        if (calm && calm.cycleShare > (routes[0].cycleShare ?? 0)) calm.name = 'Tranquille';
+        const fast = rest.filter((r) => !r.name).sort((a, b) => a.duration - b.duration)[0];
+        if (fast && fast.duration < routes[0].duration) fast.name = 'Rapide';
+        const flat = rest.filter((r) => !r.name).sort((a, b) => a.ascent - b.ascent)[0];
+        if (flat && flat.ascent < routes[0].ascent) flat.name = 'Plat';
+        rest.forEach((r) => (r.name = r.name || 'Autre'));
       } else if (routes[0]) {
         routes[0].tags = [];
+        routes[0].name = 'Conseillé';
       }
       selectAlternative(0, keepView);
     }
@@ -4076,6 +4133,7 @@ ${trkpts}
       document.querySelectorAll('.pg-btn').forEach((b) => b.addEventListener('click', () => setPlacesGroup(b.dataset.pg)));
       document.getElementById('btn-clear-filter').addEventListener('click', () => closeHomeResults());
       document.getElementById('btn-close-results').addEventListener('click', () => closeHomeResults());
+      document.getElementById('btn-dp-shortcuts').addEventListener('click', openShortcutsModal);
       document.getElementById('btn-close-shortcuts').addEventListener('click', () => document.getElementById('shortcuts-modal').classList.add('hidden'));
       document.getElementById('shortcuts-modal').addEventListener('click', (e) => {
         if (e.target.id === 'shortcuts-modal') e.target.classList.add('hidden');
@@ -4991,6 +5049,7 @@ ${trkpts}
     };
 
     window.routeToPoint = function (lat, lon, label) {
+      if (AppState.poiCatFilter) closeHomeResults();
       AppState.map.closePopup();
       Map3D.closePopups();
       AppState.vias = [];
@@ -5001,6 +5060,7 @@ ${trkpts}
     window.viaToPoint = function (lat, lon, label) {
       AppState.map.closePopup();
       Map3D.closePopups();
+      if (AppState.poiCatFilter) closeHomeResults();
       collapseMobileSheet();
       addVia(lat, lon, label);
     };
@@ -6433,21 +6493,24 @@ ${trkpts}
       const r = AppState.currentRoute;
       document.getElementById('home-route').classList.toggle('hidden', !r);
       document.getElementById('home-idle').classList.toggle('hidden', !!r);
+      document.getElementById('home-shortcuts').classList.toggle('hidden', !!r);
       if (!r) return;
       document.getElementById('home-dest').textContent = shortLabel(AppState.dest?.label);
       document.getElementById('home-dist').textContent = `${formatDistance(r.distance)} · ${formatDuration(r.duration)}`;
       const alts = AppState.alternatives.slice(0, 3);
       const box = document.getElementById('home-alts');
       if (alts.length < 2) {
-        box.innerHTML = '';
+        box.innerHTML = r.cycleShare != null ? `<div class="alt-cyc text-[12px] font-extrabold" style="color:#0f9f8f">${r.cycleShare} % sur pistes cyclables · ↗ ${r.ascent} m</div>` : '';
         return;
       }
       box.innerHTML = alts
         .map(
           (a, i) => `
           <button data-halt="${i}" class="home-alt ${i === AppState.selectedAltIdx ? 'on' : ''}">
-            <div class="text-base font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
-            <div class="text-[11px] font-semibold text-slate-500 truncate">${(a.tags && a.tags[0]) || 'Variante'} · ${formatDistance(a.distance)}</div>
+            <div class="alt-name">${a.name || (i ? 'Autre' : 'Conseillé')}</div>
+            <div class="text-lg leading-tight font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
+            <div class="text-[11px] font-semibold text-slate-500 truncate">${formatDistance(a.distance)} · ↗ ${a.ascent} m</div>
+            ${a.cycleShare != null ? `<div class="alt-cyc">${a.cycleShare} % pistes</div>` : ''}
           </button>`
         )
         .join('');
@@ -6505,9 +6568,17 @@ ${trkpts}
         AppState.shortcuts
           .filter((c) => POI_BY_ID[c])
           .map((c) => `<button data-sc="${c}" class="sc-tile ${AppState.poiCatFilter === c ? 'on' : ''}"><span class="sc-ico" style="--c:${POI_BY_ID[c].color}">${poiSvg(c, 26)}</span><span>${SHORT_LABEL[c] || POI_BY_ID[c].label}</span></button>`)
-          .join('') + `<button id="btn-edit-shortcuts" aria-label="Choisir mes raccourcis" class="sc-tile"><span class="sc-ico" style="--c:#64748b;font-size:20px;line-height:26px">✎</span><span>Choisir</span></button>`;
-      box.querySelectorAll('[data-sc]').forEach((b) => b.addEventListener('click', () => showCategoryNearby(b.dataset.sc)));
+          .join('') +
+        `<button id="btn-edit-shortcuts" aria-label="Choisir mes raccourcis" class="sc-tile sc-edit"><span class="sc-ico" style="--c:#64748b;font-size:20px;line-height:26px">✎</span><span>Choisir</span></button>` +
+        `<button id="btn-sheet-more" aria-label="Plus : trajet, lieux, balade" class="sc-tile sc-more"><span class="sc-ico" style="--c:#475569"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></span><span>Plus</span></button>`;
+      box.querySelectorAll('[data-sc]').forEach((b) =>
+        b.addEventListener('click', () => (AppState.poiCatFilter === b.dataset.sc ? closeHomeResults() : showCategoryNearby(b.dataset.sc)))
+      );
       document.getElementById('btn-edit-shortcuts').addEventListener('click', openShortcutsModal);
+      document.getElementById('btn-sheet-more').addEventListener('click', () => {
+        if (AppState.poiCatFilter) closeHomeResults();
+        expandMobileSheetIfCollapsed();
+      });
     }
 
     function openShortcutsModal() {
@@ -6544,7 +6615,6 @@ ${trkpts}
       syncHomeChips();
       renderShortcuts();
       collapseMobileSheet(); // on garde la carte sous les yeux
-      document.getElementById('home-shortcuts').classList.add('hidden');
       document.getElementById('home-results').classList.remove('hidden');
       document.getElementById('home-results-title').textContent = `${label} : recherche…`;
       document.getElementById('home-results-list').innerHTML = '';
@@ -6601,7 +6671,10 @@ ${trkpts}
               <div class="text-sm font-extrabold text-slate-900 truncate">${escapeHtml(p.name)}</div>
               <div class="text-[11px] text-slate-500 truncate">${formatDistance(haversineDistance(ref.lat, ref.lon, p.lat, p.lon))}${p.hours ? ' · ' + hoursBadge(p) : ''}</div>
             </button>
-            <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="h-9 rounded-xl bg-emerald-600 text-white text-xs font-bold">Y aller</button>
+            <div class="flex gap-1.5">
+              <button onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="flex-1 h-10 rounded-xl bg-emerald-600 text-white text-sm font-extrabold">Y aller</button>
+              <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" aria-label="Ajouter en étape" class="w-11 h-10 rounded-xl bg-slate-200/70 text-slate-800 text-lg font-bold">+</button>
+            </div>
           </div>`
         )
         .join('');
