@@ -271,6 +271,43 @@
     body.sun-mode button { font-weight: 700; }
     body.sun-mode .hud-label { display: none !important; }
 
+    /* =====================================================================
+       MODE NOIR & BLANC CONTRASTÉ (s'ajoute au mode soleil)
+       ===================================================================== */
+    body.bw-mode .leaflet-tile-pane { filter: grayscale(1) contrast(1.7) brightness(1.08); }
+    body.bw-mode .leaflet-marker-pane, body.bw-mode #map3d .maplibregl-marker { filter: grayscale(1) contrast(1.5); }
+    body.bw-mode #map3d canvas { filter: grayscale(1) contrast(1.35); }
+    body.bw-mode .glass-panel, body.bw-mode .leaflet-popup-content-wrapper { border: 3px solid #000 !important; border-radius: 6px !important; }
+    body.bw-mode .glass-dark { border: 3px solid #fff !important; outline: 3px solid #000; border-radius: 6px !important; }
+    body.bw-mode #hud-step-dist { color: #fff !important; }
+    body.bw-mode #hud-icon { background: #fff !important; color: #000 !important; border-color: #fff !important; }
+    body.bw-mode [class*="bg-emerald-5"], body.bw-mode [class*="bg-emerald-6"], body.bw-mode [class*="bg-sky-5"],
+    body.bw-mode [class*="bg-sky-6"], body.bw-mode [class*="bg-rose-5"], body.bw-mode [class*="bg-rose-6"],
+    body.bw-mode [class*="bg-indigo-6"], body.bw-mode [class*="bg-amber-5"], body.bw-mode [class*="bg-slate-9"],
+    body.bw-mode [class*="bg-red-5"], body.bw-mode .chip.on, body.bw-mode .poi-icon {
+      background: #000 !important; color: #fff !important; border-color: #000 !important;
+    }
+    body.bw-mode [class*="/10"], body.bw-mode [class*="/15"], body.bw-mode [class*="/20"], body.bw-mode [class*="/25"],
+    body.bw-mode [class*="bg-white/"], body.bw-mode [class*="bg-slate-1"], body.bw-mode [class*="bg-slate-2"] {
+      background: #fff !important; border: 2px solid #000 !important;
+    }
+    body.bw-mode [class*="text-emerald"], body.bw-mode [class*="text-sky"], body.bw-mode [class*="text-rose"],
+    body.bw-mode [class*="text-amber"], body.bw-mode [class*="text-indigo"], body.bw-mode [class*="text-teal"],
+    body.bw-mode [class*="text-red"], body.bw-mode [class*="text-slate"] { color: #000 !important; }
+    body.bw-mode [class*="bg-emerald-5"] [class*="text-"], body.bw-mode [class*="bg-slate-9"] [class*="text-"],
+    body.bw-mode .glass-dark [class*="text-"], body.bw-mode .glass-dark { color: #fff !important; }
+    body.bw-mode .glass-dark [class*="bg-white/"] { background: #000 !important; border-color: #fff !important; }
+    body.bw-mode #btn-sun-mode { background: #000 !important; color: #fff !important; }
+    body.bw-mode .chip { border: 2px solid #000; color: #000; background: #fff; }
+    body.bw-mode #hud-icon svg { color: #000 !important; }
+    body.bw-mode .glass-dark [class*="/10"] { background: transparent !important; border-color: #fff !important; }
+    body.bw-mode #btn-stop-guidance { background: #fff !important; color: #000 !important; }
+    body.bw-mode #quick-controls button, body.bw-mode #quick-controls .glass-panel {
+      background: #fff !important; color: #000 !important; border: 3px solid #000 !important;
+    }
+    body.bw-mode #quick-controls #btn-sun-mode { background: #000 !important; color: #fff !important; }
+    body.bw-mode #quick-controls button span { background: #000 !important; color: #fff !important; }
+
     /* Pendant le guidage, les boutons rapides passent sous le bandeau */
     body.guiding #quick-controls { top: 196px; }
     body.sun-mode.guiding #quick-controls { top: 232px; }
@@ -337,7 +374,7 @@
   </div>
 
   <!-- Barre de recherche flottante supérieure (Desktop à droite du panneau, Mobile en haut) -->
-  <div id="top-search-container" class="fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-20 pointer-events-none">
+  <div id="top-search-container" class="fixed top-3 left-3 right-3 md:left-[432px] md:right-20 z-30 pointer-events-none">
     <div class="max-w-xl mx-auto md:mx-0 pointer-events-auto">
       <div class="glass-panel rounded-2xl p-1.5 flex items-center gap-2">
         <div class="pl-2.5 text-emerald-600 shrink-0">
@@ -349,7 +386,7 @@
         <input
           id="global-search-input"
           type="text"
-          placeholder="Rechercher un lieu, une gare, un village..."
+          placeholder="Lieu, ville… ou « boulangerie », « restaurant »"
           class="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none py-1.5"
           autocomplete="off"
         />
@@ -506,6 +543,12 @@
 
       <!-- ONGLET 1 : EXPLORER (Points d'eau & Pistes) -->
       <section id="tab-explore" class="space-y-4">
+        <!-- Raccourcis -->
+        <div class="grid grid-cols-3 gap-2">
+          <button data-quick="visit" class="quick-btn py-2.5 rounded-2xl bg-amber-500/15 text-amber-800 text-xs font-bold">À voir</button>
+          <button data-quick="eat" class="quick-btn py-2.5 rounded-2xl bg-red-500/10 text-red-800 text-xs font-bold">Manger</button>
+          <button data-quick="tour" class="quick-btn py-2.5 rounded-2xl bg-emerald-500/15 text-emerald-800 text-xs font-bold">Balade visite</button>
+        </div>
         <!-- Carte résumé points d'eau -->
         <div class="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3.5">
           <div class="flex items-center justify-between mb-2">
@@ -678,6 +721,19 @@
           </div>
         </div>
 
+        <!-- Préférences de trajet -->
+        <div class="flex items-center justify-between gap-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2.5">
+          <div>
+            <div class="text-xs font-bold text-slate-900">Pistes cyclables d'abord</div>
+            <div class="text-[11px] text-slate-600">Évite les routes passantes, quitte à rallonger</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input id="toggle-prefer-cycleways" type="checkbox" class="sr-only peer" checked />
+            <div class="w-10 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+        <button id="btn-pick-via" class="w-full py-2 rounded-xl bg-white/80 border border-amber-300 text-amber-800 text-xs font-bold">+ Ajouter une étape (touchez la carte)</button>
+
         <!-- Bouton Calculer l'itinéraire -->
         <button id="btn-calculate-route" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
@@ -785,9 +841,27 @@
             <div id="poi-chips-visit" class="flex flex-wrap gap-1.5"></div>
           </div>
           <div>
+            <div class="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-1.5">Manger & courses</div>
+            <div id="poi-chips-eat" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div>
             <div class="text-[11px] font-bold uppercase tracking-wider text-teal-700 mb-1.5">Services vélo & pratique</div>
             <div id="poi-chips-service" class="flex flex-wrap gap-1.5"></div>
           </div>
+        </div>
+
+        <!-- Balade visite : boucle passant par des lieux à voir -->
+        <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3.5 space-y-2.5">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900">Balade visite</h2>
+            <p class="text-[11px] text-slate-600">Une boucle depuis votre position qui passe par des lieux à voir.</p>
+          </div>
+          <div class="flex gap-1.5">
+            <button data-tour="15" class="tour-len chip">15 km</button>
+            <button data-tour="30" class="tour-len chip on">30 km</button>
+            <button data-tour="50" class="tour-len chip">50 km</button>
+          </div>
+          <button id="btn-make-tour" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Créer la balade</button>
         </div>
 
         <!-- Liste des POI proches -->
@@ -895,6 +969,10 @@
     <button id="ctx-set-dest" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-800 hover:bg-rose-500/15 hover:text-rose-700 flex items-center gap-2 transition">
       <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
       <span>Arrivée ici</span>
+    </button>
+    <button id="ctx-add-via" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-800 hover:bg-amber-500/15 hover:text-amber-700 flex items-center gap-2 transition">
+      <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+      <span>Étape ici</span>
     </button>
     <button id="ctx-add-place" class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-slate-800 hover:bg-amber-500/15 hover:text-amber-700 flex items-center gap-2 transition">
       <span class="text-sm leading-none">★</span>
@@ -1285,6 +1363,12 @@
       editingPlaceId: null,
       pendingPlaceLatLng: null,
       pendingPlaceCat: 'favori',
+      // Préférences
+      preferCycleways: true,
+      pickViaMode: false,
+      theme: 'normal',        // normal | sun | bw
+      tourKm: 30,
+      searchLayer: null,
     };
 
     // -------------------------------------------------------------------------
@@ -1492,6 +1576,7 @@
 
       // Clic sur la carte pour menu "Départ ici / Arrivée ici"
       map.on('click', (e) => {
+        if (consumeViaPick(e.latlng.lat, e.latlng.lng)) return;
         openMapClickContextMenu(e.latlng, e.originalEvent);
       });
     }
@@ -1949,11 +2034,18 @@
       // En reroutage pendant le guidage, un seul trajet suffit (économie réseau & batterie)
       const altCount = opts.single ? 1 : 3;
 
-      try {
+      // « Pistes d'abord » : profil BRouter « safety » (évite le trafic), sauf en VTT
+      const wanted = AppState.preferCycleways && AppState.selectedProfile !== 'mtb' ? 'safety' : AppState.selectedProfile;
+      const tryProfile = async (profile) => {
         const settled = await Promise.allSettled(
-          Array.from({ length: altCount }, (_, idx) => fetchBRouterRoute(points, AppState.selectedProfile, idx))
+          Array.from({ length: altCount }, (_, idx) => fetchBRouterRoute(points, profile, idx))
         );
-        let routes = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+        return settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+      };
+
+      try {
+        let routes = await tryProfile(wanted);
+        if (!routes.length && wanted !== AppState.selectedProfile) routes = await tryProfile(AppState.selectedProfile);
         if (!routes.length) throw new Error('BRouter : aucun trajet');
         routes = dedupeRoutes(routes);
         setAlternatives(routes, opts.keepView);
@@ -2024,7 +2116,7 @@
         descent,
         steps,
         altIdx,
-        source: `BRouter (${profile})`,
+        source: profile === 'safety' ? 'BRouter · pistes d’abord' : `BRouter (${profile})`,
       };
     }
 
@@ -2189,6 +2281,13 @@
 
     // Styles du tracé : normal ou très contrasté (mode soleil)
     function routeStyles() {
+      if (AppState.theme === 'bw') {
+        return {
+          outline: { color: '#ffffff', weight: 15, opacity: 1 },
+          main: { color: '#000000', weight: 8, opacity: 1 },
+          alt: { color: '#000000', weight: 4, opacity: 0.8, dashArray: '2 8' },
+        };
+      }
       if (AppState.sunMode) {
         return {
           outline: { color: '#000000', weight: 13, opacity: 1 },
@@ -2615,6 +2714,11 @@
       }
 
       startGeoWatch();
+
+      // Navigation 3D par défaut (désactivable : bouton 2D du bandeau)
+      if (!AppState.is3D && !isOfflineMode() && localStorage.getItem('abicyclette.nav3d') !== '0') {
+        Map3D.enable();
+      }
     }
 
     function stopLiveGuidance() {
@@ -2634,12 +2738,15 @@
     }
 
     // Projette la position sur le tracé : index du segment le plus proche et écart en mètres
-    function snapToRoute(lat, lon, route) {
+    // minAlong / maxAlong : ne cherche que dans une portion du tracé (indispensable pour les boucles,
+    // où le départ et l'arrivée se superposent)
+    function snapToRoute(lat, lon, route, minAlong = -Infinity, maxAlong = Infinity) {
       const coords = route.coords;
       const kx = 111320 * Math.cos((lat * Math.PI) / 180);
       const ky = 110540;
       let best = { dist: Infinity, idx: 0, t: 0 };
       for (let i = 0; i < coords.length - 1; i++) {
+        if (route.cumDist[i + 1] < minAlong || route.cumDist[i] > maxAlong) continue;
         const ax = (coords[i][1] - lon) * kx;
         const ay = (coords[i][0] - lat) * ky;
         const bx = (coords[i + 1][1] - lon) * kx;
@@ -2661,7 +2768,13 @@
     // Distance le long du tracé jusqu'à chaque étape (calculée une fois)
     function ensureStepAlong(route) {
       if (route._stepsAlong) return;
-      route._stepsAlong = route.steps.map((s) => snapToRoute(s.lat, s.lon, route).along);
+      let prev = 0;
+      route._stepsAlong = route.steps.map((s, i) => {
+        // Chaque étape est cherchée après la précédente ; l'arrivée est en fin de tracé
+        const a = i === route.steps.length - 1 ? route.cumDist[route.cumDist.length - 1] : snapToRoute(s.lat, s.lon, route, prev).along;
+        prev = Number.isFinite(a) ? a : prev;
+        return prev;
+      });
     }
 
     function processLiveGuidancePosition(lat, lon, speedMs) {
@@ -2669,7 +2782,11 @@
       if (!route || !route.steps.length) return;
       ensureStepAlong(route);
 
-      const snap = snapToRoute(lat, lon, route);
+      // Recherche locale autour de la dernière position connue sur le tracé, puis globale si besoin
+      const last = route._lastAlong ?? 0;
+      let snap = snapToRoute(lat, lon, route, last - 150, last + 1500);
+      if (!(snap.dist <= 60)) snap = snapToRoute(lat, lon, route);
+      route._lastAlong = snap.along;
 
       // --- Hors itinéraire : recalcul automatique depuis la position actuelle ---
       if (snap.dist > 55) AppState.offRouteCount++;
@@ -2693,7 +2810,7 @@
       AppState.guidanceStepIdx = idx;
       const nextStep = route.steps[idx];
       const stepDist = Math.max(0, route._stepsAlong[idx] - snap.along);
-      const remDist = Math.max(0, route.distance - snap.along);
+      const remDist = Math.max(0, route.cumDist[route.cumDist.length - 1] - snap.along);
       const speedKmh = speedMs ? Math.round(speedMs * 3.6) : 0;
       const estSeconds = remDist / Math.max(3.5, speedMs || 4.8);
 
@@ -3167,11 +3284,17 @@ ${trkpts}
       });
     }
 
-    function bindAutocompleteInput(inputEl, resultsEl, onSelect) {
+    function bindAutocompleteInput(inputEl, resultsEl, onSelect, opts = {}) {
       const runSearch = debounce(async () => {
         const q = inputEl.value.trim();
         if (q.length < 2) {
           resultsEl.classList.add('hidden');
+          return;
+        }
+        // « boulangerie », « restaurant », « pharmacie »… : recherche autour de soi
+        const cats = opts.categories ? matchCategorySearch(q) : null;
+        if (cats) {
+          await runCategorySearch(cats, resultsEl);
           return;
         }
         const items = await searchNominatim(q);
@@ -3244,7 +3367,7 @@ ${trkpts}
         flyToActive(lat, lon, 15);
         setRouteDestination(lat, lon, name);
         showToast(`Destination définie : ${name}`, 'info');
-      });
+      }, { categories: true });
 
       // Autocomplétion Départ & Arrivée
       bindAutocompleteInput(
@@ -3477,6 +3600,9 @@ ${trkpts}
       document.getElementById('btn-toggle-3d').addEventListener('click', () => Map3D.toggle());
       document.getElementById('btn-hud-3d').addEventListener('click', async () => {
         await Map3D.toggle();
+        try {
+          localStorage.setItem('abicyclette.nav3d', AppState.is3D ? '1' : '0');
+        } catch {}
         if (AppState.userLocation && AppState.currentRoute) {
           const u = AppState.userLocation;
           followCamera(u.lat, u.lon, AppState.currentRoute, snapToRoute(u.lat, u.lon, AppState.currentRoute));
@@ -3484,7 +3610,54 @@ ${trkpts}
       });
 
       // Mode soleil / économie batterie
-      document.getElementById('btn-sun-mode').addEventListener('click', () => setSunMode(!AppState.sunMode));
+      document.getElementById('btn-sun-mode').addEventListener('click', () =>
+        setTheme(THEMES[(THEMES.indexOf(AppState.theme) + 1) % THEMES.length])
+      );
+
+      // Pistes d'abord
+      document.getElementById('toggle-prefer-cycleways').addEventListener('change', (e) => {
+        AppState.preferCycleways = e.target.checked;
+        try {
+          localStorage.setItem('abicyclette.preferCycleways', e.target.checked ? '1' : '0');
+        } catch {}
+        if (AppState.origin && AppState.dest) calculateBikeRoute({ keepView: true });
+      });
+
+      // Étapes
+      document.getElementById('btn-pick-via').addEventListener('click', startViaPick);
+      document.getElementById('ctx-add-via').addEventListener('click', () => {
+        const ll = AppState.pendingClickLatLng;
+        document.getElementById('map-click-menu').classList.add('hidden');
+        if (ll) addVia(ll.lat, ll.lng, `Étape (${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)})`);
+      });
+
+      // Balade visite
+      document.querySelectorAll('.tour-len').forEach((b) =>
+        b.addEventListener('click', () => {
+          AppState.tourKm = parseInt(b.dataset.tour, 10);
+          document.querySelectorAll('.tour-len').forEach((x) => x.classList.toggle('on', x === b));
+        })
+      );
+      document.getElementById('btn-make-tour').addEventListener('click', makeVisitTour);
+
+      // Raccourcis de l'onglet Explorer
+      document.querySelectorAll('.quick-btn').forEach((b) =>
+        b.addEventListener('click', () => {
+          const q = b.dataset.quick;
+          switchSidebarTab('places');
+          expandMobileSheetIfCollapsed();
+          if (q === 'tour') {
+            document.getElementById('btn-make-tour').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+          POI_CATEGORIES.filter((c) => c.group === q).forEach((c) => AppState.poiEnabled.add(c.id));
+          try {
+            localStorage.setItem(LS_POI, JSON.stringify([...AppState.poiEnabled]));
+          } catch {}
+          renderPOIChips();
+          loadPOIsForCurrentView();
+        })
+      );
 
       // Lieux
       document.getElementById('ctx-add-place').addEventListener('click', () => {
@@ -3635,10 +3808,31 @@ ${trkpts}
         q: ['node["leisure"="picnic_table"]', 'nwr["tourism"="picnic_site"]'],
         match: (t) => t.leisure === 'picnic_table' || t.tourism === 'picnic_site',
       },
+      // --- Manger & courses ---
       {
-        id: 'food', group: 'service', label: 'Cafés & boulangeries', emoji: '☕', color: '#ea580c',
-        q: ['nwr["amenity"="cafe"]', 'nwr["shop"="bakery"]'],
-        match: (t) => t.amenity === 'cafe' || t.shop === 'bakery',
+        id: 'bakery', group: 'eat', label: 'Boulangeries', emoji: '🥖', color: '#b45309',
+        q: ['nwr["shop"~"^(bakery|pastry)$"]'],
+        match: (t) => t.shop === 'bakery' || t.shop === 'pastry',
+      },
+      {
+        id: 'restaurant', group: 'eat', label: 'Restaurants', emoji: '🍽️', color: '#dc2626',
+        q: ['nwr["amenity"~"^(restaurant|fast_food)$"]'],
+        match: (t) => t.amenity === 'restaurant' || t.amenity === 'fast_food',
+      },
+      {
+        id: 'cafe', group: 'eat', label: 'Cafés & bars', emoji: '☕', color: '#92400e',
+        q: ['nwr["amenity"~"^(cafe|bar|pub|ice_cream)$"]'],
+        match: (t) => /^(cafe|bar|pub|ice_cream)$/.test(t.amenity || ''),
+      },
+      {
+        id: 'grocery', group: 'eat', label: 'Courses', emoji: '🛒', color: '#15803d',
+        q: ['nwr["shop"~"^(supermarket|convenience|greengrocer|butcher|deli|farm)$"]'],
+        match: (t) => /^(supermarket|convenience|greengrocer|butcher|deli|farm)$/.test(t.shop || ''),
+      },
+      {
+        id: 'pharmacy', group: 'eat', label: 'Pharmacies', emoji: '⚕️', color: '#059669',
+        q: ['nwr["amenity"="pharmacy"]'],
+        match: (t) => t.amenity === 'pharmacy',
       },
       {
         id: 'camp', group: 'service', label: 'Campings', emoji: '⛺', color: '#4d7c0f',
@@ -3652,7 +3846,7 @@ ${trkpts}
       },
     ];
     const POI_BY_ID = Object.fromEntries(POI_CATEGORIES.map((c) => [c.id, c]));
-    const POI_DEFAULT = ['heritage', 'viewpoint', 'museum', 'attraction', 'repair', 'toilets'];
+    const POI_DEFAULT = ['heritage', 'viewpoint', 'museum', 'attraction', 'bakery', 'repair'];
     const LS_POI = 'abicyclette.poi.enabled';
     let poiRequestSeq = 0;
 
@@ -3784,7 +3978,12 @@ ${trkpts}
       const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
       const sorted = points
         .map((p) => ({ ...p, distance: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
-        .sort((a, b) => (POI_BY_ID[a.cat].group === POI_BY_ID[b.cat].group ? a.distance - b.distance : POI_BY_ID[a.cat].group === 'visit' ? -1 : 1));
+        .sort((a, b) => {
+          const rank = { visit: 0, eat: 1, service: 2 };
+          const ga = rank[POI_BY_ID[a.cat].group];
+          const gb = rank[POI_BY_ID[b.cat].group];
+          return ga === gb ? a.distance - b.distance : ga - gb;
+        });
       document.getElementById('poi-count').textContent = points.length;
       const list = document.getElementById('poi-list');
       if (!sorted.length) {
@@ -3838,12 +4037,13 @@ ${trkpts}
     window.savePointAsPlace = function (lat, lon, name, poiCat) {
       AppState.map.closePopup();
       Map3D.closePopups();
-      const cat = POI_BY_ID[poiCat]?.group === 'visit' ? 'visiter' : poiCat === 'food' ? 'manger' : 'favori';
+      const g = POI_BY_ID[poiCat]?.group;
+      const cat = g === 'visit' ? 'visiter' : g === 'eat' ? 'manger' : poiCat === 'repair' ? 'velo' : 'favori';
       openPlaceModal(lat, lon, { name, cat });
     };
 
     function renderPOIChips() {
-      ['visit', 'service'].forEach((group) => {
+      ['visit', 'eat', 'service'].forEach((group) => {
         const box = document.getElementById(`poi-chips-${group}`);
         box.innerHTML = POI_CATEGORIES.filter((c) => c.group === group)
           .map((c) => `<button data-poi="${c.id}" class="chip ${AppState.poiEnabled.has(c.id) ? 'on' : ''}">${c.emoji} ${c.label}</button>`)
@@ -4389,6 +4589,7 @@ ${trkpts}
         });
         m.on('click', (e) => {
           if (e.defaultPrevented) return;
+          if (consumeViaPick(e.lngLat.lat, e.lngLat.lng)) return;
           openMapClickContextMenu({ lat: e.lngLat.lat, lng: e.lngLat.lng }, e.originalEvent);
         });
       }
@@ -4419,8 +4620,9 @@ ${trkpts}
           type: 'FeatureCollection',
           features: AppState.alternatives.map((r, idx) => (idx === AppState.selectedAltIdx ? null : line(r.coords, { idx }))).filter(Boolean),
         });
-        m.setPaintProperty('route-line', 'line-color', sun ? '#ff00b4' : '#059669');
-        m.setPaintProperty('route-casing', 'line-color', sun ? '#000000' : '#ffffff');
+        const bw = AppState.theme === 'bw';
+        m.setPaintProperty('route-line', 'line-color', bw ? '#000000' : sun ? '#ff00b4' : '#059669');
+        m.setPaintProperty('route-casing', 'line-color', bw ? '#ffffff' : sun ? '#000000' : '#ffffff');
         m.setPaintProperty('route-casing', 'line-width', sun ? 15 : 12);
         m.setLayoutProperty('hillshade', 'visibility', sun ? 'none' : 'visible');
 
@@ -4562,30 +4764,223 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // 17. MODE SOLEIL / ÉCONOMIE BATTERIE
     // -------------------------------------------------------------------------
-    const LS_SUN = 'abicyclette.sunmode';
+    const LS_THEME = 'abicyclette.theme';
+    const THEMES = ['normal', 'sun', 'bw'];
+    const THEME_LABEL = { normal: 'Affichage normal', sun: 'Soleil : couleurs fortes, batterie ménagée', bw: 'Noir & blanc contrasté, batterie ménagée' };
 
-    function setSunMode(on, silent = false) {
-      AppState.sunMode = on;
-      document.body.classList.toggle('sun-mode', on);
-      document.getElementById('eco-badge').classList.toggle('hidden', !on);
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', on ? '#000000' : '#059669');
+    function setTheme(theme, silent = false) {
+      AppState.theme = theme;
+      // Les deux modes contrastés économisent aussi la batterie
+      AppState.sunMode = theme !== 'normal';
+      document.body.classList.toggle('sun-mode', theme !== 'normal');
+      document.body.classList.toggle('bw-mode', theme === 'bw');
+      const badge = document.getElementById('eco-badge');
+      badge.classList.toggle('hidden', theme === 'normal');
+      badge.textContent = theme === 'bw' ? 'N&B' : 'SOLEIL';
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'normal' ? '#059669' : '#000000');
       try {
-        localStorage.setItem(LS_SUN, on ? '1' : '0');
+        localStorage.setItem(LS_THEME, theme);
       } catch {}
-      // Redessine les tracés avec les couleurs adaptées
       if (AppState.currentRoute) {
         applyCalculatedRoute(AppState.currentRoute, true);
         drawAlternativePolylines();
       }
-      if (AppState.isGuiding) startGeoWatch(); // nouvelles options GPS
+      if (AppState.isGuiding) startGeoWatch();
       if (AppState.is3D) Map3D.refreshOverlays();
-      if (!silent) {
-        showToast(
-          on ? 'Mode soleil : contraste maximal, GPS et écran ménagés.' : 'Mode normal rétabli.',
-          on ? 'warning' : 'info',
-          2600
-        );
+      if (!silent) showToast(THEME_LABEL[theme], theme === 'normal' ? 'info' : 'warning', 2400);
+    }
+
+    // Compatibilité : ancien interrupteur soleil
+    function setSunMode(on, silent = false) {
+      setTheme(on ? 'sun' : 'normal', silent);
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 bis. RECHERCHE PAR CATÉGORIE (« boulangerie », « restaurant »…)
+    // -------------------------------------------------------------------------
+    const SEARCH_KEYWORDS = [
+      { re: /boulang|pain|viennois|p[âa]tisser/i, cats: ['bakery'] },
+      { re: /restau|manger|d[ée]jeuner|d[îi]ner|pizz|kebab|brasserie|cr[êe]pe|burger/i, cats: ['restaurant'] },
+      { re: /caf[ée]|\bbar\b|boire|glace/i, cats: ['cafe'] },
+      { re: /supermarch|courses|[ée]picerie|sup[ée]rette|march[ée]|primeur|boucher/i, cats: ['grocery'] },
+      { re: /pharma/i, cats: ['pharmacy'] },
+      { re: /toilette|\bwc\b/i, cats: ['toilets'] },
+      { re: /r[ée]par|v[ée]lociste|magasin.*v[ée]lo|crev/i, cats: ['repair'] },
+      { re: /camping/i, cats: ['camp'] },
+      { re: /mus[ée]e/i, cats: ['museum'] },
+      { re: /ch[âa]teau|patrimoine|monument|ruine/i, cats: ['heritage'] },
+      { re: /point de vue|panorama|belv[ée]d/i, cats: ['viewpoint'] },
+      { re: /[ée]glise|abbaye|cath[ée]drale|chapelle/i, cats: ['worship'] },
+      { re: /parc|nature|cascade/i, cats: ['nature'] },
+      { re: /\bgares?\b|\btrain/i, cats: ['station'] },
+      { re: /parking/i, cats: ['parking'] },
+      { re: /abri|pique|picnic/i, cats: ['shelter', 'picnic'] },
+      { re: /visite|tourisme|[àa] voir|curiosit/i, cats: ['heritage', 'viewpoint', 'museum', 'attraction'] },
+    ];
+
+    function matchCategorySearch(q) {
+      const hit = SEARCH_KEYWORDS.find((k) => k.re.test(q));
+      return hit ? hit.cats : null;
+    }
+
+    async function runCategorySearch(cats, resultsEl) {
+      if (isOfflineMode()) {
+        const b = AppState.map.getBounds();
+        const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => cats.includes(p.cat) && b.pad(1).contains([p.lat, p.lon]));
+        showCategoryResults(cached, cats, resultsEl, true);
+        return;
       }
+      resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-slate-500">Recherche autour de vous…</div>`;
+      resultsEl.classList.remove('hidden');
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      const parts = cats
+        .flatMap((id) => POI_BY_ID[id].q)
+        .map((q) => `${q}(around:6000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)});`)
+        .join('');
+      try {
+        const data = await fetchOverpassWithFallback(`[out:json][timeout:15];(${parts});out center 80;`);
+        const pts = parsePOIElements(data.elements || [], cats);
+        OfflineDB.putExtraPOIs(pts);
+        showCategoryResults(pts, cats, resultsEl, false);
+      } catch {
+        resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-rose-600">Serveur occupé, réessayez.</div>`;
+      }
+    }
+
+    function showCategoryResults(pts, cats, resultsEl, offline) {
+      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      const sorted = pts
+        .map((p) => ({ ...p, distance: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 15);
+
+      // Marqueurs de résultats sur la carte
+      if (!AppState.searchLayer) AppState.searchLayer = L.layerGroup().addTo(AppState.map);
+      AppState.searchLayer.clearLayers();
+      sorted.forEach((p) => {
+        const m = L.marker([p.lat, p.lon], { icon: createPOIIcon(p.cat), zIndexOffset: 400 });
+        m.bindPopup(poiPopupHtml(p));
+        AppState.searchLayer.addLayer(m);
+      });
+      // Les résultats rejoignent aussi la vue 3D
+      const known = new Set(AppState.poiPoints.map((p) => p.id));
+      sorted.forEach((p) => !known.has(p.id) && AppState.poiPoints.push(p));
+      if (AppState.is3D) Map3D.refreshOverlays();
+
+      if (!sorted.length) {
+        resultsEl.innerHTML = `<div class="px-3 py-3 text-xs text-slate-500">Rien trouvé à moins de 6 km${offline ? ' (cache hors ligne)' : ''}.</div>`;
+        return;
+      }
+      const label = cats.map((c) => POI_BY_ID[c].label).join(', ');
+      resultsEl.innerHTML =
+        `<div class="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">${escapeHtml(label)} · ${sorted.length} résultat(s)</div>` +
+        sorted
+          .map(
+            (p) => `
+          <div class="flex items-center gap-2 px-3 py-2.5">
+            <span class="text-base shrink-0">${POI_BY_ID[p.cat].emoji}</span>
+            <button type="button" onclick="focusSearchResult(${p.lat}, ${p.lon})" class="min-w-0 flex-1 text-left">
+              <div class="text-xs font-bold text-slate-900 truncate">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-500 truncate">${formatDistance(p.distance)}${p.hours ? ' · ' + escapeHtml(p.hours) : ''}</div>
+            </button>
+            <button type="button" onclick="routeToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}'); document.getElementById('global-search-results').classList.add('hidden')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
+          </div>`
+          )
+          .join('');
+      resultsEl.classList.remove('hidden');
+    }
+
+    window.focusSearchResult = function (lat, lon) {
+      document.getElementById('global-search-results').classList.add('hidden');
+      flyToActive(lat, lon, 17);
+      if (!AppState.is3D && AppState.searchLayer) {
+        AppState.searchLayer.eachLayer((m) => {
+          const ll = m.getLatLng();
+          if (Math.abs(ll.lat - lat) < 1e-7 && Math.abs(ll.lng - lon) < 1e-7) setTimeout(() => m.openPopup(), 700);
+        });
+      }
+    };
+
+    // -------------------------------------------------------------------------
+    // 17 ter. BALADE VISITE (boucle par des lieux à voir)
+    // -------------------------------------------------------------------------
+    async function makeVisitTour() {
+      if (isOfflineMode()) return showToast('Création de balade impossible hors ligne.', 'warning');
+      const btn = document.getElementById('btn-make-tour');
+      const start = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      const km = AppState.tourKm;
+      // Une boucle de L km reste grosso modo dans un rayon de L/5 km
+      const R = Math.round((km / 5) * 1000);
+      btn.disabled = true;
+      btn.textContent = 'Recherche des lieux à voir…';
+      try {
+        const cats = ['heritage', 'viewpoint', 'museum', 'attraction', 'nature', 'worship'];
+        const parts = cats
+          .flatMap((id) => POI_BY_ID[id].q)
+          .map((q) => `${q}(around:${R},${start.lat.toFixed(5)},${start.lon.toFixed(5)});`)
+          .join('');
+        const data = await fetchOverpassWithFallback(`[out:json][timeout:20];(${parts});out center 400;`);
+        const weight = { heritage: 3, museum: 3, viewpoint: 3, attraction: 2, nature: 1.5, worship: 1 };
+        const cands = parsePOIElements(data.elements || [], cats)
+          .filter((p) => p.name && !Object.values(POI_BY_ID).some((c) => c.label.startsWith(p.name)))
+          .map((p) => {
+            const d = haversineDistance(start.lat, start.lon, p.lat, p.lon);
+            const ang = Math.atan2(p.lon - start.lon, p.lat - start.lat);
+            // On privilégie les beaux lieux, situés à bonne distance (ni trop près, ni au bord)
+            const score = weight[p.cat] * (1 - Math.abs(d / R - 0.65));
+            return { ...p, d, ang, score };
+          })
+          .filter((p) => p.d > R * 0.15);
+
+        if (cands.length < 2) {
+          showToast('Pas assez de lieux à voir dans le coin. Essayez une balade plus longue.', 'warning');
+          return;
+        }
+        // Un lieu par secteur angulaire, puis tri par angle pour former la boucle
+        const nStops = km <= 15 ? 3 : km <= 30 ? 4 : 5;
+        const sectors = Array.from({ length: nStops }, () => null);
+        cands.forEach((p) => {
+          const sec = Math.floor(((p.ang + Math.PI) / (2 * Math.PI)) * nStops) % nStops;
+          if (!sectors[sec] || p.score > sectors[sec].score) sectors[sec] = p;
+        });
+        let stops = sectors.filter(Boolean);
+        // Secteurs vides : on complète avec les meilleurs restants
+        if (stops.length < Math.min(3, cands.length)) {
+          const used = new Set(stops.map((p) => p.id));
+          stops = stops.concat(cands.filter((p) => !used.has(p.id)).sort((a, b) => b.score - a.score).slice(0, 3 - stops.length));
+        }
+        stops.sort((a, b) => a.ang - b.ang);
+
+        AppState.vias = stops.map((p) => ({ lat: p.lat, lon: p.lon, label: p.name }));
+        setRouteOrigin(start.lat, start.lon, AppState.userLocation ? 'Ma position GPS' : 'Départ');
+        setRouteDestination(start.lat, start.lon, 'Retour au départ');
+        renderVias();
+        switchSidebarTab('route');
+        expandMobileSheetIfCollapsed();
+        showToast(`Balade : ${stops.map((p) => p.name).join(' → ')}`, 'success', 4500);
+        await calculateBikeRoute();
+      } catch {
+        showToast('Serveur des lieux occupé, réessayez dans un instant.', 'warning');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Créer la balade';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 17 quater. AJOUT D'ÉTAPES EN TOUCHANT LA CARTE
+    // -------------------------------------------------------------------------
+    function startViaPick() {
+      AppState.pickViaMode = true;
+      collapseMobileSheet();
+      showToast('Touchez la carte à l’endroit de l’étape.', 'info', 3000);
+    }
+
+    function consumeViaPick(lat, lon) {
+      if (!AppState.pickViaMode) return false;
+      AppState.pickViaMode = false;
+      addVia(lat, lon, `Étape (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
+      return true;
     }
 
     // -------------------------------------------------------------------------
@@ -4614,7 +5009,10 @@ ${trkpts}
       loadPOIsForCurrentView();
       CloudSync.refreshInfo();
       CloudSync.sync(true);
-      if (localStorage.getItem(LS_SUN) === '1') setSunMode(true, true);
+      const savedTheme = localStorage.getItem(LS_THEME) || (localStorage.getItem('abicyclette.sunmode') === '1' ? 'sun' : 'normal');
+      if (savedTheme !== 'normal') setTheme(savedTheme, true);
+      AppState.preferCycleways = localStorage.getItem('abicyclette.preferCycleways') !== '0';
+      document.getElementById('toggle-prefer-cycleways').checked = AppState.preferCycleways;
 
       // Application installable & coque disponible hors ligne
       if ('serviceWorker' in navigator && location.protocol === 'https:') {
