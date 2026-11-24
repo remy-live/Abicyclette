@@ -337,6 +337,25 @@
     #photo-viewer.hidden { display: none; }
     #photo-viewer button { color: #fff; }
     #btn-photo-close, #btn-photo-share-all { background: rgba(255,255,255,.16); }
+    #ride-summary { position: fixed; inset: 0; z-index: 55; background: rgba(15,23,42,.45); display: flex; align-items: flex-end; justify-content: center; }
+    #ride-summary.hidden, #live-banner.hidden { display: none; }
+    .rs-card { width: 100%; max-width: 460px; background: #fff; color: #0f172a; border-radius: 24px 24px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+    @media (min-width: 768px) { #ride-summary { align-items: center; } .rs-card { border-radius: 24px; } }
+    .rs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .rs-grid > div { background: #f8fafc; border-radius: 16px; padding: 10px 12px; }
+    .rs-grid b { display: block; font-size: 24px; font-weight: 800; line-height: 1.1; }
+    .rs-grid span { font-size: 12px; font-weight: 700; color: #64748b; }
+    #rs-photos img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex: none; }
+    body.night-mode .rs-card { background: #0d1117; color: #e6edf3; }
+    body.night-mode .rs-grid > div { background: #161b22; }
+    #live-banner { position: fixed; z-index: 45; left: 12px; right: 12px; top: 12px; background: #0f172a; color: #fff; border-radius: 18px; padding: 12px 16px; font-size: 15px; font-weight: 800; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+    #live-banner small { display: block; font-size: 12.5px; font-weight: 600; color: #cbd5e1; margin-top: 2px; }
+    body.live-view #top-search-container, body.live-view #side-drawer, body.live-view #quick-controls, body.live-view #map-status { display: none !important; }
+    .live-dot { width: 26px; height: 26px; border-radius: 50%; background: #e11d48; border: 4px solid #fff; box-shadow: 0 0 0 6px rgba(225,29,72,.25), 0 2px 8px rgba(0,0,0,.4); }
+    .fav-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; font-size: 14px; font-weight: 700; color: #0f172a; }
+    .fav-row small { display: block; font-size: 11.5px; font-weight: 500; color: #64748b; }
+    .fav-row .fav-x { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: rgba(226,232,240,.8); color: #475569; font-size: 13px; flex: none; display: flex; align-items: center; justify-content: center; }
+    body.night-mode .fav-row { color: #e6edf3; }
     .photo-pin { width: 40px; height: 40px; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); background-size: cover; background-position: center; cursor: pointer; }
     #photo-strip img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; opacity: .6; }
     #photo-strip img.on { opacity: 1; outline: 3px solid #fff; }
@@ -393,6 +412,8 @@
     .home-alt .alt-name { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
     .home-alt.on .alt-name { color: #047857; }
     .home-alt .alt-cyc { font-size: 11px; font-weight: 800; color: #0f9f8f; }
+    .home-alt .alt-rough { font-size: 11px; font-weight: 800; color: #b45309; }
+    body.bw-mode .home-alt .alt-rough { color: inherit !important; }
     body.bw-mode .home-alt .alt-name, body.bw-mode .home-alt .alt-cyc { color: inherit !important; }
     body.night-mode .home-alt .alt-name { color: #9aa6b2; }
 
@@ -706,6 +727,11 @@
         <div class="grid grid-cols-5 gap-1.5"><button data-theme="normal" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#eef1ea"/><path d="M0 26l18 3 4 11H0z" fill="#d5e6cc"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#bcdcf0"/><path d="M-2 32L60 24" stroke="#d6d3cc" stroke-width="5"/><path d="M-2 32L60 24" stroke="#fff" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#0f9f8f" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#0b7a55" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clair</span></button><button data-theme="sun" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#fbfaf3"/><path d="M0 26l18 3 4 11H0z" fill="#bfe0a8"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#7cc3f0"/><path d="M-2 32L60 24" stroke="#5b5b5b" stroke-width="5"/><path d="M-2 32L60 24" stroke="#fff" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#0057d9" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#ff00b4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Soleil</span></button><button data-theme="bw" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#fff"/><path d="M0 26l18 3 4 11H0z" fill="#e5e5e5"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#cfcfcf"/><path d="M-2 32L60 24" stroke="#000" stroke-width="5"/><path d="M-2 32L60 24" stroke="#fff" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#0f9f8f" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>N&amp;B</span></button><button data-theme="noir" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#000"/><path d="M0 26l18 3 4 11H0z" fill="#1a1a1a"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#262626"/><path d="M-2 32L60 24" stroke="#bdbdbd" stroke-width="5"/><path d="M-2 32L60 24" stroke="#000" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Noir</span></button><button data-theme="night" class="theme-dot"><svg viewBox="0 0 56 40" aria-hidden="true"><rect width="56" height="40" fill="#000"/><path d="M0 26l18 3 4 11H0z" fill="#0c1a10"/><path d="M0 12c14-4 26 6 56 0v7c-28 6-42-4-56 0z" fill="#0b1d2e"/><path d="M-2 32L60 24" stroke="#000" stroke-width="5"/><path d="M-2 32L60 24" stroke="#1c2430" stroke-width="3"/><path d="M6 4c10 4 22 2 30 8" fill="none" stroke="#2b7a6f" stroke-width="2" stroke-dasharray="4 2.5"/><path d="M12 40l6-14 18-10 8-16" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Nuit</span></button></div>
       </section>
 
+      <label class="dp-row" style="padding:0">
+        <span>Nuit automatique<small>style Nuit du coucher au lever du soleil</small></span>
+        <input id="toggle-auto-night" type="checkbox" class="dp-switch" />
+      </label>
+
       <section class="space-y-2">
         <div class="dp-line"><span>Vue</span>
           <div class="dp-seg"><button id="view-2d" class="seg sm on">2D</button><button id="view-3d" class="seg sm">3D</button></div>
@@ -720,6 +746,10 @@
         <label class="dp-row">
           <span>Privilégier les pistes cyclables<small>pour calculer les trajets</small></span>
           <input id="dp-prefer-cycleways" type="checkbox" class="dp-switch" checked />
+        </label>
+        <label class="dp-row">
+          <span>Éviter les chemins non revêtus<small>terre, gravier : préfère la route goudronnée</small></span>
+          <input id="toggle-avoid-rough" type="checkbox" class="dp-switch" />
         </label>
         <label class="dp-row">
           <span>Pistes en couleur sur la carte</span>
@@ -740,6 +770,10 @@
         <label class="dp-row">
           <span>Annoncer les lieux à voir</span>
           <input id="toggle-announce-visits" type="checkbox" class="dp-switch" />
+        </label>
+        <label class="dp-row">
+          <span>Partager ma position en direct<small id="live-info">un lien à envoyer à un proche, pendant le guidage</small></span>
+          <input id="toggle-live" type="checkbox" class="dp-switch" />
         </label>
         <label class="dp-row">
           <span>Lieux à proximité<small>pastille silencieuse quand un lieu choisi approche</small></span>
@@ -832,6 +866,7 @@
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
           <div id="home-dest" class="text-lg font-extrabold text-slate-900 truncate">Destination</div>
+          <button id="btn-save-trip" aria-label="Garder ce trajet dans mes favoris" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 text-base" style="margin-left:auto">☆</button>
           <div id="home-dist" class="text-sm font-semibold text-slate-500 shrink-0"></div>
         </div>
         <div id="home-alts" class="flex gap-2"></div>
@@ -1310,6 +1345,22 @@
   </div>
 
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
+  <!-- Résumé de fin de sortie -->
+  <div id="ride-summary" class="hidden">
+    <div class="rs-card">
+      <div style="font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#059669">Sortie terminée</div>
+      <div id="rs-title" style="font-size:20px;font-weight:800;margin-top:2px"></div>
+      <div id="rs-grid" class="rs-grid"></div>
+      <div id="rs-photos" class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto"></div>
+      <div style="display:flex;gap:8px">
+        <button id="btn-rs-share" class="ps-btn ps-go" style="flex:1;height:50px;border-radius:16px;background:#059669;color:#fff;font-size:16px;font-weight:800">Partager</button>
+        <button id="btn-rs-close" style="height:50px;padding:0 18px;border-radius:16px;background:#f1f5f9;color:#0f172a;font-size:15px;font-weight:800">Fermer</button>
+      </div>
+    </div>
+  </div>
+  <!-- Suivi en direct (page ouverte par un proche) -->
+  <div id="live-banner" class="hidden"></div>
+
   <!-- Photos : prise directe, rangées dans le téléphone, épinglées sur la carte -->
   <input id="photo-input" type="file" accept="image/*" capture="environment" class="hidden" />
   <div id="photo-viewer" class="hidden fixed inset-0 z-[60] bg-black flex flex-col">
@@ -2311,7 +2362,7 @@
       AppState.map.closePopup();
       collapseMobileSheet(); // la carte d'accueil montre le trajet et le bouton Partir
       setRouteDestination(lat, lon, label || "Point d'eau potable");
-      if (!AppState.origin) {
+      if (!AppState.origin || (AppState.userLocation && /^(Ma position GPS|Centre de la carte)$/.test(AppState.origin.label || ''))) {
         if (AppState.userLocation) {
           setRouteOrigin(AppState.userLocation.lat, AppState.userLocation.lon, 'Ma position GPS');
         } else {
@@ -2576,7 +2627,7 @@
       const altCount = opts.single ? 1 : 3;
 
       // « Pistes d'abord » : profil BRouter « safety » (évite le trafic), sauf en VTT
-      const wanted = AppState.preferCycleways && AppState.selectedProfile !== 'mtb' ? 'safety' : AppState.selectedProfile;
+      const wanted = AppState.selectedProfile === 'mtb' ? 'mtb' : AppState.avoidRough ? 'fastbike' : AppState.preferCycleways ? 'safety' : AppState.selectedProfile;
       const tryProfile = async (profile) => {
         const settled = await Promise.allSettled(
           Array.from({ length: altCount }, (_, idx) => fetchBRouterRoute(points, profile, idx))
@@ -2654,6 +2705,7 @@
         distance,
         duration,
         cycleShare: cycleShareFromMessages(props.messages),
+        roughShare: cycleShareFromMessages(props.messages, ROUGH_RE),
         ascent: Math.round(parseFloat(props['filtered ascend']) || ascent),
         descent,
         steps,
@@ -2663,13 +2715,15 @@
     }
 
     // Part du trajet sur piste / voie cyclable (colonne WayTags des messages BRouter)
-    function cycleShareFromMessages(messages) {
+    // Chemins non revêtus : terre, gravier, herbe… ou piste agricole sans revêtement indiqué
+    const ROUGH_RE = /surface=(unpaved|gravel|fine_gravel|dirt|earth|ground|grass|sand|mud|pebblestone|compacted|woodchips)|highway=track(?!.*surface=(asphalt|paved|concrete|paving_stones))/;
+    function cycleShareFromMessages(messages, re0) {
       if (!Array.isArray(messages) || messages.length < 2) return null;
       const head = messages[0];
       const iD = head.indexOf('Distance');
       const iT = head.indexOf('WayTags');
       if (iD < 0 || iT < 0) return null;
-      const re = /highway=cycleway|cycleway(:(left|right|both))?=(lane|track|opposite_lane|opposite_track|shared_busway)|bicycle=designated|bicycle_road=yes|cyclestreet=yes/;
+      const re = re0 || /highway=cycleway|cycleway(:(left|right|both))?=(lane|track|opposite_lane|opposite_track|shared_busway)|bicycle=designated|bicycle_road=yes|cyclestreet=yes/;
       let tot = 0;
       let cyc = 0;
       for (let i = 1; i < messages.length; i++) {
@@ -2994,7 +3048,7 @@
       const slim = (r) => ({
         coords: r.coords.map((c) => [r5(c[0]), r5(c[1]), Math.round(c[2] || 0)]),
         distance: r.distance, duration: r.duration, ascent: r.ascent, descent: r.descent, steps: r.steps,
-        altIdx: r.altIdx, source: r.source, cycleShare: r.cycleShare ?? null, name: r.name, tags: r.tags || [],
+        altIdx: r.altIdx, source: r.source, cycleShare: r.cycleShare ?? null, roughShare: r.roughShare ?? null, name: r.name, tags: r.tags || [],
       });
       const read = () => {
         try {
@@ -3060,7 +3114,7 @@
           }
         } else if (apply(remote, false)) showToast('Trajet récupéré depuis le cloud.', 'info', 3000);
       }
-      return { save, clear, restore, forCloud, fromCloud };
+      return { save, clear, restore, forCloud, fromCloud, apply, snapshot: forCloud };
     })();
 
     // Tuiles vectorielles à garder : liste [z, x, y] sans doublon
@@ -3464,6 +3518,7 @@
       }
 
       startGeoWatch();
+      Live.start();
       loadCompanion(AppState.currentRoute);
       if (!Rides.isRecording()) Rides.start(true);
 
@@ -3487,8 +3542,10 @@
         AppState.watchId = null;
       }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      if (Rides.isAuto()) Rides.stop();
+      const doneRide = Rides.isAuto() ? Rides.stop() : null;
       if (!Rides.isRecording()) releaseWakeLock();
+      Live.stop();
+      if (doneRide) Extras.showSummary(doneRide);
 
       document.getElementById('guidance-hud').classList.add('hidden');
       document.body.classList.remove('guiding');
@@ -3595,6 +3652,7 @@
           AppState.lastSpokenThreshold = 'arrived';
           speakFrench('Vous êtes arrivé.');
           showToast('Arrivée !', 'success');
+          setTimeout(() => AppState.isGuiding && stopLiveGuidance(), 6000); // puis le résumé de la sortie
         }
         return;
       }
@@ -4141,7 +4199,7 @@ ${trkpts}
           return;
         }
         // « boulangerie », « restaurant », « pharmacie »… : recherche autour de soi
-        const cats = opts.categories ? matchCategorySearch(q) : null;
+        const cats = opts.categories && !Extras.isPending() ? matchCategorySearch(q) : null;
         if (cats) {
           await runCategorySearch(cats, resultsEl);
           return;
@@ -4212,14 +4270,20 @@ ${trkpts}
         globalResults.classList.add('hidden');
       });
 
+      globalInput.addEventListener('focus', () => !globalInput.value.trim() && Extras.showFavs(globalResults));
+      globalInput.addEventListener('input', () => !globalInput.value.trim() && Extras.showFavs(globalResults));
       bindAutocompleteInput(globalInput, globalResults, (lat, lon, name) => {
         globalInput.value = name;
         globalResults.classList.add('hidden');
         globalInput.blur();
+        if (Extras.takePending(lat, lon, name)) {
+          globalInput.value = '';
+          return;
+        }
         AppState.vias = [];
         renderVias();
         setRouteDestination(lat, lon, name);
-        if (!AppState.origin || AppState.origin.label === 'Centre de la carte') {
+        if (!AppState.origin || /^(Ma position GPS|Centre de la carte)$/.test(AppState.origin.label || '')) {
           const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
           setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
         }
@@ -6672,6 +6736,347 @@ ${trkpts}
     })();
 
     // -------------------------------------------------------------------------
+    // PLUS : domicile / travail, trajets favoris, résumé de sortie, nuit automatique
+    // -------------------------------------------------------------------------
+    const Extras = (() => {
+      const K_FAV = 'abicyclette.favs';
+      const K_TRIPS = 'abicyclette.savedTrips';
+      let pending = null;
+      const getJ = (k, d) => {
+        try {
+          return JSON.parse(localStorage.getItem(k) || 'null') ?? d;
+        } catch {
+          return d;
+        }
+      };
+      const setJ = (k, v) => {
+        try {
+          localStorage.setItem(k, JSON.stringify(v));
+          return true;
+        } catch {
+          showToast('Mémoire pleine : supprimez un trajet favori.', 'warning');
+          return false;
+        }
+      };
+      const FAVS = [['home', 'Domicile', '<path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/>'], ['work', 'Travail', '<path d="M3 8h18v12H3zM8 8V5h8v3M3 13h18"/>']];
+      const ico = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+
+      function showFavs(box) {
+        const favs = getJ(K_FAV, {});
+        const trips = getJ(K_TRIPS, []);
+        box.innerHTML =
+          FAVS.map(([k, label, d]) => {
+            const f = favs[k];
+            return `<div class="fav-row"><button data-fav="${k}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico(d)}<span class="truncate">${label}<small>${f ? escapeHtml(f.label) : 'Toucher pour choisir l’adresse'}</small></span></button>${f ? `<button class="fav-x" data-favedit="${k}" aria-label="Changer l’adresse : ${label}">✎</button>` : ''}</div>`;
+          }).join('') +
+          trips
+            .map((t) => `<div class="fav-row"><button data-trip="${t.id}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico('<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>')}<span class="truncate">${escapeHtml(t.name)}<small>${formatDistance(t.routes[0].distance)} · ${formatDuration(t.routes[0].duration)}</small></span></button><button class="fav-x" data-tripdel="${t.id}" aria-label="Supprimer ce trajet favori">✕</button></div>`)
+            .join('');
+        box.classList.remove('hidden');
+        const ask = (k) => {
+          pending = k;
+          box.classList.add('hidden');
+          const label = FAVS.find((f) => f[0] === k)[1];
+          showToast(`${label} : tapez l’adresse dans la recherche puis choisissez-la.`, 'info', 5000);
+          document.getElementById('global-search-input').focus();
+        };
+        box.querySelectorAll('[data-fav]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const f = getJ(K_FAV, {})[b.dataset.fav];
+            if (!f) return ask(b.dataset.fav);
+            box.classList.add('hidden');
+            document.getElementById('global-search-input').blur();
+            window.routeToPoint(f.lat, f.lon, FAVS.find((x) => x[0] === b.dataset.fav)[1]);
+          })
+        );
+        box.querySelectorAll('[data-favedit]').forEach((b) => b.addEventListener('click', () => ask(b.dataset.favedit)));
+        box.querySelectorAll('[data-trip]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const t = getJ(K_TRIPS, []).find((x) => x.id === b.dataset.trip);
+            box.classList.add('hidden');
+            document.getElementById('global-search-input').blur();
+            if (t && Trip.apply(t)) {
+              Trip.save();
+              collapseMobileSheet();
+            }
+          })
+        );
+        box.querySelectorAll('[data-tripdel]').forEach((b) =>
+          b.addEventListener('click', () => {
+            if (!confirm('Supprimer ce trajet favori ?')) return;
+            setJ(K_TRIPS, getJ(K_TRIPS, []).filter((x) => x.id !== b.dataset.tripdel));
+            showFavs(box);
+          })
+        );
+      }
+      function takePending(lat, lon, name) {
+        if (!pending) return false;
+        const favs = getJ(K_FAV, {});
+        favs[pending] = { lat, lon, label: name };
+        setJ(K_FAV, favs);
+        showToast(`${FAVS.find((f) => f[0] === pending)[1]} enregistré : ${name}`, 'success', 3000);
+        pending = null;
+        return true;
+      }
+      function saveTrip() {
+        const t = Trip.snapshot();
+        if (!t || t.cleared) return;
+        const name = prompt('Nom de ce trajet favori :', shortLabel(AppState.dest?.label) || 'Mon trajet');
+        if (!name) return;
+        const trips = getJ(K_TRIPS, []);
+        trips.unshift({ ...t, id: 't' + Date.now(), name: name.trim().slice(0, 60) });
+        if (setJ(K_TRIPS, trips.slice(0, 20))) showToast('Trajet gardé : il est dans la recherche, sous Domicile et Travail.', 'success', 4500);
+      }
+
+      // --- Résumé de fin de sortie ---
+      let lastRide = null;
+      function showSummary(r) {
+        lastRide = r;
+        const km = r.distance / 1000;
+        const h = r.duration / 3600;
+        const route = AppState.currentRoute;
+        const photos = Photos.since(r.startedAt);
+        document.getElementById('rs-title').textContent = shortLabel(AppState.dest?.label) ? `Vers ${shortLabel(AppState.dest.label)}` : r.name;
+        const cells = [
+          [formatDistance(r.distance), 'distance'],
+          [formatDuration(r.duration), 'durée'],
+          [h > 0 ? `${(km / h).toFixed(1)} km/h` : '–', 'vitesse moyenne'],
+          route && Math.abs(route.distance - r.distance) < route.distance * 0.25 ? [`${route.ascent} m`, 'dénivelé positif'] : [String(photos.length), photos.length > 1 ? 'photos' : 'photo'],
+        ];
+        document.getElementById('rs-grid').innerHTML = cells.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
+        document.getElementById('rs-photos').innerHTML = photos.map((p) => `<img src="${p.thumb}" alt="">`).join('');
+        document.getElementById('ride-summary').classList.remove('hidden');
+      }
+      async function shareSummary() {
+        const r = lastRide;
+        if (!r) return;
+        const km = r.distance / 1000;
+        const h = r.duration / 3600;
+        const text = `À bicyclette : ${formatDistance(r.distance)} en ${formatDuration(r.duration)}${h > 0 ? ` (${(km / h).toFixed(1)} km/h)` : ''}.`;
+        const photos = Photos.since(r.startedAt);
+        if (photos.length) return Photos.share(photos, text);
+        try {
+          if (navigator.share) return await navigator.share({ title: 'Ma sortie à vélo', text });
+        } catch {
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('Résumé copié.', 'success', 2000);
+        } catch {}
+      }
+
+      // --- Nuit automatique : style Nuit du coucher au lever du soleil ---
+      function sunUT(date, lat, lon, rising) {
+        const rad = Math.PI / 180;
+        const N = Math.floor((Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) - Date.UTC(date.getUTCFullYear(), 0, 0)) / 86400000);
+        const lh = lon / 15;
+        const t = N + ((rising ? 6 : 18) - lh) / 24;
+        const M = 0.9856 * t - 3.289;
+        let Ls = (M + 1.916 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 282.634 + 720) % 360;
+        let RA = (Math.atan(0.91764 * Math.tan(Ls * rad)) / rad + 360) % 360;
+        RA = (RA + Math.floor(Ls / 90) * 90 - Math.floor(RA / 90) * 90) / 15;
+        const sinD = 0.39782 * Math.sin(Ls * rad);
+        const cosD = Math.cos(Math.asin(sinD));
+        const cosH = (Math.cos(90.833 * rad) - sinD * Math.sin(lat * rad)) / (cosD * Math.cos(lat * rad));
+        if (cosH > 1) return null; // nuit polaire
+        if (cosH < -1) return undefined; // jour polaire
+        const H = (rising ? 360 - Math.acos(cosH) / rad : Math.acos(cosH) / rad) / 15;
+        return (H + RA - 0.06571 * t - 6.622 - lh + 48) % 24;
+      }
+      function isNight(now = new Date()) {
+        const u = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+        const rise = sunUT(now, u.lat, u.lon, true);
+        const set = sunUT(now, u.lat, u.lon, false);
+        if (rise === null || set === null) return true;
+        if (rise === undefined || set === undefined) return false;
+        const ut = now.getUTCHours() + now.getUTCMinutes() / 60;
+        return !((ut - rise + 24) % 24 < (set - rise + 24) % 24);
+      }
+      let phase = null;
+      function autoNightTick() {
+        if (localStorage.getItem('abicyclette.autoNight') !== '1') return (phase = null);
+        const night = isNight();
+        if (night === phase) return; // on n'agit qu'au changement : un choix à la main est respecté
+        phase = night;
+        if (night && AppState.theme !== 'night') {
+          localStorage.setItem('abicyclette.dayTheme', AppState.theme);
+          setTheme('night', true);
+        } else if (!night && AppState.theme === 'night') setTheme(localStorage.getItem('abicyclette.dayTheme') || 'normal', true);
+      }
+
+      function init() {
+        document.getElementById('btn-save-trip').addEventListener('click', saveTrip);
+        document.getElementById('btn-rs-close').addEventListener('click', () => document.getElementById('ride-summary').classList.add('hidden'));
+        document.getElementById('btn-rs-share').addEventListener('click', shareSummary);
+        const an = document.getElementById('toggle-auto-night');
+        an.checked = localStorage.getItem('abicyclette.autoNight') === '1';
+        an.addEventListener('change', () => {
+          localStorage.setItem('abicyclette.autoNight', an.checked ? '1' : '0');
+          phase = null;
+          autoNightTick();
+        });
+        const ar = document.getElementById('toggle-avoid-rough');
+        AppState.avoidRough = localStorage.getItem('abicyclette.avoidRough') === '1';
+        ar.checked = AppState.avoidRough;
+        ar.addEventListener('change', () => {
+          AppState.avoidRough = ar.checked;
+          localStorage.setItem('abicyclette.avoidRough', ar.checked ? '1' : '0');
+          if (AppState.origin && AppState.dest && !AppState.isGuiding) calculateBikeRoute({ keepView: true });
+        });
+        document.querySelector('#hud-bottom > div').addEventListener('click', showGuidanceOverview);
+        autoNightTick();
+        setInterval(autoNightTick, 300000);
+      }
+      return { init, showFavs, takePending, showSummary, isNight, isPending: () => !!pending };
+    })();
+
+    // -------------------------------------------------------------------------
+    // POSITION EN DIRECT : un lien à envoyer à un proche (Gist dédié, ne contient que la position)
+    // -------------------------------------------------------------------------
+    const Live = (() => {
+      const FILE = 'abicyclette-direct.json';
+      const K_ID = 'abicyclette.live.gist';
+      const K_ON = 'abicyclette.live.on';
+      let timer = null;
+      let trail = [];
+      const token = () => localStorage.getItem('abicyclette.gh.token') || '';
+      const isOn = () => localStorage.getItem(K_ON) === '1';
+      const link = () => `${location.origin}${location.pathname}?suivi=${localStorage.getItem(K_ID)}`;
+      async function api(path, method, body) {
+        const res = await fetch('https://api.github.com' + path, {
+          method,
+          headers: { Authorization: `Bearer ${token()}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error('GitHub ' + res.status);
+        return res.json();
+      }
+      const payload = (extra = {}) => {
+        const u = AppState.userLocation;
+        return { at: Date.now(), lat: u?.lat ?? null, lon: u?.lon ?? null, dest: shortLabel(AppState.dest?.label) || '', eta: document.getElementById('hud-eta').textContent, rem: document.getElementById('hud-rem-dist').textContent, trail, ...extra };
+      };
+      async function push(extra) {
+        if (!isOn() || !token() || isOfflineMode()) return;
+        const u = AppState.userLocation;
+        if (u) {
+          trail.push([+u.lat.toFixed(5), +u.lon.toFixed(5)]);
+          if (trail.length > 300) trail = trail.filter((_, i) => i % 2 === 0);
+        }
+        try {
+          await api(`/gists/${localStorage.getItem(K_ID)}`, 'PATCH', { files: { [FILE]: { content: JSON.stringify(payload(extra)) } } });
+        } catch {}
+      }
+      async function shareLink() {
+        const url = link();
+        try {
+          if (navigator.share) return await navigator.share({ title: 'Ma position à vélo', text: 'Suis ma sortie à vélo en direct :', url });
+        } catch {
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast('Lien de suivi copié : collez-le dans un message.', 'success', 4000);
+        } catch {
+          prompt('Lien de suivi à envoyer :', url);
+        }
+      }
+      async function enable() {
+        if (!token()) {
+          showToast('Il faut d’abord le jeton GitHub (onglet Plus › synchronisation).', 'warning', 5000);
+          return false;
+        }
+        try {
+          if (!localStorage.getItem(K_ID)) {
+            const g = await api('/gists', 'POST', { description: 'À bicyclette — position en direct', public: false, files: { [FILE]: { content: JSON.stringify({ at: Date.now(), ended: true }) } } });
+            localStorage.setItem(K_ID, g.id);
+          }
+        } catch {
+          showToast('Impossible de créer le lien (réseau ou jeton).', 'warning');
+          return false;
+        }
+        localStorage.setItem(K_ON, '1');
+        if (AppState.isGuiding) start();
+        shareLink();
+        return true;
+      }
+      function start() {
+        if (!isOn() || timer) return;
+        trail = [];
+        push();
+        timer = setInterval(push, 60000);
+      }
+      function stop() {
+        if (!timer) return;
+        clearInterval(timer);
+        timer = null;
+        push({ ended: true });
+      }
+      function refreshInfo() {
+        document.getElementById('toggle-live').checked = isOn();
+        document.getElementById('live-info').textContent = isOn() ? 'actif pendant le guidage — toucher pour renvoyer le lien' : 'un lien à envoyer à un proche, pendant le guidage';
+      }
+
+      // --- Côté proche : la page ouverte avec ?suivi=… ---
+      let vL = null, vG = null, vLine = null;
+      async function viewTick(id) {
+        const el = document.getElementById('live-banner');
+        try {
+          const res = await fetch(`https://api.github.com/gists/${id}`, { headers: { Accept: 'application/vnd.github+json' } });
+          if (!res.ok) throw new Error(res.status);
+          const d = JSON.parse((await res.json()).files[FILE].content);
+          const min = Math.max(0, Math.round((Date.now() - d.at) / 60000));
+          const when = min < 1 ? 'à l’instant' : `il y a ${min} min`;
+          el.innerHTML = d.ended
+            ? `Sortie terminée<small>dernière position ${when}</small>`
+            : `En route${d.dest ? ` vers ${escapeHtml(d.dest)}` : ''}<small>position ${when}${d.eta && d.eta !== '--:--' ? ` · arrivée prévue ${escapeHtml(d.eta)}` : ''}${d.rem && d.rem !== '--' ? ` · reste ${escapeHtml(d.rem)}` : ''}</small>`;
+          if (d.lat == null) return;
+          const first = !vL;
+          if (vL) AppState.map.removeLayer(vL);
+          if (vLine) AppState.map.removeLayer(vLine);
+          vL = L.marker([d.lat, d.lon], { icon: L.divIcon({ html: '<div class="live-dot"></div>', className: '', iconSize: [26, 26], iconAnchor: [13, 13] }), zIndexOffset: 900 }).addTo(AppState.map);
+          if (d.trail?.length > 1) vLine = L.polyline(d.trail, { color: '#e11d48', weight: 5, opacity: 0.85 }).addTo(AppState.map);
+          if (AppState.map3d && window.maplibregl) {
+            if (!vG) {
+              const dot = document.createElement('div');
+              dot.className = 'live-dot';
+              vG = new maplibregl.Marker({ element: dot }).setLngLat([d.lon, d.lat]).addTo(AppState.map3d);
+            } else vG.setLngLat([d.lon, d.lat]);
+          }
+          if (first || !d.ended) flyToActive(d.lat, d.lon, first ? 15 : undefined);
+        } catch {
+          el.innerHTML = 'Suivi indisponible<small>lien invalide, ou trop de consultations : nouvel essai dans une minute</small>';
+        }
+      }
+      function view(id) {
+        document.body.classList.add('live-view');
+        document.getElementById('live-banner').classList.remove('hidden');
+        document.getElementById('live-banner').textContent = 'Recherche de la position…';
+        setTimeout(() => viewTick(id), 2500); // la carte d'abord
+        setInterval(() => viewTick(id), 75000);
+      }
+      function init() {
+        refreshInfo();
+        document.getElementById('toggle-live').addEventListener('change', async (e) => {
+          if (e.target.checked) await enable();
+          else {
+            stop();
+            localStorage.setItem(K_ON, '0');
+          }
+          refreshInfo();
+        });
+        document.getElementById('live-info').addEventListener('click', (e) => {
+          if (!isOn()) return;
+          e.preventDefault();
+          shareLink();
+        });
+        const id = new URLSearchParams(location.search).get('suivi');
+        if (id && /^[\w-]+$/.test(id)) view(id);
+      }
+      return { init, start, stop };
+    })();
+
+    // -------------------------------------------------------------------------
     // PHOTOS : appareil photo direct, photos gardées dans le téléphone et épinglées sur la carte
     // -------------------------------------------------------------------------
     const Photos = (() => {
@@ -6758,10 +7163,10 @@ ${trkpts}
       }
       const close = () => document.getElementById('photo-viewer').classList.add('hidden');
       const fileOf = (p) => new File([p.blob], `a-bicyclette-${new Date(p.at).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.jpg`, { type: 'image/jpeg' });
-      async function share(items) {
+      async function share(items, text) {
         const files = items.map(fileOf);
         try {
-          if (navigator.canShare && navigator.canShare({ files })) return await navigator.share({ files, title: 'À bicyclette' });
+          if (navigator.canShare && navigator.canShare({ files })) return await navigator.share({ files, title: 'À bicyclette', ...(text ? { text } : {}) });
         } catch (e) {
           if (e && e.name === 'AbortError') return;
         }
@@ -6796,7 +7201,7 @@ ${trkpts}
         });
         renderPins();
       }
-      return { init, renderPins, count: () => list.length };
+      return { init, renderPins, count: () => list.length, since: (t) => list.filter((p) => p.at >= t), share };
     })();
 
     // Choix du moteur : MapLibre (vectoriel, ou tuiles en 3D) sauf hors ligne → Leaflet + cache
@@ -7156,7 +7561,7 @@ ${trkpts}
       const alts = AppState.alternatives.slice(0, 3);
       const box = document.getElementById('home-alts');
       if (alts.length < 2) {
-        box.innerHTML = r.cycleShare != null ? `<div class="alt-cyc text-[12px] font-extrabold" style="color:#0f9f8f">${r.cycleShare} % sur pistes cyclables · ↗ ${r.ascent} m</div>` : '';
+        box.innerHTML = r.cycleShare != null ? `<div class="alt-cyc text-[12px] font-extrabold" style="color:#0f9f8f">${r.cycleShare} % sur pistes cyclables · ↗ ${r.ascent} m${r.roughShare >= 5 ? ` · <span style="color:#b45309">${r.roughShare} % chemin</span>` : ''}</div>` : '';
         return;
       }
       box.innerHTML = alts
@@ -7167,6 +7572,7 @@ ${trkpts}
             <div class="text-lg leading-tight font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
             <div class="text-[11px] font-semibold text-slate-500 truncate">${formatDistance(a.distance)} · ↗ ${a.ascent} m</div>
             ${a.cycleShare != null ? `<div class="alt-cyc">${a.cycleShare} % pistes</div>` : ''}
+            ${a.roughShare >= 5 ? `<div class="alt-rough">${a.roughShare} % chemin</div>` : ''}
           </button>`
         )
         .join('');
@@ -7537,9 +7943,75 @@ ${trkpts}
         if (stepDist > 80) speakFrench(`À voir : ${v.name}`);
         showToast(`À voir : ${v.name}`, 'info', 5000);
       }
+      // Côtes à venir
+      const cl = (route._climbs || (route._climbs = findClimbs(route))).find((c) => c.end > snap.along + 30);
+      if (cl) {
+        const pc = `${cl.grade.toFixed(0)} %`;
+        const ctxt =
+          cl.start <= snap.along
+            ? `⛰ Côte : encore ${formatDistance(cl.end - snap.along)} à ${pc}`
+            : cl.start - snap.along < 3000
+              ? `⛰ Côte de ${formatDistance(cl.end - cl.start)} à ${pc} dans ${formatDistance(cl.start - snap.along)}`
+              : '';
+        if (ctxt) txt = txt ? `${ctxt} · ${txt}` : ctxt;
+      }
       extra.textContent = txt;
       extra.classList.toggle('hidden', !txt);
       nearbyTick(comp, snap);
+    }
+
+    // Côtes du trajet : au moins 200 m et 12 m de montée, à 3 % ou plus (altitudes lissées, pas de 50 m)
+    function findClimbs(route) {
+      const total = route.cumDist[route.cumDist.length - 1];
+      if (!(total > 400) || !route.coords.some((c) => c[2])) return [];
+      const STEP = 50;
+      const n = Math.floor(total / STEP) + 1;
+      const ele = new Array(n);
+      let j = 0;
+      for (let k = 0; k < n; k++) {
+        const d = k * STEP;
+        while (j < route.cumDist.length - 2 && route.cumDist[j + 1] < d) j++;
+        const seg = route.cumDist[j + 1] - route.cumDist[j] || 1;
+        const t = Math.min(1, Math.max(0, (d - route.cumDist[j]) / seg));
+        ele[k] = route.coords[j][2] + t * (route.coords[j + 1][2] - route.coords[j][2]);
+      }
+      const sm = ele.map((_, k) => {
+        let a = 0, c = 0;
+        for (let q = Math.max(0, k - 2); q <= Math.min(n - 1, k + 2); q++) { a += ele[q]; c++; }
+        return a / c;
+      });
+      const W = 3; // fenêtre de 150 m
+      const slope = (k) => (k + W < n ? ((sm[k + W] - sm[k]) / (W * STEP)) * 100 : -99);
+      const out = [];
+      let k = 0;
+      while (k < n - W) {
+        if (slope(k) >= 3) {
+          const a = k;
+          while (k < n - W && slope(k) >= 1.5) k++;
+          const b = Math.min(n - 1, k + W - 1);
+          const gain = sm[b] - sm[a];
+          const len = (b - a) * STEP;
+          if (len >= 200 && gain >= 12) out.push({ start: a * STEP, end: b * STEP, gain, grade: (gain / len) * 100 });
+          k = b;
+        } else k++;
+      }
+      return out;
+    }
+
+    // Vue d'ensemble pendant le guidage : tout le trajet restant, puis retour automatique
+    function showGuidanceOverview() {
+      const route = AppState.currentRoute;
+      if (!AppState.isGuiding || !route) return;
+      pauseFollow();
+      const along = route._lastAlong || 0;
+      const pts = route.coords.filter((_, i) => route.cumDist[i] >= along - 50).map((c) => [c[0], c[1]]);
+      const u = AppState.userLocation;
+      if (u) pts.push([u.lat, u.lon]);
+      if (pts.length < 2) return;
+      const b = L.latLngBounds(pts);
+      if (AppState.glOn && AppState.map3d) {
+        AppState.map3d.fitBounds([[b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()]], { padding: { top: 190, bottom: 130, left: 40, right: 80 }, bearing: 0, pitch: 0, duration: 600 });
+      } else AppState.map.fitBounds(b.pad(0.1), { padding: [40, 140] });
     }
 
     // -------------------------------------------------------------------------
@@ -7943,6 +8415,7 @@ ${trkpts}
         render();
         CloudSync.schedule();
         showToast(`Sortie enregistrée : ${formatDistance(r.dist)}`, 'success');
+        return list[0];
       }
 
       function updateButton() {
@@ -8103,9 +8576,13 @@ ${trkpts}
       renderShortcuts();
       syncHomeChips();
       updateHome();
-      Trip.restore();
-      CloudSync.sync(true);
+      if (!new URLSearchParams(location.search).get('suivi')) {
+        Trip.restore();
+        CloudSync.sync(true);
+      }
       Photos.init();
+      Extras.init();
+      Live.init();
 
       // Ma position au démarrage, sans redemander l'autorisation si elle est déjà donnée
       try {
