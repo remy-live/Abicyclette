@@ -3497,8 +3497,25 @@
       }
     }
 
+    // Appli iPhone (Capacitor) : les liens partagés pointent vers la version web
+    const IS_NATIVE = location.protocol === 'capacitor:' || !!window.Capacitor?.isNativePlatform?.();
+    const PUBLIC_URL = location.protocol.startsWith('http') ? location.origin + location.pathname : 'https://remy-live.github.io/Abicyclette/';
+    // Plugin natif « garder l'écran allumé » (appli iPhone), appelé par le pont Capacitor
+    const KeepAwake = IS_NATIVE
+      ? {
+          call(m) {
+            const C = window.Capacitor;
+            const p = C?.Plugins?.KeepAwake?.[m] ? C.Plugins.KeepAwake[m]() : C?.nativePromise?.('KeepAwake', m, {});
+            return Promise.resolve(p).catch(() => null);
+          },
+          keepAwake() { return this.call('keepAwake'); },
+          allowSleep() { return this.call('allowSleep'); },
+        }
+      : null;
+
     async function requestWakeLock() {
       try {
+        if (KeepAwake) return void (await KeepAwake.keepAwake()); // écran allumé, côté iPhone natif
         if ('wakeLock' in navigator && !AppState.wakeLock) {
           AppState.wakeLock = await navigator.wakeLock.request('screen');
           AppState.wakeLock.addEventListener('release', () => (AppState.wakeLock = null));
@@ -3509,6 +3526,9 @@
     }
 
     function releaseWakeLock() {
+      try {
+        KeepAwake?.allowSleep();
+      } catch {}
       try {
         AppState.wakeLock?.release();
       } catch {}
@@ -7256,7 +7276,7 @@ ${trkpts}
       function link() {
         const r = AppState.currentRoute;
         if (!r || !AppState.origin || !AppState.dest) return null;
-        const u = new URL(location.origin + location.pathname);
+        const u = new URL(PUBLIC_URL);
         const keep = (lbl) => (lbl && !/^(Ma position GPS|Centre de la carte|Départ)$/.test(lbl) ? lbl : '');
         if (r.source === 'Trace GPX importée') {
           u.searchParams.set('trace', enc(thin(r.coords)));
@@ -7375,7 +7395,7 @@ ${trkpts}
       let trail = [];
       const token = () => localStorage.getItem('abicyclette.gh.token') || '';
       const isOn = () => localStorage.getItem(K_ON) === '1';
-      const link = () => `${location.origin}${location.pathname}?suivi=${localStorage.getItem(K_ID)}`;
+      const link = () => `${PUBLIC_URL}?suivi=${localStorage.getItem(K_ID)}`;
       async function api(path, method, body) {
         const res = await fetch('https://api.github.com' + path, {
           method,
@@ -9110,7 +9130,7 @@ ${trkpts}
 
       // Application installable & coque disponible hors ligne
       if ('serviceWorker' in navigator && location.protocol === 'https:') {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        if (!IS_NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {});
       }
     });
   </script>

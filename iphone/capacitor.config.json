@@ -1,0 +1,9 @@
+{
+  "appId": "fr.devoddere.abicyclette",
+  "appName": "À bicyclette",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#e5e7eb"
+  }
+}
