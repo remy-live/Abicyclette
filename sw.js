@@ -1,6 +1,6 @@
 /* Service worker « À bicyclette » : garde la coque de l'appli disponible hors ligne.
    Les tuiles de carte et les données (eau, lieux, pistes) sont gérées à part, dans IndexedDB. */
-const CACHE = 'abicyclette-v26';
+const CACHE = 'abicyclette-v27';
 const SHELL = [
   './',
   './index.html',
@@ -32,13 +32,32 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== 'abicyclette-partage').map((k) => caches.delete(k))))
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  // Fichier GPX « partagé vers » l'appli (Android) : on le garde, puis on ouvre l'appli qui le lira
+  if (req.method === 'POST' && new URL(req.url).search.includes('partage-gpx')) {
+    event.respondWith(
+      (async () => {
+        try {
+          const form = await req.formData();
+          const file = form.getAll('gpx').find((f) => f && f.size);
+          const c = await caches.open('abicyclette-partage');
+          if (file) await c.put('./partage.gpx', new Response(file, { headers: { 'X-Name': encodeURIComponent(file.name || 'trace.gpx') } }));
+          else {
+            const t = form.get('url') || form.get('text') || '';
+            await c.put('./partage.txt', new Response(String(t)));
+          }
+        } catch (e) {}
+        return Response.redirect('./?gpx=partage', 303);
+      })()
+    );
+    return;
+  }
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
