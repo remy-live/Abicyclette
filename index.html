@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>À bicyclette — Carte vélo, itinéraires, lieux & navigation hors ligne</title>
   <meta name="theme-color" content="#059669" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -370,6 +370,10 @@
     .photo-pin { width: 40px; height: 40px; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); background-size: cover; background-position: center; cursor: pointer; }
     #photo-strip img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; opacity: .6; }
     #photo-strip img.on { opacity: 1; outline: 3px solid #fff; }
+    /* Encoche / barre d'état (appli iPhone et écran d'accueil) : rien ne passe dessous */
+    #top-search-container, #hud-band, #map-status, #quick-controls, #toast-container, #live-banner { margin-top: env(safe-area-inset-top, 0px); }
+    #photo-viewer { padding-top: env(safe-area-inset-top, 0px); }
+    #side-drawer.sheet-expanded { max-height: calc(100% - env(safe-area-inset-top, 0px) - 8px); }
     .dp-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 700; color: #0f172a; }
     .dp-seg { display: flex; gap: 4px; }
     .dp-seg .seg { height: 38px; padding: 0 14px; }
@@ -752,6 +756,10 @@
         <div class="dp-line"><span>Vue</span>
           <div class="dp-seg"><button id="view-2d" class="seg sm on">2D</button><button id="view-3d" class="seg sm">3D</button></div>
         </div>
+        <label id="row-buildings" class="dp-row" style="padding:2px 0">
+          <span>Bâtiments en relief<small>en 3D : immeubles dessinés en volume, ou carte à plat avec le relief du terrain</small></span>
+          <input id="toggle-buildings" type="checkbox" class="dp-switch" />
+        </label>
         <div class="dp-line"><span>Contraste</span>
           <div class="dp-seg"><button data-contrast="0" class="contrast-btn seg sm on">Normal</button><button data-contrast="1" class="contrast-btn seg sm">Fort</button><button data-contrast="2" class="contrast-btn seg sm">Max</button></div>
         </div>
@@ -4498,6 +4506,14 @@ ${trkpts}
       document.querySelectorAll('.layer-option').forEach((btn) => btn.addEventListener('click', () => switchBaseLayer(btn.dataset.layer)));
       document.getElementById('view-2d').addEventListener('click', () => AppState.view3D && Map3D.set3D(false));
       document.getElementById('view-3d').addEventListener('click', () => !AppState.view3D && Map3D.set3D(true));
+      AppState.buildings3d = localStorage.getItem('abicyclette.buildings3d') !== '0';
+      const tb = document.getElementById('toggle-buildings');
+      tb.checked = AppState.buildings3d;
+      tb.addEventListener('change', () => {
+        AppState.buildings3d = tb.checked;
+        localStorage.setItem('abicyclette.buildings3d', tb.checked ? '1' : '0');
+        if (AppState.view3D && AppState.glOn) Map3D.applyStyle();
+      });
       document.querySelectorAll('.theme-btn, .theme-dot').forEach((btn) => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
       document.querySelectorAll('.contrast-btn').forEach((btn) => btn.addEventListener('click', () => setContrast(+btn.dataset.contrast)));
       document.getElementById('btn-contrast').addEventListener('click', () => setContrast((AppState.contrast + 1) % 3));
@@ -6426,7 +6442,7 @@ ${trkpts}
             sources['dem-shade'] = { ...dem };
             layers.splice(1, 0, { id: 'hillshade', type: 'hillshade', source: 'dem-shade', paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#475569' } });
           }
-          if (base === 'vector') {
+          if (base === 'vector' && AppState.buildings3d) {
             const at = layers.findIndex((l) => l.id === 'building');
             layers.splice(at, 1, { id: 'buildings-3d', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 14, paint: { 'fill-extrusion-color': P.bld, 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.85 } });
           }
@@ -6549,6 +6565,7 @@ ${trkpts}
         const on = AppState.view3D;
         document.getElementById('view-2d').classList.toggle('on', !on);
         document.getElementById('view-3d').classList.toggle('on', on);
+        document.getElementById('row-buildings').style.display = on ? '' : 'none';
         document.getElementById('btn-hud-3d').textContent = on ? '2D' : '3D';
       }
 
