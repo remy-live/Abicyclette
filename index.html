@@ -339,6 +339,18 @@
     #photo-viewer.hidden { display: none; }
     #photo-viewer button { color: #fff; }
     #btn-photo-close, #btn-photo-share-all { background: rgba(255,255,255,.16); }
+    #profile-sheet { position: fixed; z-index: 46; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); border-radius: 22px; background: #fff; color: #0f172a; padding: 14px 16px; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; }
+    @media (min-width: 768px) { #profile-sheet { left: 432px; right: auto; width: 460px; bottom: 16px; } }
+    body.poi-open #profile-sheet, body.guiding #profile-sheet { display: none !important; }
+    .pf-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .pf-stats div { background: #f8fafc; border-radius: 12px; padding: 6px 8px; }
+    .pf-stats b { display: block; font-size: 14px; font-weight: 800; white-space: nowrap; letter-spacing: -.01em; }
+    .pf-stats span { font-size: 10.5px; font-weight: 700; color: #64748b; }
+    #pf-svg { width: 100%; height: 130px; display: block; touch-action: none; }
+    body.night-mode #profile-sheet { background: #0d1117; color: #e6edf3; } body.night-mode .pf-stats div { background: #161b22; }
+    body.bw-mode #profile-sheet { border: 3px solid #000; } body.bw-mode .pf-stats div { background: #fff; border: 2px solid #000; }
+    body.noir-mode #profile-sheet { filter: invert(1); }
+    @media (max-width: 767px) { body.profile-open #side-drawer.sheet-collapsed, body.profile-open #side-drawer.sheet-mini { display: none; } }
     #ride-summary { position: fixed; inset: 0; z-index: 55; background: rgba(15,23,42,.45); display: flex; align-items: flex-end; justify-content: center; }
     #ride-summary.hidden, #live-banner.hidden { display: none; }
     .rs-card { width: 100%; max-width: 460px; background: #fff; color: #0f172a; border-radius: 24px 24px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
@@ -380,6 +392,7 @@
     .dp-mini { height: 30px; padding: 0 10px; border-radius: 999px; background: rgba(241,245,249,.9); font-size: 11px; font-weight: 800; color: #334155; }
     .dp-link, .dp-adv summary { width: 100%; height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-radius: 14px; background: rgba(241,245,249,.9); font-size: 14px; font-weight: 700; color: #0f172a; cursor: pointer; list-style: none; }
     .dp-adv summary::-webkit-details-marker { display: none; }
+    .dp-adv summary { height: auto; min-height: 52px; padding-top: 8px; padding-bottom: 8px; }
     .dp-adv[open] summary span { transform: rotate(90deg); }
     body.night-mode .dp-line { color: #e6edf3; }
     body.night-mode .dp-link, body.night-mode .dp-adv summary, body.night-mode .dp-mini { background: #161b22; color: #e6edf3; }
@@ -834,7 +847,7 @@
       </section>
 
       <details class="dp-adv">
-        <summary>Avancé<span>›</span></summary>
+        <summary><span style="transform:none;display:flex;flex-direction:column;align-items:flex-start;line-height:1.2">Avancé<small style="font-size:11.5px;font-weight:600;color:#64748b">fond de carte, icônes, hors ligne, eau</small></span><span>›</span></summary>
         <div class="space-y-2 pt-2">
           <div class="dp-line"><span>Fond de carte</span>
             <div class="dp-seg"><button data-layer="vector" class="layer-option seg sm">Vectoriel</button><button id="layer-images" class="seg sm">Images</button></div>
@@ -894,7 +907,8 @@
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
           <div id="home-dest" class="text-lg font-extrabold text-slate-900 truncate">Destination</div>
-          <button id="btn-share-trip" aria-label="Partager ce trajet par lien" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center" style="margin-left:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v7h14v-7"/></svg></button>
+          <button id="btn-profile" aria-label="Profil du trajet : dénivelé" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center" style="margin-left:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20l6-9 4 5 3-4 7 8z"/></svg></button>
+          <button id="btn-share-trip" aria-label="Partager ce trajet par lien" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v7h14v-7"/></svg></button>
           <button id="btn-save-trip" aria-label="Garder ce trajet dans mes favoris" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 text-base">☆</button>
           <div id="home-dist" class="text-sm font-semibold text-slate-500 shrink-0"></div>
         </div>
@@ -1394,6 +1408,9 @@
   </div>
 
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
+  <!-- Profil du trajet : dénivelé, côtes, pistes -->
+  <div id="profile-sheet" class="hidden glass-panel"></div>
+
   <!-- Résumé de fin de sortie -->
   <div id="ride-summary" class="hidden">
     <div class="rs-card">
@@ -3042,6 +3059,7 @@
       renderAlternativesList();
       if (AppState.glOn) Map3D.refreshOverlays();
       Trip.save();
+      if (Profile.isOpen()) Profile.open(); // le profil suit la variante choisie
     }
 
     function drawAlternativePolylines() {
@@ -3271,6 +3289,10 @@
       // Tracé avec bordure (blanche, ou noire en mode soleil)
       AppState.routeOutlinePolyline = L.polyline(latLngs, { ...st.outline, lineCap: 'round', lineJoin: 'round' }).addTo(AppState.map);
       AppState.routePolyline = L.polyline(latLngs, { ...st.main, lineCap: 'round', lineJoin: 'round' }).addTo(AppState.map);
+      AppState.routePolyline.on('click', (e) => {
+        L.DomEvent.stop(e);
+        Profile.open();
+      });
 
       if (!keepView && !AppState.isGuiding) {
         if (AppState.glOn) Map3D.fitBounds(AppState.routePolyline.getBounds());
@@ -4254,6 +4276,7 @@ ${trkpts}
         document.getElementById(id)?.classList.add('hidden')
       );
       closePoiSheet();
+      Profile.close();
     }
     window.addEventListener('popstate', () => {
       backStepPushed = false;
@@ -4627,6 +4650,7 @@ ${trkpts}
         ['route-weather', 'route-weather-advice', 'home-weather'].forEach((id) => document.getElementById(id).classList.add('hidden'));
         if (AppState.glOn) Map3D.refreshOverlays();
         Trip.clear();
+        Profile.close();
       });
       document.getElementById('btn-take-trip').addEventListener('click', takeTripOffline);
 
@@ -4738,6 +4762,9 @@ ${trkpts}
       document.getElementById('btn-clear-filter').addEventListener('click', () => closeHomeResults());
       document.getElementById('btn-close-results').addEventListener('click', () => closeHomeResults());
       document.getElementById('btn-dp-shortcuts').addEventListener('click', openShortcutsModal);
+      document.querySelector('.dp-adv').addEventListener('toggle', (e) => {
+        if (e.target.open) setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      });
       document.getElementById('btn-close-shortcuts').addEventListener('click', () => document.getElementById('shortcuts-modal').classList.add('hidden'));
       document.getElementById('shortcuts-modal').addEventListener('click', (e) => {
         if (e.target.id === 'shortcuts-modal') e.target.classList.add('hidden');
@@ -5491,6 +5518,28 @@ ${trkpts}
     // Lieux « à voir » assez rares pour être cherchés sur une grande zone
     const POI_WIDE = ['heritage', 'viewpoint', 'museum', 'attraction'];
 
+    // Réseau capricieux (4G, réveil du téléphone) : on réessaie tout seul au lieu d'attendre qu'on rouvre l'appli
+    let poiRetryTimer = null;
+    let poiRetryCount = 0;
+    function retryPOIsSoon() {
+      clearTimeout(poiRetryTimer);
+      if (poiRetryCount >= 4) return;
+      poiRetryTimer = setTimeout(() => {
+        poiRetryCount++;
+        loadPOIsForCurrentView();
+      }, 3000 * (poiRetryCount + 1));
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !AppState.isGuiding) {
+        poiRetryCount = 0;
+        loadPOIsForCurrentView();
+      }
+    });
+    window.addEventListener('online', () => {
+      poiRetryCount = 0;
+      loadPOIsForCurrentView();
+    });
+
     async function loadPOIsForCurrentView() {
       const statusEl = document.getElementById('poi-status-text');
       const enabled = [...AppState.poiEnabled];
@@ -5536,6 +5585,8 @@ ${trkpts}
       statusEl.textContent = 'Recherche des lieux…';
       setMapStatus('Recherche des lieux…');
       const done = (pts) => {
+        poiRetryCount = 0;
+        clearTimeout(poiRetryTimer);
         AppState.poiPoints = pts;
         OfflineDB.putExtraPOIs(pts);
         renderPOIs(pts);
@@ -5548,7 +5599,7 @@ ${trkpts}
         });
       };
       try {
-        const { pois } = await tilePlaces(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), Math.round(z), 16);
+        const { pois } = await tilePlaces(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), z >= 12.5 ? 14 : Math.round(z), 40);
         if (seq !== poiRequestSeq) return;
         done(pois.filter((p) => cats.includes(p.cat)));
         return;
@@ -5561,6 +5612,7 @@ ${trkpts}
         const data = await fetchOverpassWithFallback(q, 'poi');
         if (!data || seq !== poiRequestSeq) return; // une requête plus récente est partie
         const pts = parsePOIElements(data.elements || [], cats);
+        clearTimeout(poiRetryTimer);
         AppState.poiPoints = pts;
         OfflineDB.putExtraPOIs(pts);
         renderPOIs(pts);
@@ -5574,6 +5626,7 @@ ${trkpts}
         renderPOIs(cached);
         statusEl.textContent = cached.length ? `${cached.length} lieu(x) (secours local)` : 'Serveur des lieux occupé — touchez ↻ dans un instant';
         setMapStatus(cached.length ? `${cached.length} lieu(x) en mémoire · toucher pour réessayer` : 'Serveur des lieux occupé · toucher pour réessayer', { retry: true });
+        retryPOIsSoon();
       }
     }
 
@@ -6570,6 +6623,11 @@ ${trkpts}
       }
 
       function bindEvents(m) {
+        m.on('click', 'route-casing', (e) => {
+          if (e.defaultPrevented || AppState.isGuiding) return;
+          e.preventDefault();
+          Profile.open();
+        });
         m.on('click', 'alts-line', (e) => {
           const idx = e.features?.[0]?.properties?.idx;
           if (idx != null) selectAlternative(Number(idx), true);
@@ -6583,7 +6641,7 @@ ${trkpts}
             openPointPopup(f);
           })
         );
-        ['pts-icons', 'pts-top', 'alts-line'].forEach((id) => {
+        ['pts-icons', 'pts-top', 'alts-line', 'route-casing'].forEach((id) => {
           m.on('mouseenter', id, () => (m.getCanvas().style.cursor = 'pointer'));
           m.on('mouseleave', id, () => (m.getCanvas().style.cursor = ''));
         });
@@ -7161,6 +7219,165 @@ ${trkpts}
     }
 
     // -------------------------------------------------------------------------
+    // PROFIL DU TRAJET : on touche le tracé (ou le bouton « profil ») → dénivelé, côtes, pistes
+    // -------------------------------------------------------------------------
+    const Profile = (() => {
+      let marker = null;
+      let gMarker = null;
+      let data = null;
+      const W = 360, H = 130, PADL = 30, PADB = 16;
+      const gradeCol = (g) => (g >= 7 ? '#dc2626' : g >= 4 ? '#f59e0b' : g >= 1.5 ? '#84cc16' : '#10b981');
+
+      // Points tous les ~25 m (240 au plus), altitudes lissées : le modèle de terrain est bruité
+      function sample(route) {
+        const cum = route.cumDist || (route.cumDist = computeCumDist(route.coords));
+        const total = cum[cum.length - 1];
+        const step = Math.max(25, total / 240);
+        const raw = [];
+        let j = 0;
+        for (let d = 0; d <= total + 1; d += step) {
+          while (j < cum.length - 2 && cum[j + 1] < d) j++;
+          const seg = cum[j + 1] - cum[j] || 1;
+          const t = Math.min(1, Math.max(0, (d - cum[j]) / seg));
+          const a = route.coords[j];
+          const b = route.coords[j + 1] || a;
+          raw.push({ d: Math.min(d, total), e: (a[2] || 0) + t * ((b[2] || 0) - (a[2] || 0)), lat: a[0] + t * (b[0] - a[0]), lon: a[1] + t * (b[1] - a[1]) });
+        }
+        return raw.map((p, i) => {
+          const win = raw.slice(Math.max(0, i - 2), i + 3);
+          return { ...p, e: win.reduce((s, q) => s + q.e, 0) / win.length };
+        });
+      }
+
+      function render(route) {
+        const pts = sample(route);
+        const hasEle = pts.some((p) => p.e);
+        const total = pts[pts.length - 1].d || 1;
+        const eMin = Math.min(...pts.map((p) => p.e));
+        const eMax = Math.max(...pts.map((p) => p.e));
+        const span = Math.max(30, eMax - eMin);
+        const x = (d) => PADL + ((W - PADL - 4) * d) / total;
+        const y = (e) => 6 + (H - PADB - 10) * (1 - (e - (eMin - 4)) / (span + 8));
+        let bands = '';
+        for (let i = 1; i < pts.length; i++) {
+          const g = ((pts[i].e - pts[i - 1].e) / Math.max(1, pts[i].d - pts[i - 1].d)) * 100;
+          const x0 = x(pts[i - 1].d).toFixed(1);
+          const x1 = x(pts[i].d).toFixed(1);
+          bands += `<path d="M${x0} ${H - PADB}L${x0} ${y(pts[i - 1].e).toFixed(1)}L${x1} ${y(pts[i].e).toFixed(1)}L${x1} ${H - PADB}Z" fill="${gradeCol(g)}" opacity=".85"/>`;
+        }
+        const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.d).toFixed(1)} ${y(p.e).toFixed(1)}`).join('');
+        const km = total / 1000;
+        const ticks = [0, 0.25, 0.5, 0.75, 1]
+          .map((f) => `<text x="${x(f * total)}" y="${H - 3}" text-anchor="${f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}" font-size="9.5" font-weight="700" fill="#94a3b8">${(f * km).toFixed(km < 10 ? 1 : 0).replace('.', ',')}${f === 1 ? ' km' : ''}</text>`)
+          .join('');
+        const climbs = route._climbs || (route._climbs = findClimbs(route));
+        const maxG = Math.round(climbs.reduce((m, c) => Math.max(m, c.grade), 0));
+        const cells = [
+          [formatDistance(route.distance), 'distance'],
+          [`↗ ${route.ascent ?? 0} m`, 'montée'],
+          [`↘ ${route.descent ?? 0} m`, 'descente'],
+          [hasEle ? `${Math.round(eMin)}–${Math.round(eMax)} m` : '–', 'altitude'],
+        ];
+        const extra = [
+          route.cycleShare != null ? `<span style="color:#0f9f8f">${route.cycleShare} % sur pistes</span>` : '',
+          route.roughShare >= 5 ? `<span style="color:#b45309">${route.roughShare} % de chemin</span>` : '',
+          hasEle ? (climbs.length ? `${climbs.length} côte${climbs.length > 1 ? 's' : ''}, max ${maxG} %` : 'pas de vraie côte') : '',
+        ]
+          .filter(Boolean)
+          .join(' · ');
+        const dest = AppState.dest ? shortLabel(AppState.dest.label) : '';
+        const legend = [['#10b981', 'plat'], ['#84cc16', '2–4 %'], ['#f59e0b', '4–7 %'], ['#dc2626', '7 % et +']]
+          .map(([c, l]) => `<span><i style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${c};vertical-align:-1px"></i> ${l}</span>`)
+          .join('');
+        const el = document.getElementById('profile-sheet');
+        el.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+            <div style="min-width:0">
+              <div class="truncate" style="font-size:17px;font-weight:800">Profil${dest ? ' vers ' + escapeHtml(dest) : ''}</div>
+              <div id="pf-info" style="font-size:12.5px;font-weight:700;color:#64748b">${extra}</div>
+            </div>
+            <button onclick="Profile.close()" aria-label="Fermer" class="w-10 h-10 rounded-full bg-slate-200/70 text-slate-700 text-base font-bold shrink-0">✕</button>
+          </div>
+          <div class="pf-stats">${cells.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>
+          ${
+            hasEle
+              ? `<svg id="pf-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="Profil d'altitude du trajet">
+                  <text x="2" y="${y(eMax) + 4}" font-size="9.5" font-weight="700" fill="#94a3b8">${Math.round(eMax)}</text>
+                  <text x="2" y="${y(eMin) + 4}" font-size="9.5" font-weight="700" fill="#94a3b8">${Math.round(eMin)}</text>
+                  ${bands}<path d="${line}" fill="none" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round"/>${ticks}
+                  <g id="pf-cur" style="display:none"><line id="pf-cl" y1="4" y2="${H - PADB}" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="3 2"/><circle id="pf-cc" r="4.5" fill="#fff" stroke="#0f172a" stroke-width="2"/></g>
+                </svg>
+                <div style="display:flex;gap:10px;justify-content:center;font-size:10.5px;font-weight:700;color:#64748b;margin-top:2px">${legend}</div>
+                <div style="text-align:center;font-size:11px;font-weight:600;color:#94a3b8;margin-top:2px">Glissez le doigt sur le profil pour voir l'endroit sur la carte</div>`
+              : '<div style="font-size:13px;color:#64748b;margin-top:10px">Altitudes non disponibles pour ce trajet.</div>'
+          }`;
+        data = { pts, x, y };
+        const svg = document.getElementById('pf-svg');
+        if (!svg) return;
+        const pick = (ev) => {
+          const r = svg.getBoundingClientRect();
+          const cx = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * (W / r.width);
+          const d = Math.max(0, Math.min(total, ((cx - PADL) / (W - PADL - 4)) * total));
+          let best = pts[0];
+          for (const p of pts) if (Math.abs(p.d - d) < Math.abs(best.d - d)) best = p;
+          showAt(best);
+          if (ev.cancelable) ev.preventDefault();
+        };
+        svg.addEventListener('pointerdown', pick);
+        svg.addEventListener('pointermove', (ev) => ev.buttons && pick(ev));
+        svg.addEventListener('touchmove', pick, { passive: false });
+      }
+
+      // Curseur sur le profil et point sur la carte, au même endroit
+      function showAt(p) {
+        const g = document.getElementById('pf-cur');
+        if (!g || !data) return;
+        g.style.display = '';
+        const cl = document.getElementById('pf-cl');
+        cl.setAttribute('x1', data.x(p.d));
+        cl.setAttribute('x2', data.x(p.d));
+        document.getElementById('pf-cc').setAttribute('cx', data.x(p.d));
+        document.getElementById('pf-cc').setAttribute('cy', data.y(p.e));
+        const i = data.pts.indexOf(p);
+        const q = data.pts[Math.min(data.pts.length - 1, i + 2)];
+        const o = data.pts[Math.max(0, i - 2)];
+        const grade = q.d > o.d ? Math.round(((q.e - o.e) / (q.d - o.d)) * 100) : 0;
+        document.getElementById('pf-info').textContent = `à ${formatDistance(p.d)} · ${Math.round(p.e)} m d'altitude · pente ${grade} %`;
+        const html = '<div style="width:18px;height:18px;border-radius:50%;background:#0f172a;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4)"></div>';
+        if (!marker) marker = L.marker([p.lat, p.lon], { icon: L.divIcon({ html, className: '', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 950, interactive: false }).addTo(AppState.map);
+        else marker.setLatLng([p.lat, p.lon]);
+        if (AppState.glOn && AppState.map3d && window.maplibregl) {
+          if (!gMarker) {
+            const holder = document.createElement('div');
+            holder.innerHTML = html;
+            gMarker = new maplibregl.Marker({ element: holder.firstChild }).setLngLat([p.lon, p.lat]).addTo(AppState.map3d);
+          } else gMarker.setLngLat([p.lon, p.lat]);
+        }
+      }
+
+      function open(route = AppState.currentRoute) {
+        if (!route || AppState.isGuiding) return;
+        AppState.map.closePopup();
+        closePoiSheet();
+        const wasOpen = isOpen();
+        render(route);
+        document.getElementById('profile-sheet').classList.remove('hidden');
+        document.body.classList.add('profile-open');
+        if (!wasOpen) pushBackStep();
+      }
+      function close() {
+        document.getElementById('profile-sheet').classList.add('hidden');
+        document.body.classList.remove('profile-open');
+        if (marker) AppState.map.removeLayer(marker);
+        gMarker?.remove();
+        marker = gMarker = data = null;
+      }
+      const isOpen = () => !document.getElementById('profile-sheet').classList.contains('hidden');
+      return { open, close, isOpen };
+    })();
+    window.Profile = Profile;
+
+    // -------------------------------------------------------------------------
     // STATISTIQUES DES SORTIES
     // -------------------------------------------------------------------------
     const Stats = (() => {
@@ -7397,6 +7614,7 @@ ${trkpts}
       }
       function init() {
         document.getElementById('btn-share-trip').addEventListener('click', shareTrip);
+        document.getElementById('btn-profile').addEventListener('click', () => Profile.open());
       }
       return { init, handleIncoming, link, enc, dec };
     })();
@@ -7837,15 +8055,35 @@ ${trkpts}
     }
 
     // Lieux d'une catégorie autour d'un point, depuis les tuiles (≈ 2,5 km, puis ≈ 6 km si trop peu)
+    // Lieux d'une tuile z14 précise (les tuiles moins détaillées n'ont presque pas de commerces)
+    function z14Tile(x, y) {
+      const N = 2 ** 14;
+      const lonOf = (tx) => (tx / N) * 360 - 180;
+      const latOf = (ty) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * ty) / N))) * 180) / Math.PI;
+      const e = 1e-6;
+      return tilePlaces(latOf(y + 1) + e, lonOf(x) + e, latOf(y) - e, lonOf(x + 1) - e, 14, 1).then((r) => r.pois).catch(() => []);
+    }
+    // Autour d'un point : d'abord les 9 tuiles voisines (~5 km), puis un anneau de plus (~8 km)
     async function nearbyFromTiles(ref, cats, min = 3) {
-      const dLat = (km) => km / 111.32;
-      const dLon = (km) => km / (111.32 * Math.cos((ref.lat * Math.PI) / 180));
+      const c = TileSource.tileXY(ref.lat, ref.lon, 14);
+      const seen = new Set();
+      const all = new Map();
       let out = [];
-      for (const [km, z, max] of [[2.5, 14, 9], [6, 13, 9]]) {
-        const { pois } = await tilePlaces(ref.lat - dLat(km), ref.lon - dLon(km), ref.lat + dLat(km), ref.lon + dLon(km), z, max);
-        out = pois.filter((p) => cats.includes(p.cat));
+      let ok = 0;
+      for (const r of [1, 2]) {
+        const jobs = [];
+        for (let dx = -r; dx <= r; dx++)
+          for (let dy = -r; dy <= r; dy++) {
+            const k = `${c.x + dx}/${c.y + dy}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            jobs.push(z14Tile(c.x + dx, c.y + dy).then((pois) => (ok++, pois.forEach((p) => all.set(p.id, p)))));
+          }
+        await Promise.all(jobs);
+        out = [...all.values()].filter((p) => cats.includes(p.cat));
         if (out.length >= min) break;
       }
+      if (!ok) throw new Error('tuiles indisponibles');
       return out
         .map((p) => ({ p, d: haversineDistance(ref.lat, ref.lon, p.lat, p.lon) }))
         .sort((a, b) => a.d - b.d)
