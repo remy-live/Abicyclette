@@ -16,6 +16,11 @@
 	<string>Pour enregistrer vos photos de sortie dans la galerie.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Pour choisir une photo ou un fichier à importer.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>audio</string>
+	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
 	<key>CFBundleDisplayName</key>

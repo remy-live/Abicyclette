@@ -45,4 +45,5 @@ npm run ouvrir     # puis ▶ dans Xcode
 ## Limites du compte gratuit
 
 - 3 applis installées ainsi par appareil, signature valable 7 jours.
-- Pas de suivi GPS quand l'écran est éteint : garde l'écran allumé pendant le guidage (l'appli l'empêche de se mettre en veille).
+- Le GPS continue écran éteint pendant un guidage ou un enregistrement (une pastille bleue apparaît en haut de l'iPhone). À la première demande, choisis « Autoriser lorsque l'app est active ».
+- Les photos prises dans l'appli sont aussi enregistrées dans la galerie (autorise l'accès aux photos quand l'iPhone le demande).

@@ -339,6 +339,31 @@
     #photo-viewer.hidden { display: none; }
     #photo-viewer button { color: #fff; }
     #btn-photo-close, #btn-photo-share-all { background: rgba(255,255,255,.16); }
+    /* Un réglage = un seul endroit : les anciennes puces (Pistes, À voir, Manger, Eau, Contraste) sont dans Affichage */
+    #home-chips-row { display: none !important; }
+    @media (max-width: 767px) { #home-idle { display: none !important; } }
+    #menu-sheet { position: fixed; z-index: 46; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); border-radius: 22px; background: #fff; color: #0f172a; padding: 12px 12px 10px; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; max-height: 80vh; overflow-y: auto; }
+    @media (min-width: 768px) { #menu-sheet { display: none !important; } }
+    .mn-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 14px; text-align: left; }
+    .mn-row:active { background: rgba(226,232,240,.7); }
+    .mn-ico { width: 40px; height: 40px; border-radius: 12px; background: #f1f5f9; color: #0f172a; display: flex; align-items: center; justify-content: center; flex: none; }
+    .mn-row b { display: block; font-size: 15.5px; font-weight: 800; line-height: 1.2; }
+    .mn-row small { display: block; font-size: 12px; font-weight: 600; color: #64748b; }
+    .mn-row i { margin-left: auto; font-style: normal; font-weight: 800; color: #94a3b8; }
+    body.night-mode #menu-sheet { background: #0d1117; color: #e6edf3; } body.night-mode .mn-ico { background: #161b22; color: #e6edf3; }
+    body.bw-mode #menu-sheet { border: 3px solid #000; } body.bw-mode .mn-ico { background: #fff; border: 2px solid #000; color: #000; }
+    body.noir-mode #menu-sheet { filter: invert(1); }
+    body.guiding #menu-sheet { display: none !important; }
+    @media (max-width: 767px) {
+      body.menu-open #side-drawer.sheet-collapsed, body.menu-open #side-drawer.sheet-mini { display: none; }
+      body.focus-mode #sheet-tabs { display: none; }
+      body.focus-mode #sheet-title { display: flex; }
+      body.focus-mode #btn-sheet-menu { display: block; }
+      body.focus-mode .focus-hide { display: none !important; }
+      /* Un seul sujet à l'écran : plus de cadres colorés, le contenu occupe la page */
+      body.focus-mode #tab-places > div, body.focus-mode #tab-gpx > div { background: transparent !important; border: 0 !important; box-shadow: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+      body.focus-mode #tab-gpx > div + div { border-top: 1px solid rgba(148,163,184,.35) !important; border-radius: 0 !important; padding-top: 16px !important; }
+    }
     #profile-sheet { position: fixed; z-index: 46; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); border-radius: 22px; background: #fff; color: #0f172a; padding: 14px 16px; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; }
     @media (min-width: 768px) { #profile-sheet { left: 432px; right: auto; width: 460px; bottom: 16px; } }
     body.poi-open #profile-sheet, body.guiding #profile-sheet { display: none !important; }
@@ -930,7 +955,9 @@
       <button id="btn-sheet-close" aria-label="Revenir à la carte" class="hidden shrink-0 px-3 rounded-xl bg-slate-900 text-white text-xs font-extrabold items-center gap-1">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Carte
       </button>
-      <div class="flex-1 grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
+      <div id="sheet-title" class="hidden flex-1 min-w-0 items-center text-base font-extrabold text-slate-900 truncate"></div>
+      <button id="btn-sheet-menu" aria-label="Retour au menu" class="hidden shrink-0 px-3 rounded-xl bg-slate-200/70 text-slate-800 text-xs font-extrabold">Menu</button>
+      <div id="sheet-tabs" class="flex-1 grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
         <button data-tab="route" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Trajet</button>
         <button data-tab="places" class="tab-btn py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">Lieux</button>
         <button data-tab="gpx" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Plus</button>
@@ -1408,6 +1435,9 @@
   </div>
 
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
+  <!-- Menu « ⋯ » : une ligne par sujet, au lieu des anciens onglets -->
+  <div id="menu-sheet" class="hidden glass-panel"></div>
+
   <!-- Profil du trajet : dénivelé, côtes, pistes -->
   <div id="profile-sheet" class="hidden glass-panel"></div>
 
@@ -3543,6 +3573,34 @@
         }
       : null;
 
+    // GPS : dans l'appli iPhone, le suivi continue écran éteint (plugin natif) ; sinon, GPS du navigateur
+    function geoWatch(onPos, onErr) {
+      const C = window.Capacitor;
+      if (IS_NATIVE && C?.nativeCallback) {
+        try {
+          const id = C.nativeCallback(
+            'BackgroundGeolocation',
+            'addWatcher',
+            { backgroundTitle: 'À bicyclette', backgroundMessage: 'Guidage et enregistrement de la sortie en cours.', requestPermissions: true, stale: false, distanceFilter: 3 },
+            (loc, err) => {
+              if (err) return onErr && onErr({ code: err.code === 'NOT_AUTHORIZED' ? 1 : 2 });
+              if (!loc || loc.latitude == null) return;
+              onPos({ coords: { latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, speed: loc.speed, heading: loc.bearing } });
+            }
+          );
+          return { native: id };
+        } catch {
+          /* plugin absent : GPS du navigateur */
+        }
+      }
+      return { web: navigator.geolocation.watchPosition(onPos, onErr, geoWatchOptions()) };
+    }
+    function geoClear(h) {
+      if (!h) return;
+      if (h.native != null) window.Capacitor?.nativePromise?.('BackgroundGeolocation', 'removeWatcher', { id: h.native }).catch(() => {});
+      else if (h.web != null) navigator.geolocation.clearWatch(h.web);
+    }
+
     async function requestWakeLock() {
       try {
         if (KeepAwake) return void (await KeepAwake.keepAwake()); // écran allumé, côté iPhone natif
@@ -3573,8 +3631,8 @@
     }
 
     function startGeoWatch() {
-      if (AppState.watchId !== null) navigator.geolocation.clearWatch(AppState.watchId);
-      AppState.watchId = navigator.geolocation.watchPosition(
+      if (AppState.watchId !== null) geoClear(AppState.watchId);
+      AppState.watchId = geoWatch(
         (pos) => {
           const { latitude, longitude, accuracy, speed, heading } = pos.coords;
           if (heading != null && !Number.isNaN(heading) && (speed || 0) > 1) AppState.lastHeading = heading;
@@ -3585,8 +3643,7 @@
           // Un simple délai dépassé (arrêt au feu, tunnel…) n'est pas signalé
           if (err.code === 3) return;
           showToast(err.code === 1 ? 'Accès au GPS refusé.' : 'Signal GPS faible.', 'warning');
-        },
-        geoWatchOptions()
+        }
       );
     }
 
@@ -3643,7 +3700,7 @@
       document.getElementById('btn-hud-recenter').classList.add('hidden');
       document.getElementById('btn-hud-recenter').classList.remove('flex');
       if (AppState.watchId !== null) {
-        navigator.geolocation.clearWatch(AppState.watchId);
+        geoClear(AppState.watchId);
         AppState.watchId = null;
       }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -4277,6 +4334,7 @@ ${trkpts}
       );
       closePoiSheet();
       Profile.close();
+      Menu.close();
     }
     window.addEventListener('popstate', () => {
       backStepPushed = false;
@@ -6502,7 +6560,7 @@ ${trkpts}
         }
         // Itinéraires vélo balisés (EuroVelo, véloroutes) par-dessus le fond
         if (AppState.showBikeRoutes) {
-          sources.wmt = { type: 'raster', tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'], tileSize: 256, maxzoom: 18, attribution: 'Itinéraires © Waymarked Trails' };
+          sources.wmt = { type: 'raster', tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'], tileSize: window.devicePixelRatio >= 2 ? 128 : 256, maxzoom: 18, attribution: 'Itinéraires © Waymarked Trails' };
           layers.push({ id: 'wmt', type: 'raster', source: 'wmt', paint: { 'raster-opacity': theme === 'night' || theme === 'noir' ? 0.55 : 0.85 } });
         }
         layers.push(
@@ -6820,6 +6878,8 @@ ${trkpts}
           });
           AppState.map3d = m;
           m.on('dragstart', (e) => e.originalEvent && pauseFollow());
+          // Crédits repliés dès le départ (le « i » les rouvre)
+          m.once('load', () => setTimeout(() => { const a = document.querySelector('.maplibregl-ctrl-attrib'); a?.classList.remove('maplibregl-compact-show'); a?.removeAttribute('open'); }, 1500));
           bindEvents(m);
         } else {
           AppState.map3d.resize();
@@ -7219,6 +7279,71 @@ ${trkpts}
     }
 
     // -------------------------------------------------------------------------
+    // MENU « ⋯ » : chaque sujet a sa ligne ; le grand panneau n'affiche que le sujet choisi
+    // -------------------------------------------------------------------------
+    const Menu = (() => {
+      const I = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      // kids = cartes de l'onglet à montrer (les autres sont masquées)
+      const ITEMS = [
+        { id: 'route', label: 'Itinéraire', sub: 'départ, arrivée, étapes, feuille de route', icon: '<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/>', tab: 'route' },
+        { id: 'tour', label: 'Balade visite', sub: 'une boucle par des lieux à voir', icon: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', tab: 'places', kids: [1] },
+        { id: 'around', label: 'Lieux et points d’eau', sub: 'la liste de ce qu’il y a autour', icon: '<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', tab: 'places', kids: [0] },
+        { id: 'train', label: 'Rentrer en train', sub: 'les gares les plus proches', icon: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>', tab: 'places', kids: [2] },
+        { id: 'mine', label: 'Mes lieux', sub: 'mes adresses, synchronisation', icon: '<path d="M12 3l2.7 5.8 6.3.6-4.8 4.200 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.400l6.3-.6z"/>', tab: 'places', kids: [3] },
+        { id: 'rides', label: 'Mes sorties', sub: 'statistiques, enregistrer une sortie', icon: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', tab: 'gpx', kids: [1, 2] },
+        { id: 'gpx', label: 'Traces GPX', sub: 'importer ou exporter un parcours', icon: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', tab: 'gpx', kids: [0] },
+        { id: 'offline', label: 'Cartes hors ligne', sub: 'télécharger une zone', icon: '<path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3z"/><path d="M9 4v13M15 7v13"/>', run: () => document.getElementById('btn-offline-modal').click() },
+        { id: 'photos', label: 'Mes photos', sub: 'prises pendant les sorties', icon: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', run: () => document.getElementById('btn-dp-photos').click() },
+      ];
+      const el = () => document.getElementById('menu-sheet');
+      function open() {
+        if (AppState.poiCatFilter) closeHomeResults();
+        closePoiSheet();
+        Profile.close();
+        el().innerHTML =
+          `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 6px 4px"><span style="font-size:17px;font-weight:800">Menu</span><button data-mnclose aria-label="Fermer" class="w-10 h-10 rounded-full bg-slate-200/70 text-slate-700 text-base font-bold">✕</button></div>` +
+          ITEMS.map((it) => `<button class="mn-row" data-mn="${it.id}"><span class="mn-ico">${I(it.icon)}</span><span style="min-width:0"><b>${it.label}</b><small class="truncate">${it.sub}</small></span><i>›</i></button>`).join('');
+        el().classList.remove('hidden');
+        document.body.classList.add('menu-open');
+        pushBackStep();
+        el().querySelector('[data-mnclose]').addEventListener('click', close);
+        el().querySelectorAll('[data-mn]').forEach((b) => b.addEventListener('click', () => go(b.dataset.mn)));
+      }
+      function close() {
+        el().classList.add('hidden');
+        document.body.classList.remove('menu-open');
+      }
+      function clearFocus() {
+        document.body.classList.remove('focus-mode');
+        document.querySelectorAll('.focus-hide').forEach((c) => c.classList.remove('focus-hide'));
+      }
+      function go(id) {
+        const it = ITEMS.find((x) => x.id === id);
+        close();
+        if (!it) return;
+        if (it.run) return it.run();
+        clearFocus();
+        switchSidebarTab(it.tab);
+        const sec = document.getElementById(`tab-${it.tab}`);
+        if (it.kids) [...sec.children].forEach((c, i) => c.classList.toggle('focus-hide', !it.kids.includes(i)));
+        document.getElementById('sheet-title').textContent = it.label;
+        document.body.classList.add('focus-mode');
+        expandMobileSheetIfCollapsed();
+        sec.parentElement.scrollTop = 0;
+      }
+      function init() {
+        document.getElementById('btn-sheet-menu').addEventListener('click', () => {
+          collapseMobileSheet();
+          setTimeout(open, 60);
+        });
+        // Dès que le grand panneau se referme, tout redevient visible
+        const drawer = document.getElementById('side-drawer');
+        new MutationObserver(() => !drawer.classList.contains('sheet-expanded') && clearFocus()).observe(drawer, { attributes: true, attributeFilter: ['class'] });
+      }
+      return { open, close, go, init };
+    })();
+
+    // -------------------------------------------------------------------------
     // PROFIL DU TRAJET : on touche le tracé (ou le bouton « profil ») → dénivelé, côtes, pistes
     // -------------------------------------------------------------------------
     const Profile = (() => {
@@ -7399,10 +7524,10 @@ ${trkpts}
         const cnt = (t) => rides.filter((r) => r.startedAt >= t).length;
         const km = (v) => (v < 10 ? v.toFixed(1) : Math.round(v)).toString().replace('.', ',') + ' km';
         document.getElementById('stats-grid').innerHTML = [
-          [km(sum(wk)), `cette semaine · ${cnt(wk)}`],
-          [km(sum(mo)), `ce mois · ${cnt(mo)}`],
-          [km(sum(yr)), `en ${now.getFullYear()} · ${cnt(yr)}`],
-        ].map(([v, l]) => `<div class="st-cell"><b>${v}</b><span>${l} sortie${l.endsWith(' 1') || l.endsWith(' 0') ? '' : 's'}</span></div>`).join('');
+          [km(sum(wk)), 'cette semaine', cnt(wk)],
+          [km(sum(mo)), 'ce mois', cnt(mo)],
+          [km(sum(yr)), `en ${now.getFullYear()}`, cnt(yr)],
+        ].map(([v, l, n]) => `<div class="st-cell"><b>${v}</b><span style="display:block">${l}</span><span style="display:block;font-weight:600">${n} sortie${n > 1 ? 's' : ''}</span></div>`).join('');
         const goal = +localStorage.getItem(K_GOAL) || 200;
         const m = sum(mo);
         document.getElementById('stats-goal-label').textContent = `Objectif du mois : ${km(m)} / ${goal} km`;
@@ -7806,7 +7931,22 @@ ${trkpts}
           if ((await OfflineDB.putPhoto(ph)) === null) throw new Error('stockage');
           list.push(ph);
           renderPins();
-          showToast('Photo gardée dans l’appli, épinglée sur la carte.', 'success', 2500);
+          let inGallery = false;
+          if (IS_NATIVE && window.Capacitor?.nativePromise) {
+            try {
+              const dataUrl = await new Promise((res, rej) => {
+                const fr = new FileReader();
+                fr.onload = () => res(fr.result);
+                fr.onerror = rej;
+                fr.readAsDataURL(file.type && file.type.startsWith('image/') ? file : blob);
+              });
+              await window.Capacitor.nativePromise('Media', 'savePhoto', { path: dataUrl });
+              inGallery = true;
+            } catch {
+              /* refus d'accès aux photos : elle reste dans l'appli */
+            }
+          }
+          showToast(inGallery ? 'Photo enregistrée dans la galerie et épinglée sur la carte.' : 'Photo gardée dans l’appli, épinglée sur la carte.', 'success', 2500);
         } catch {
           showToast('Photo non enregistrée (mémoire du téléphone ?).', 'warning', 4000);
         }
@@ -7913,7 +8053,7 @@ ${trkpts}
     let leafletBikeRoutes = null;
     function updateLeafletBikeRoutes() {
       const lm = AppState.map;
-      if (!leafletBikeRoutes) leafletBikeRoutes = L.tileLayer('https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png', { maxZoom: 18, opacity: 0.85, attribution: 'Itinéraires © Waymarked Trails' });
+      if (!leafletBikeRoutes) leafletBikeRoutes = L.tileLayer('https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png', { maxZoom: 18, detectRetina: true, opacity: 0.85, attribution: 'Itinéraires © Waymarked Trails' });
       const want = AppState.showBikeRoutes && !AppState.glOn && !isOfflineMode();
       if (want && !lm.hasLayer(leafletBikeRoutes)) leafletBikeRoutes.addTo(lm);
       if (!want && lm.hasLayer(leafletBikeRoutes)) lm.removeLayer(leafletBikeRoutes);
@@ -8413,10 +8553,7 @@ ${trkpts}
         b.addEventListener('click', () => (AppState.poiCatFilter === b.dataset.sc ? closeHomeResults() : showCategoryNearby(b.dataset.sc)))
       );
       document.getElementById('btn-edit-shortcuts').addEventListener('click', openShortcutsModal);
-      document.getElementById('btn-sheet-more').addEventListener('click', () => {
-        if (AppState.poiCatFilter) closeHomeResults();
-        expandMobileSheetIfCollapsed();
-      });
+      document.getElementById('btn-sheet-more').addEventListener('click', () => Menu.open());
     }
 
     function openShortcutsModal() {
@@ -9142,11 +9279,7 @@ ${trkpts}
         if (rec) return;
         rec = { id: newId(), startedAt: Date.now(), pts: [], dist: 0, auto };
         if (!auto && 'geolocation' in navigator) {
-          ownWatch = navigator.geolocation.watchPosition(
-            (p) => updateUserGPSMarker(p.coords.latitude, p.coords.longitude, p.coords.accuracy),
-            () => {},
-            geoWatchOptions()
-          );
+          ownWatch = geoWatch((p) => updateUserGPSMarker(p.coords.latitude, p.coords.longitude, p.coords.accuracy), () => {});
           requestWakeLock();
         }
         updateButton();
@@ -9168,7 +9301,7 @@ ${trkpts}
       function stop() {
         if (!rec) return;
         if (ownWatch !== null) {
-          navigator.geolocation.clearWatch(ownWatch);
+          geoClear(ownWatch);
           ownWatch = null;
           if (!AppState.isGuiding) releaseWakeLock();
         }
@@ -9361,6 +9494,7 @@ ${trkpts}
       Live.init();
       Share.init();
       Stats.init();
+      Menu.init();
       if (!new URLSearchParams(location.search).get('suivi')) {
         Share.handleIncoming().then((got) => {
           if (!got) Trip.restore();
