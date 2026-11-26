@@ -189,7 +189,6 @@
       #side-drawer.sheet-expanded #home-route,
       #side-drawer.sheet-expanded #home-idle, #side-drawer.sheet-half #home-chips,
       #side-drawer.sheet-half #home-route, #side-drawer.sheet-half #home-idle { display: none !important; }
-      #side-drawer.sheet-expanded #btn-sheet-close { display: flex !important; }
       /* Accueil = pilule flottante : icônes des raccourcis, résultats ou trajet. Rien d'autre. */
       #side-drawer.sheet-collapsed, #side-drawer.sheet-mini {
         transform: none; left: 10px; right: 10px; width: auto; top: auto;
@@ -354,16 +353,90 @@
     body.bw-mode #menu-sheet { border: 3px solid #000; } body.bw-mode .mn-ico { background: #fff; border: 2px solid #000; color: #000; }
     body.noir-mode #menu-sheet { filter: invert(1); }
     body.guiding #menu-sheet { display: none !important; }
+    /* Pages du grand panneau : gros texte, un bouton principal, le secondaire replié */
+    .pp-in { height: 48px; border-radius: 14px; padding: 0 14px; font-size: 16px; font-weight: 600; }
+    .pp-ib { width: 48px; height: 48px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center; }
+    .pp-main { width: 100%; height: 54px; border-radius: 18px; font-size: 17px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .pp-main:disabled { opacity: .75; }
+    .pp-choice { height: 76px; flex-direction: column; gap: 0; }
+    .pp-choice b { font-size: 20px; font-weight: 800; line-height: 1.15; }
+    .pp-choice span { font-size: 12.5px; font-weight: 700; opacity: .75; }
+    .pp-fold > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; padding: 8px 14px; font-size: 15.5px; font-weight: 800; color: #0f172a; cursor: pointer; }
+    .pp-fold > summary::-webkit-details-marker { display: none; }
+    .pp-fold > summary::after { content: '›'; font-size: 18px; font-weight: 800; color: #94a3b8; transition: transform .15s; }
+    .pp-fold[open] > summary::after { transform: rotate(90deg); }
+    .pp-fold > summary small { display: block; font-size: 12.5px; font-weight: 600; }
+    .pp-fold > summary + * { padding: 0 14px 14px; }
+    .pp-link { height: auto !important; min-height: 58px; padding-top: 8px !important; padding-bottom: 8px !important; font-size: 15.5px !important; text-align: left; }
+    .pp-link small { display: block; font-size: 12.5px; font-weight: 600; color: #64748b; }
+    .pp-link i { font-style: normal; font-weight: 800; color: #94a3b8; }
+    .pp .dp-row { font-size: 15.5px; } .pp .dp-row small { font-size: 12.5px; }
+    .pp .dp-adv summary { font-size: 15.5px; min-height: 58px; }
+    .pp .dp-adv summary > span:last-child { font-weight: 800; color: #94a3b8; }
+    /* Boutons des listes : assez grands pour le doigt */
+    .pp #rides-list button, .pp #my-places-list button, .pp #vias-list button, .pp #poi-list button, .pp #water-list button, .pp #route-visits-list button { min-height: 40px; min-width: 40px; padding-left: 12px; padding-right: 12px; }
+    .pp .fav-row { font-size: 15.5px; padding: 12px 14px; min-height: 58px; }
+    .pp .fav-row + .fav-row { border-top: 1px solid rgba(148,163,184,.3); }
+    .pp .fav-row small { font-size: 12.5px; }
+    /* Listes générées (étapes, lieux, sorties) : même taille de lecture que le reste */
+    .pp .text-\[10px\] { font-size: 12px; } .pp .text-\[11px\] { font-size: 13px; } .pp .text-xs { font-size: 14px; }
+    body.night-mode .pp-fold > summary { color: #e6edf3; } body.night-mode .pp-link small { color: #9aa6b2; }
     @media (max-width: 767px) {
-      body.menu-open #side-drawer.sheet-collapsed, body.menu-open #side-drawer.sheet-mini { display: none; }
-      body.focus-mode #sheet-tabs { display: none; }
-      body.focus-mode #sheet-title { display: flex; }
-      body.focus-mode #btn-sheet-menu { display: block; }
-      body.focus-mode .focus-hide { display: none !important; }
-      /* Un seul sujet à l'écran : plus de cadres colorés, le contenu occupe la page */
-      body.focus-mode #tab-places > div, body.focus-mode #tab-gpx > div { background: transparent !important; border: 0 !important; box-shadow: none !important; padding-left: 0 !important; padding-right: 0 !important; }
-      body.focus-mode #tab-gpx > div + div { border-top: 1px solid rgba(148,163,184,.35) !important; border-radius: 0 !important; padding-top: 16px !important; }
+      body.menu-open #side-drawer.sheet-collapsed, body.menu-open #side-drawer.sheet-mini,
+      body.back-open #side-drawer.sheet-collapsed, body.back-open #side-drawer.sheet-mini { display: none; }
+      /* Une page ouverte : ‹ retour au menu, le titre, ✕ retour à la carte */
+      #sheet-tabs { display: none !important; }
+      #side-drawer.sheet-expanded #btn-sheet-menu, #side-drawer.sheet-expanded #btn-sheet-close, #side-drawer.sheet-expanded #sheet-title { display: flex !important; }
+      /* Le panneau prend la hauteur de sa page : la carte reste visible au-dessus des pages courtes */
+      #side-drawer.sheet-expanded { height: auto; }
+      #side-drawer.sheet-expanded > .overflow-y-auto { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
     }
+    .mn-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 8px; }
+    .mn-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 94px; border-radius: 18px; background: #f1f5f9; color: #0f172a; font-size: 14.5px; font-weight: 800; }
+    .mn-tile.main { background: #059669; color: #fff; }
+    .mn-tile:active { transform: scale(.97); }
+    body.night-mode .mn-tile { background: #161b22; color: #e6edf3; } body.night-mode .mn-tile.main { background: #0f2a20; color: #34d399; }
+    body.bw-mode .mn-tile { background: #fff; border: 2px solid #000; color: #000; } body.bw-mode .mn-tile.main { background: #000; color: #fff; }
+    /* Fiche « Rentrer » */
+    #back-sheet { position: fixed; z-index: 46; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); border-radius: 22px; background: #fff; color: #0f172a; padding: 12px 12px 10px; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; max-height: 78vh; overflow-y: auto; }
+    @media (min-width: 768px) { #back-sheet { left: 432px; right: auto; width: 440px; bottom: 16px; } }
+    body.guiding #back-sheet { bottom: calc(104px + env(safe-area-inset-bottom)); max-height: 60vh; }
+    body.guiding.back-open #hud-side, body.guiding.back-open #hud-nearby.pos-bas { display: none !important; }
+    .bk-head { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 4px; font-size: 17px; font-weight: 800; }
+    .bk-head button { width: 40px; height: 40px; border-radius: 50%; background: rgba(226,232,240,.7); color: #334155; font-weight: 800; }
+    .bk-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 9px 8px; border-radius: 14px; text-align: left; }
+    .bk-row:active { background: rgba(226,232,240,.7); }
+    .bk-row i { margin-left: auto; font-style: normal; font-weight: 800; color: #94a3b8; }
+    .bk-ico { width: 40px; height: 40px; border-radius: 12px; background: #f1f5f9; color: #0f172a; display: flex; align-items: center; justify-content: center; flex: none; }
+    .bk-txt { flex: 1; min-width: 0; }
+    .bk-txt b { display: block; font-size: 15.5px; font-weight: 800; line-height: 1.25; }
+    .bk-txt small { display: block; font-size: 12.5px; font-weight: 600; color: #64748b; }
+    .bk-title { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #64748b; padding: 10px 8px 4px; }
+    .bk-st { padding: 8px; border-radius: 14px; }
+    .bk-st + .bk-st { border-top: 1px solid rgba(148,163,184,.3); border-radius: 0; }
+    .bk-st-head { display: flex; align-items: center; gap: 12px; }
+    .bk-go { flex: none; height: 44px; padding: 0 16px; border-radius: 14px; background: #059669; color: #fff; font-size: 14.5px; font-weight: 800; }
+    .bk-time { font-size: 20px !important; font-variant-numeric: tabular-nums; }
+    .bk-time em, .bk-dep em { font-style: normal; font-size: 12px; font-weight: 800; color: #b45309; margin-left: 8px; }
+    .bk-leave { margin-top: 6px; font-size: 14.5px; font-weight: 800; color: #047857; }
+    .bk-leave span { font-weight: 700; opacity: .8; }
+    .bk-sub { font-size: 12.5px; font-weight: 600; color: #64748b; margin-top: 2px; }
+    .bk-dep { display: flex; align-items: baseline; gap: 10px; padding: 5px 0 0 52px; font-size: 14px; font-weight: 600; }
+    .bk-dep b { font-size: 15.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .bk-dep .bk-dir { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+    .bk-dep.off { opacity: .4; }
+    .bk-note { padding: 8px; font-size: 13px; font-weight: 600; color: #64748b; }
+    .bk-inl { font-weight: 800; color: #0369a1; text-decoration: underline; }
+    .bk-links { display: flex; flex-direction: column; gap: 6px; padding: 6px 4px 2px; }
+    .bk-link { display: flex; align-items: center; justify-content: center; height: 44px; border-radius: 14px; background: #f1f5f9; color: #0f172a; font-size: 14px; font-weight: 800; }
+    body.night-mode #back-sheet { background: #0d1117; color: #e6edf3; }
+    body.night-mode .bk-ico, body.night-mode .bk-link, body.night-mode .bk-head button { background: #161b22; color: #e6edf3; }
+    body.night-mode .bk-leave { color: #34d399; } body.night-mode .bk-inl { color: #7dd3fc; }
+    body.bw-mode #back-sheet { border: 3px solid #000; }
+    body.bw-mode .bk-ico, body.bw-mode .bk-link, body.bw-mode .bk-head button { background: #fff; border: 2px solid #000; color: #000; }
+    body.bw-mode .bk-go { background: #000; } body.bw-mode .bk-leave, body.bw-mode .bk-inl, body.bw-mode .bk-time em, body.bw-mode .bk-dep em { color: #000; }
+    body.bw-mode .bk-txt small, body.bw-mode .bk-sub, body.bw-mode .bk-note, body.bw-mode .bk-title { color: #3f3f3f; }
+    body.noir-mode #back-sheet { filter: invert(1); }
     #profile-sheet { position: fixed; z-index: 46; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); border-radius: 22px; background: #fff; color: #0f172a; padding: 14px 16px; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; }
     @media (min-width: 768px) { #profile-sheet { left: 432px; right: auto; width: 460px; bottom: 16px; } }
     body.poi-open #profile-sheet, body.guiding #profile-sheet { display: none !important; }
@@ -948,453 +1021,314 @@
 
       <div id="home-idle" class="grid grid-cols-2 gap-2">
         <button id="btn-home-tour" class="h-12 rounded-2xl bg-emerald-600 text-white text-sm font-extrabold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>Balade visite</button>
-        <button id="btn-home-places" class="h-12 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/></svg>Mes lieux</button>
+        <button id="btn-home-back" class="h-12 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-bold flex items-center justify-center gap-2"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></svg>Rentrer</button>
       </div>
 
-      <div id="sheet-tabs-row" class="flex gap-2 items-stretch">
-      <button id="btn-sheet-close" aria-label="Revenir à la carte" class="hidden shrink-0 px-3 rounded-xl bg-slate-900 text-white text-xs font-extrabold items-center gap-1">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>Carte
+      <div id="sheet-tabs-row" class="flex gap-2 items-center">
+      <button id="btn-sheet-menu" aria-label="Retour au menu" class="hidden shrink-0 w-11 h-11 rounded-full bg-slate-200/70 text-slate-800 items-center justify-center">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
-      <div id="sheet-title" class="hidden flex-1 min-w-0 items-center text-base font-extrabold text-slate-900 truncate"></div>
-      <button id="btn-sheet-menu" aria-label="Retour au menu" class="hidden shrink-0 px-3 rounded-xl bg-slate-200/70 text-slate-800 text-xs font-extrabold">Menu</button>
-      <div id="sheet-tabs" class="flex-1 grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
-        <button data-tab="route" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Trajet</button>
-        <button data-tab="places" class="tab-btn py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">Lieux</button>
-        <button data-tab="gpx" class="tab-btn py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">Plus</button>
+      <div id="sheet-title" class="hidden flex-1 min-w-0 items-center text-xl font-extrabold text-slate-900 truncate">Itinéraire</div>
+      <button id="btn-sheet-close" aria-label="Revenir à la carte" class="hidden shrink-0 w-11 h-11 rounded-full bg-slate-200/70 text-slate-800 text-lg font-bold items-center justify-center">✕</button>
+      <div id="sheet-tabs" class="flex-1 grid grid-cols-5 gap-1 p-1 rounded-xl bg-slate-200/60 text-xs font-semibold">
+        <button data-tab="route" class="tab-btn py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">Itinéraire</button>
+        <button data-tab="tour" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Balade</button>
+        <button data-tab="places" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Lieux</button>
+        <button data-tab="rides" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Sorties</button>
+        <button data-tab="settings" class="tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Réglages</button>
       </div>
       </div>
     </div>
 
-    <!-- Contenu défilant des onglets -->
+    <!-- Pages du grand panneau : une page = un sujet, ouverte depuis le menu -->
     <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4">
 
-
-      <!-- ONGLET 2 : ITINÉRAIRE VÉLO & GUIDAGE -->
-      <section id="tab-route" class="hidden space-y-4">
-        <!-- Formulaire Départ / Arrivée -->
-        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3 space-y-2.5 shadow-sm">
-          <!-- Départ -->
-          <div class="relative flex items-center gap-2">
+      <!-- PAGE ITINÉRAIRE -->
+      <section id="tab-route" class="pp space-y-4">
+        <div class="rounded-2xl bg-white border border-slate-200 p-3 space-y-2 shadow-sm">
+          <div class="relative flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0"></span>
-            <input
-              id="input-origin"
-              type="text"
-              placeholder="Point de départ (ou clic carte)"
-              class="w-full text-xs bg-slate-100/80 focus:bg-white border border-transparent focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-800 focus:outline-none transition"
-              autocomplete="off"
-            />
-            <button id="btn-origin-gps" title="Utiliser ma position GPS" class="p-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-emerald-600 shrink-0 transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
-              </svg>
+            <input id="input-origin" type="text" placeholder="Départ" class="pp-in w-full bg-slate-100/80 focus:bg-white border border-transparent focus:border-emerald-500 text-slate-800 focus:outline-none transition" autocomplete="off" />
+            <button id="btn-origin-gps" aria-label="Partir de ma position" class="pp-ib bg-slate-100 text-emerald-600">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
             </button>
           </div>
-          <div id="origin-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-40 overflow-y-auto text-xs z-30"></div>
+          <div id="origin-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-48 overflow-y-auto text-sm z-30"></div>
 
-          <!-- Bouton inversion & indication clic carte -->
-          <div class="flex items-center justify-between pl-5 pr-1">
-            <span class="text-[11px] text-slate-400">Astuce : appui long sur la carte pour placer un point</span>
-            <button id="btn-swap-points" title="Inverser départ et arrivée" class="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-500 transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="17 1 21 5 17 9"></polyline>
-                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                <polyline points="7 23 3 19 7 15"></polyline>
-                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Arrivée -->
-          <div class="relative flex items-center gap-2">
+          <div class="relative flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-rose-500 ring-4 ring-rose-500/20 shrink-0"></span>
-            <input
-              id="input-dest"
-              type="text"
-              placeholder="Destination (gare, village, fontaine...)"
-              class="w-full text-xs bg-slate-100/80 focus:bg-white border border-transparent focus:border-emerald-500 rounded-xl px-3 py-2 text-slate-800 focus:outline-none transition"
-              autocomplete="off"
-            />
-            <button id="btn-clear-route" title="Effacer l'itinéraire" class="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 shrink-0 transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+            <input id="input-dest" type="text" placeholder="Arrivée" class="pp-in w-full bg-slate-100/80 focus:bg-white border border-transparent focus:border-emerald-500 text-slate-800 focus:outline-none transition" autocomplete="off" />
+            <button id="btn-swap-points" aria-label="Inverser départ et arrivée" class="pp-ib bg-slate-100 text-slate-600">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg>
             </button>
           </div>
-          <div id="dest-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-40 overflow-y-auto text-xs z-30"></div>
-        </div>
+          <div id="dest-suggestions" class="hidden rounded-xl bg-white shadow-lg border border-slate-200/80 divide-y divide-slate-100 max-h-48 overflow-y-auto text-sm z-30"></div>
 
-        <!-- Étapes intermédiaires (lieux à visiter ajoutés au trajet) -->
-        <div id="vias-box" class="hidden rounded-2xl bg-white/75 border border-slate-200/80 p-3 space-y-1.5">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Étapes</div>
-          <div id="vias-list" class="space-y-1"></div>
-        </div>
+          <div id="vias-box" class="hidden pt-1 space-y-1.5">
+            <div class="dp-title">Étapes</div>
+            <div id="vias-list" class="space-y-1"></div>
+          </div>
 
-        <!-- Sélecteur de profil vélo BRouter -->
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Profil cycliste (BRouter)</label>
-          <div class="grid grid-cols-3 gap-1.5">
-            <button data-profile="trekking" class="profile-btn p-2 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-emerald-800 text-center transition">
-              <div class="text-xs font-bold">Balade</div>
-              <div class="text-[10px] text-emerald-700/80">Pistes & calme</div>
-            </button>
-            <button data-profile="fastbike" class="profile-btn p-2 rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white text-center transition">
-              <div class="text-xs font-bold">Route</div>
-              <div class="text-[10px] text-slate-500">Rapide asphalte</div>
-            </button>
-            <button data-profile="mtb" class="profile-btn p-2 rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white text-center transition">
-              <div class="text-xs font-bold">VTT</div>
-              <div class="text-[10px] text-slate-500">Chemins & forêt</div>
-            </button>
+          <div class="flex gap-2 pt-1">
+            <button id="btn-pick-via" class="flex-1 h-11 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">+ Étape sur la carte</button>
+            <button id="btn-clear-route" aria-label="Effacer l'itinéraire" class="h-11 px-4 rounded-xl bg-slate-100 text-slate-600 text-sm font-bold">Effacer</button>
           </div>
         </div>
 
-        <!-- Préférences de trajet -->
-        <div class="flex items-center justify-between gap-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2.5">
-          <div>
-            <div class="text-xs font-bold text-slate-900">Pistes cyclables d'abord</div>
-            <div class="text-[11px] text-slate-600">Évite les routes passantes, quitte à rallonger</div>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input id="toggle-prefer-cycleways" type="checkbox" class="sr-only peer" checked />
-            <div class="w-10 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-          </label>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button data-profile="trekking" class="profile-btn seg on">Balade</button>
+          <button data-profile="fastbike" class="profile-btn seg">Route</button>
+          <button data-profile="mtb" class="profile-btn seg">VTT</button>
         </div>
-        <button id="btn-pick-via" class="w-full py-2 rounded-xl bg-white/80 border border-amber-300 text-amber-800 text-xs font-bold">+ Ajouter une étape (touchez la carte)</button>
 
-        <!-- Bouton Calculer l'itinéraire -->
-        <button id="btn-calculate-route" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-          <span>Calculer l'itinéraire vélo</span>
-        </button>
+        <button id="btn-calculate-route" class="pp-main bg-emerald-600 hover:bg-emerald-700 text-white"><span>Calculer l'itinéraire</span></button>
 
-        <!-- Trajets proposés -->
         <div id="route-alternatives-box" class="hidden space-y-2">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Trajets proposés</h3>
-            <span class="text-[11px] text-slate-400">Touchez pour choisir</span>
-          </div>
-          <div id="route-alternatives" class="space-y-2"></div>
+          <div class="dp-title">Trajets proposés</div>
+          <div id="route-alternatives" class="flex gap-2"></div>
         </div>
 
-        <!-- Résultat de l'itinéraire : Stats, Profil SVG, Guidage, Instructions -->
-        <div id="route-summary-card" class="hidden space-y-3.5">
-          <!-- Chiffres clés -->
-          <div class="rounded-2xl bg-slate-900 text-white p-3.5 shadow-md">
-            <div class="flex items-center justify-between mb-2">
-              <span id="route-engine-badge" class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">BRouter Vélo</span>
-              <button id="btn-export-gpx-inline" class="text-[11px] text-sky-300 hover:text-sky-200 font-semibold flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                <span>Exporter GPX</span>
-              </button>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center py-1">
+        <!-- Résultat : trois chiffres, un bouton principal, le reste replié -->
+        <div id="route-summary-card" class="hidden space-y-3">
+          <div class="rounded-2xl bg-white border border-slate-200 p-4 space-y-3 shadow-sm">
+            <div class="grid grid-cols-3 gap-2 text-center">
               <div>
-                <div id="stat-distance" class="text-lg font-bold text-white">-- km</div>
-                <div class="text-[10px] text-slate-400 uppercase">Distance</div>
-              </div>
-              <div class="border-x border-white/10">
-                <div id="stat-duration" class="text-lg font-bold text-emerald-400">-- min</div>
-                <div class="text-[10px] text-slate-400 uppercase">Durée vélo</div>
+                <div id="stat-distance" class="text-2xl font-extrabold text-slate-900 leading-tight">-- km</div>
+                <div class="text-xs font-bold text-slate-500">distance</div>
               </div>
               <div>
-                <div id="stat-elevation" class="text-sm font-bold text-sky-300 mt-1">+0 / -0 m</div>
-                <div class="text-[10px] text-slate-400 uppercase">Dénivelé</div>
+                <div id="stat-duration" class="text-2xl font-extrabold text-slate-900 leading-tight">-- min</div>
+                <div class="text-xs font-bold text-slate-500">durée</div>
+              </div>
+              <div>
+                <div id="stat-elevation" class="text-base font-extrabold text-slate-900 leading-tight pt-1.5">+0 / -0 m</div>
+                <div class="text-xs font-bold text-slate-500">dénivelé</div>
               </div>
             </div>
-
-            <p id="route-weather" class="hidden mt-2 text-[11px] text-slate-300 leading-relaxed"></p>
-            <div id="route-weather-advice" class="hidden mt-2"></div>
-            <!-- Bouton Démarrer le guidage GPS -->
-            <button id="btn-start-guidance" class="mt-3 w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition shadow">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              <span>Démarrer le guidage GPS</span>
+            <p id="route-weather" class="hidden text-[13px] font-semibold text-slate-600 leading-relaxed"></p>
+            <div id="route-weather-advice" class="hidden"></div>
+            <button id="btn-start-guidance" class="pp-main bg-emerald-600 hover:bg-emerald-700 text-white">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+              <span>Démarrer</span>
             </button>
-          </div>
-
-          <!-- Profil altimétrique SVG interactif -->
-          <div class="rounded-2xl bg-white/80 border border-slate-200/80 p-3">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-slate-800">Profil altimétrique</span>
-              <span id="ele-hover-info" class="text-[11px] font-mono text-emerald-700 font-semibold">Survolez la courbe</span>
-            </div>
-            <div id="elevation-chart-container" class="w-full h-28 relative select-none cursor-crosshair">
-              <!-- SVG injecté dynamiquement -->
+            <div class="grid grid-cols-3 gap-2">
+              <button id="btn-page-profile" class="h-11 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Profil</button>
+              <button id="btn-page-share" class="h-11 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Partager</button>
+              <button id="btn-export-gpx-inline" class="h-11 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">GPX</button>
             </div>
           </div>
 
-          <!-- Liste des instructions virage par virage -->
-          <div class="rounded-2xl bg-white/80 border border-slate-200/80 p-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Feuille de route (<span id="steps-count">0</span> étapes)</h3>
-            <div id="route-steps-list" class="space-y-2 max-h-60 overflow-y-auto custom-scroll pr-1"></div>
-          </div>
+          <details class="pp-fold rounded-2xl bg-white border border-slate-200">
+            <summary><span>Feuille de route<small class="text-slate-500"><span id="steps-count">0</span> étapes</small></span></summary>
+            <div><div id="route-steps-list" class="space-y-1"></div></div>
+          </details>
 
-          <!-- À visiter le long du trajet -->
-          <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <h3 class="text-sm font-bold text-slate-900">À visiter sur le trajet</h3>
-                <p class="text-[11px] text-slate-600">Châteaux, points de vue, musées… à moins de 500 m</p>
-              </div>
-              <button id="btn-route-visits" class="shrink-0 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Chercher</button>
-            </div>
-            <div id="route-visits-list" class="space-y-1.5"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ONGLET LIEUX : points d'intérêt, lieux à visiter, mes lieux synchronisés -->
-      <section id="tab-places" class="space-y-4">
-        <!-- Lieux autour : 4 groupes -->
-        <div class="space-y-3">
-          <div id="place-groups" class="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-slate-200/60">
-            <button data-pg="visit" class="pg-btn on">À voir</button>
-            <button data-pg="eat" class="pg-btn">Manger</button>
-            <button data-pg="service" class="pg-btn">Services</button>
-            <button data-pg="water" class="pg-btn">Eau</button>
-          </div>
-
-          <div id="pg-poi" class="space-y-2.5">
-            <div class="flex items-center justify-between gap-2">
-              <p id="poi-status-text" class="text-[11px] text-slate-500">Choisissez ce que vous voulez voir</p>
-              <div class="flex items-center gap-1.5 shrink-0">
-                <button id="btn-hide-group" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold">Masquer</button>
-                <button id="btn-refresh-poi" aria-label="Actualiser" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                </button>
-              </div>
-            </div>
-            <div id="poi-chips-group" class="flex flex-wrap gap-1.5"></div>
-            <div class="flex items-center justify-between gap-2">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Autour (<span id="poi-count">0</span>)</div>
-              <button id="btn-clear-filter" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-bold">✕ Toutes les catégories</button>
-            </div>
-            <div id="poi-list" class="space-y-2">
-              <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
-            </div>
-          </div>
-
-          <div id="pg-water" class="hidden space-y-3">
-        <!-- Carte résumé points d'eau -->
-        <div class="rounded-2xl bg-sky-500/10 border border-sky-500/20 p-3.5">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <span class="w-7 h-7 rounded-lg bg-sky-500 text-white flex items-center justify-center">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                </svg>
-              </span>
-              <div>
-                <h2 class="text-sm font-bold text-slate-900">Points d'eau potable</h2>
-                <p id="water-status-text" class="text-[11px] text-slate-600">Chargement autour de la carte...</p>
-              </div>
-            </div>
-            <button id="btn-refresh-water" title="Actualiser les points d'eau" class="p-2 rounded-xl bg-white/80 hover:bg-white text-sky-600 shadow-sm transition">
-              <svg id="icon-refresh-water" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-            </button>
-          </div>
-
-          <button id="btn-route-nearest-water-panel" class="w-full py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-            </svg>
-            <span>Aller au point d'eau le plus proche</span>
-          </button>
-        </div>
-
-        <!-- Liste des points d'eau à proximité -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">À proximité (<span id="water-count">0</span>)</h3>
-            <span class="text-[11px] text-slate-400">Données OpenStreetMap</span>
-          </div>
-          <div id="water-list" class="space-y-2">
-            <div class="text-xs text-slate-500 text-center py-6 bg-white/50 rounded-2xl">
-              Déplacez la carte pour afficher les fontaines et robinets publics.
-            </div>
-          </div>
-        </div>
-
-          </div>
-        </div>
-
-        <!-- Balade visite : boucle passant par des lieux à voir -->
-        <div class="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3.5 space-y-2.5">
-          <div>
-            <h2 class="text-sm font-bold text-slate-900">Balade visite</h2>
-            <p class="text-[11px] text-slate-600">Une boucle depuis votre position par des lieux à voir.</p>
-          </div>
-          <div class="flex gap-1.5 flex-wrap">
-            <button data-tour="15" class="tour-len chip">1 h · 15 km</button>
-            <button data-tour="30" class="tour-len chip on">2 h · 30 km</button>
-            <button data-tour="45" class="tour-len chip">3 h · 45 km</button>
-          </div>
-          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-            <input id="tour-pause" type="checkbox" class="w-4 h-4 accent-amber-500" checked />
-            Pause boulangerie ou café à mi-parcours
-          </label>
-          <button id="btn-make-tour" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition">Créer la balade</button>
-        </div>
-
-        <!-- Rentrer en train -->
-        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900">Rentrer en train</h2>
-              <p class="text-[11px] text-slate-500">Les gares les plus proches de vous</p>
-            </div>
-            <button id="btn-find-stations" class="shrink-0 px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Chercher</button>
-          </div>
-          <div id="stations-list" class="space-y-1.5"></div>
-        </div>
-
-        <!-- Mes lieux -->
-        <div class="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-3.5 space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900">Mes lieux</h2>
-              <p id="cloud-status-text" class="text-[11px] text-slate-600">Enregistrés sur cet appareil</p>
-            </div>
-            <button id="btn-cloud-sync" title="Synchroniser maintenant" class="p-2 rounded-xl bg-white/80 hover:bg-white text-rose-600 shadow-sm transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-              </svg>
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btn-add-place-here" class="py-2 px-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition">+ Ma position</button>
-            <button id="btn-add-place-center" class="py-2 px-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold transition">+ Centre carte</button>
-          </div>
-          <p class="text-[11px] text-slate-600">Astuce : appui long sur la carte puis « Ajouter à mes lieux ».</p>
-          <div id="my-places-list" class="space-y-1.5"></div>
-
-          <!-- Réglages synchronisation cloud -->
-          <details class="rounded-xl bg-white/70 border border-rose-200/70 p-2.5">
-            <summary class="text-xs font-bold text-slate-800 cursor-pointer">Synchronisation cloud (GitHub)</summary>
-            <div class="mt-2 space-y-2 text-[11px] text-slate-600">
-              <p>Vos lieux sont copiés dans un Gist <strong>privé</strong> de votre compte GitHub et retrouvés sur tous vos appareils (téléphone, ordi…).</p>
-              <ol class="list-decimal pl-4 space-y-0.5">
-                <li>Sur github.com : Settings → Developer settings → Personal access tokens → <em>Tokens (classic)</em>.</li>
-                <li>« Generate new token », cochez uniquement <strong>gist</strong>.</li>
-                <li>Collez le jeton ci-dessous, sur chaque appareil.</li>
-              </ol>
-              <input id="input-gh-token" type="password" placeholder="ghp_…" autocomplete="off" class="w-full text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 focus:outline-none focus:border-rose-500" />
-              <div class="flex gap-2">
-                <button id="btn-save-token" class="flex-1 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold">Enregistrer & synchroniser</button>
-                <button id="btn-forget-token" class="py-2 px-3 rounded-lg bg-white border border-slate-300 text-slate-700 text-xs font-semibold">Oublier</button>
-              </div>
-              <p id="cloud-gist-info" class="font-mono text-[10px] text-slate-400"></p>
+          <details class="pp-fold rounded-2xl bg-white border border-slate-200">
+            <summary><span>À visiter sur le trajet<small class="text-slate-500">châteaux, points de vue, musées à moins de 500 m</small></span></summary>
+            <div class="space-y-2">
+              <button id="btn-route-visits" class="w-full h-11 rounded-xl bg-slate-900 text-white text-sm font-bold">Chercher</button>
+              <div id="route-visits-list" class="space-y-1.5"></div>
             </div>
           </details>
+
+          <p class="text-[11.5px] font-semibold text-slate-400 text-center">Calculé avec <span id="route-engine-badge">BRouter</span></p>
         </div>
-      </section>
 
-      <!-- ONGLET 3 : GPX & OUTILS HORS LIGNE -->
-      <section id="tab-gpx" class="hidden space-y-4">
-        <!-- Import / Export GPX -->
-        <div class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-3">
-          <div>
-            <h2 class="text-sm font-bold text-slate-900">Traces GPX</h2>
-            <p class="text-[11px] text-slate-500">Importez une trace locale ou exportez votre itinéraire calculé.</p>
-          </div>
+        <div id="saved-trips-box" class="hidden space-y-2">
+          <div class="dp-title">Mes trajets favoris</div>
+          <div id="saved-trips-list" class="rounded-2xl bg-white border border-slate-200 overflow-hidden"></div>
+        </div>
 
+        <details class="pp-fold rounded-2xl bg-white border border-slate-200">
+          <summary><span>Fichier GPX<small class="text-slate-500">suivre une trace, exporter ce trajet</small></span></summary>
           <div class="grid grid-cols-2 gap-2">
-            <label class="cursor-pointer py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <span>Importer GPX</span>
+            <label class="cursor-pointer h-12 rounded-xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-1.5">
+              <span>Importer</span>
               <input id="input-import-gpx" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml,application/octet-stream" class="hidden" />
             </label>
+            <button id="btn-export-gpx-tab" class="h-12 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Exporter</button>
+          </div>
+        </details>
 
-            <button id="btn-export-gpx-tab" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              <span>Exporter GPX</span>
+        <p class="text-[12.5px] font-semibold text-slate-500 text-center">Un appui long sur la carte place le départ, l'arrivée ou une étape.</p>
+      </section>
+
+      <!-- PAGE BALADE VISITE -->
+      <section id="tab-tour" class="pp hidden space-y-4">
+        <p class="text-[15px] font-semibold text-slate-600">Une boucle depuis votre position, par des lieux à voir.</p>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-tour="15" class="tour-len seg pp-choice"><b>1 h</b><span>15 km</span></button>
+          <button data-tour="30" class="tour-len seg pp-choice on"><b>2 h</b><span>30 km</span></button>
+          <button data-tour="45" class="tour-len seg pp-choice"><b>3 h</b><span>45 km</span></button>
+        </div>
+        <label class="dp-row">
+          <span>Pause à mi-parcours<small>boulangerie ou café</small></span>
+          <input id="tour-pause" type="checkbox" class="dp-switch" checked />
+        </label>
+        <button id="btn-make-tour" class="pp-main bg-emerald-600 hover:bg-emerald-700 text-white">Créer la balade</button>
+      </section>
+
+      <!-- PAGE MES LIEUX -->
+      <section id="tab-places" class="pp hidden space-y-4">
+        <div id="fav-rows" class="rounded-2xl bg-white border border-slate-200 overflow-hidden"></div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="dp-title">Lieux enregistrés</div>
+            <button id="btn-cloud-sync" aria-label="Synchroniser maintenant" class="flex items-center gap-1.5 text-xs font-bold text-slate-500 min-w-0">
+              <span id="cloud-status-text" class="truncate">Enregistrés sur cet appareil</span>
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             </button>
           </div>
+          <div id="my-places-list" class="space-y-1.5"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-add-place-here" class="h-12 rounded-xl bg-slate-900 text-white text-sm font-bold">+ Ma position</button>
+            <button id="btn-add-place-center" class="h-12 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">+ Centre de la carte</button>
+          </div>
+          <p class="text-[12.5px] font-semibold text-slate-500">Ou un appui long sur la carte, puis « Ajouter à mes lieux ».</p>
         </div>
 
-        <!-- Statistiques -->
-        <div id="stats-card" class="rounded-2xl bg-white/75 border border-slate-200/80 p-3.5 space-y-3">
-          <div class="flex items-center justify-between gap-2">
-            <h2 class="text-sm font-bold text-slate-900">Mes statistiques</h2>
-            <button id="btn-all-tracks" class="px-3 py-1.5 rounded-xl bg-slate-200/70 text-slate-800 text-xs font-bold">Toutes mes traces</button>
+        <!-- Liste complète des lieux autour (les icônes du bas font la même chose en plus rapide) -->
+        <details id="fold-around" class="pp-fold rounded-2xl bg-white border border-slate-200">
+          <summary><span>Autour de moi<small class="text-slate-500">la liste des lieux et des points d'eau</small></span></summary>
+          <div class="space-y-3">
+            <div id="place-groups" class="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-slate-200/60">
+              <button data-pg="visit" class="pg-btn on">À voir</button>
+              <button data-pg="eat" class="pg-btn">Manger</button>
+              <button data-pg="service" class="pg-btn">Services</button>
+              <button data-pg="water" class="pg-btn">Eau</button>
+            </div>
+
+            <div id="pg-poi" class="space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <p id="poi-status-text" class="text-[11px] text-slate-500">Choisissez ce que vous voulez voir</p>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button id="btn-hide-group" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold">Masquer</button>
+                  <button id="btn-refresh-poi" aria-label="Actualiser" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <div id="poi-chips-group" class="flex flex-wrap gap-1.5"></div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="dp-title">Autour (<span id="poi-count">0</span>)</div>
+                <button id="btn-clear-filter" class="hidden px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-bold">✕ Toutes les catégories</button>
+              </div>
+              <div id="poi-list" class="space-y-2">
+                <div class="text-xs text-slate-500 text-center py-5 bg-white/50 rounded-2xl">Zoomez sur une zone pour voir les lieux.</div>
+              </div>
+            </div>
+
+            <div id="pg-water" class="hidden space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <p id="water-status-text" class="text-[11px] text-slate-600">Chargement autour de la carte...</p>
+                <button id="btn-refresh-water" aria-label="Actualiser les points d'eau" class="p-2 rounded-xl bg-slate-100 text-slate-600 transition">
+                  <svg id="icon-refresh-water" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                </button>
+              </div>
+              <button id="btn-route-nearest-water-panel" class="w-full h-12 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold">Aller au point d'eau le plus proche</button>
+              <div class="dp-title">À proximité (<span id="water-count">0</span>)</div>
+              <div id="water-list" class="space-y-2">
+                <div class="text-xs text-slate-500 text-center py-6 bg-white/50 rounded-2xl">Déplacez la carte pour afficher les fontaines et robinets publics.</div>
+              </div>
+            </div>
           </div>
+        </details>
+      </section>
+
+      <!-- PAGE MES SORTIES -->
+      <section id="tab-rides" class="pp hidden space-y-4">
+        <div class="space-y-1.5">
+          <button id="btn-record" class="pp-main bg-rose-600 text-white">● Enregistrer une sortie</button>
+          <p id="rides-summary" class="text-[13px] font-semibold text-slate-500 text-center">Enregistrées pendant le guidage, ou à la demande</p>
+        </div>
+
+        <div id="stats-card" class="space-y-3">
           <div id="stats-grid" class="grid grid-cols-3 gap-2"></div>
           <div>
-            <div class="flex items-center justify-between text-[12px] font-bold text-slate-600">
+            <div class="flex items-center justify-between text-[13px] font-bold text-slate-600">
               <span id="stats-goal-label"></span>
-              <button id="btn-stats-goal" class="text-sky-700">Objectif ✎</button>
+              <button id="btn-stats-goal" class="text-sky-700 px-2 py-1">Objectif ✎</button>
             </div>
             <div class="h-2.5 rounded-full bg-slate-200 overflow-hidden mt-1"><div id="stats-goal-bar" class="h-full rounded-full bg-emerald-600" style="width:0%"></div></div>
           </div>
           <div>
-            <div class="text-[11px] font-bold text-slate-500 mb-1">Kilomètres par semaine</div>
+            <div class="dp-title mb-1">Kilomètres par semaine</div>
             <div id="stats-weeks" class="flex items-end gap-1.5" style="height:70px"></div>
           </div>
         </div>
 
-        <!-- Mes sorties enregistrées -->
-        <div class="rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-3.5 space-y-2.5">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900">Mes sorties</h2>
-              <p id="rides-summary" class="text-[11px] text-slate-600">Enregistrées pendant le guidage, ou à la demande</p>
-            </div>
-            <button id="btn-record" class="shrink-0 px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">● Enregistrer</button>
-          </div>
+        <div class="flex gap-2">
+          <button id="btn-page-photos" class="flex-1 h-12 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Mes photos</button>
+          <button id="btn-all-tracks" class="flex-1 h-12 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Toutes mes traces</button>
+        </div>
+
+        <div class="space-y-2">
+          <div class="dp-title">Sorties</div>
           <div id="rides-list" class="space-y-1.5"></div>
         </div>
-
-        <!-- Légende rapide CyclOSM -->
-        <div class="rounded-2xl bg-white/60 border border-slate-200/70 p-3.5 space-y-2">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Légende CyclOSM</h3>
-          <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-700">
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full bg-[#0073e6]"></span>
-              <span>Piste cyclable dédiée</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full bg-[#16a34a]"></span>
-              <span>Voie verte / Parc</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full border-b-2 border-dashed border-[#0073e6]"></span>
-              <span>Bande cyclable</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="w-4 h-1.5 rounded-full bg-[#a855f7]"></span>
-              <span>Véloroute / EuroVelo</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Raccourci Mode Hors Ligne -->
-        <div class="rounded-2xl bg-indigo-500/10 border border-indigo-500/20 p-3.5 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900">Cartes Hors Ligne (IndexedDB)</h2>
-              <p id="offline-summary-mini" class="text-[11px] text-slate-600">0 tuiles et 0 points d'eau en cache</p>
-            </div>
-          </div>
-          <button id="btn-open-offline-from-tab" class="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition">
-            Gérer le cache & télécharger une zone
-          </button>
-        </div>
       </section>
+
+      <!-- PAGE RÉGLAGES -->
+      <section id="tab-settings" class="pp hidden space-y-2.5">
+        <button id="btn-set-display" class="dp-link pp-link"><span>Affichage et carte<small>style, 3D, contraste, vélo, guidage</small></span><i>›</i></button>
+        <button id="btn-open-offline-from-tab" class="dp-link pp-link"><span>Cartes hors ligne<small id="offline-summary-mini">0 tuiles et 0 points d'eau en cache</small></span><i>›</i></button>
+        <button id="btn-set-shortcuts" class="dp-link pp-link"><span>Icônes du bas<small>les raccourcis affichés sur la carte</small></span><i>›</i></button>
+
+        <details id="fold-sync" class="dp-adv">
+          <summary><span style="transform:none;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25">Synchronisation<small style="font-size:12px;font-weight:600;color:#64748b">lieux, sorties et trajet sur tous mes appareils</small></span><span>›</span></summary>
+          <div class="pt-2 px-1 space-y-2 text-[13px] text-slate-600">
+            <p>Vos données sont copiées dans un Gist <strong>privé</strong> de votre compte GitHub et retrouvées sur vos autres appareils.</p>
+            <ol class="list-decimal pl-5 space-y-0.5">
+              <li>Sur github.com : Settings → Developer settings → Personal access tokens → <em>Tokens (classic)</em>.</li>
+              <li>« Generate new token », cochez uniquement <strong>gist</strong>.</li>
+              <li>Collez le jeton ci-dessous, sur chaque appareil.</li>
+            </ol>
+            <input id="input-gh-token" type="password" placeholder="ghp_…" autocomplete="off" class="pp-in w-full bg-white border border-slate-300 focus:outline-none focus:border-emerald-500" />
+            <div class="flex gap-2">
+              <button id="btn-save-token" class="flex-1 h-11 rounded-xl bg-slate-900 text-white text-sm font-bold">Enregistrer et synchroniser</button>
+              <button id="btn-forget-token" class="h-11 px-4 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold">Oublier</button>
+            </div>
+            <p id="cloud-gist-info" class="font-mono text-[11px] text-slate-400"></p>
+          </div>
+        </details>
+
+        <details id="fold-sncf" class="dp-adv">
+          <summary><span style="transform:none;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25">Horaires des trains<small id="sncf-state" style="font-size:12px;font-weight:600;color:#64748b">clé SNCF gratuite : à ajouter</small></span><span>›</span></summary>
+          <div class="pt-2 px-1 space-y-2 text-[13px] text-slate-600">
+            <p>Avec une clé gratuite de l'API SNCF, « Rentrer » affiche les prochains trains vers chez vous et l'heure à laquelle partir.</p>
+            <ol class="list-decimal pl-5 space-y-0.5">
+              <li>Demandez la clé sur <a href="https://numerique.sncf.com/startup/api/token-developpeur/" target="_blank" rel="noopener" class="font-bold text-sky-700 underline">numerique.sncf.com</a> : elle arrive par courriel.</li>
+              <li>Collez-la ci-dessous.</li>
+            </ol>
+            <input id="input-sncf-key" type="password" placeholder="Clé SNCF" autocomplete="off" class="pp-in w-full bg-white border border-slate-300 focus:outline-none focus:border-emerald-500" />
+            <div class="flex gap-2">
+              <button id="btn-save-sncf" class="flex-1 h-11 rounded-xl bg-slate-900 text-white text-sm font-bold">Enregistrer et tester</button>
+              <button id="btn-forget-sncf" class="h-11 px-4 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold">Oublier</button>
+            </div>
+            <p class="text-[12px] text-slate-500">La clé reste dans cet appareil : elle n'est ni synchronisée, ni publiée.</p>
+          </div>
+        </details>
+
+        <details class="dp-adv">
+          <summary><span style="transform:none">Légende de la carte</span><span>›</span></summary>
+          <div class="grid grid-cols-2 gap-2 pt-3 px-1 text-[13px] font-semibold text-slate-700">
+            <div class="flex items-center gap-2"><span class="w-5 h-1.5 rounded-full bg-[#0073e6]"></span><span>Piste cyclable</span></div>
+            <div class="flex items-center gap-2"><span class="w-5 h-1.5 rounded-full bg-[#16a34a]"></span><span>Voie verte</span></div>
+            <div class="flex items-center gap-2"><span class="w-5 h-1.5 rounded-full border-b-2 border-dashed border-[#0073e6]"></span><span>Bande cyclable</span></div>
+            <div class="flex items-center gap-2"><span class="w-5 h-1.5 rounded-full bg-[#a855f7]"></span><span>Véloroute</span></div>
+          </div>
+        </details>
+
+        <p class="text-[12px] font-semibold text-slate-400 text-center pt-3">À bicyclette · Rémy DEVODDERE</p>
+      </section>
+
+      <!-- Éléments que le code utilise encore, sans affichage (leurs réglages sont dans Affichage et dans la fiche Profil) -->
+      <div id="legacy-keep" class="hidden" aria-hidden="true">
+        <input id="toggle-prefer-cycleways" type="checkbox" checked />
+        <span id="ele-hover-info"></span>
+        <div id="elevation-chart-container"></div>
+      </div>
     </div>
   </aside>
 
@@ -1437,6 +1371,7 @@
   <!-- MODALE : AJOUTER / MODIFIER UN LIEU -->
   <!-- Menu « ⋯ » : une ligne par sujet, au lieu des anciens onglets -->
   <div id="menu-sheet" class="hidden glass-panel"></div>
+  <div id="back-sheet" class="hidden glass-panel"></div>
 
   <!-- Profil du trajet : dénivelé, côtes, pistes -->
   <div id="profile-sheet" class="hidden glass-panel"></div>
@@ -2716,7 +2651,7 @@
 
       const btn = document.getElementById('btn-calculate-route');
       btn.disabled = true;
-      btn.innerHTML = `<span class="animate-pulse">Calcul des trajets vélo...</span>`;
+      btn.innerHTML = `<span class="animate-pulse">Calcul en cours…</span>`;
 
       const points = [AppState.origin, ...AppState.vias, AppState.dest];
       // En reroutage pendant le guidage, un seul trajet suffit (économie réseau & batterie)
@@ -2759,11 +2694,7 @@
         }
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-          <span>Calculer l'itinéraire vélo</span>`;
+        btn.innerHTML = `<span>Calculer l'itinéraire</span>`;
       }
     }
 
@@ -3123,28 +3054,24 @@
         return;
       }
       box.classList.remove('hidden');
-      list.innerHTML = alts
-        .map((r, idx) => {
-          const sel = idx === AppState.selectedAltIdx;
-          const tags = (r.tags || [])
-            .map((t) => `<span class="px-1.5 py-0.5 rounded-md ${sel ? 'bg-white/20 text-white' : 'bg-emerald-500/15 text-emerald-700'} text-[10px] font-bold">${t}</span>`)
-            .join(' ');
-          return `
-          <button data-alt="${idx}" class="alt-card w-full text-left p-2.5 rounded-2xl border-2 transition ${sel ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white/80 border-slate-200 text-slate-800 hover:border-emerald-400'}">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-xs font-bold">${idx === 0 ? 'Recommandé' : 'Variante ' + idx}</span>
-              <span class="text-sm font-extrabold">${formatDuration(r.duration)}</span>
-            </div>
-            <div class="flex items-center justify-between gap-2 mt-0.5">
-              <span class="text-[11px] ${sel ? 'text-emerald-50' : 'text-slate-500'}">${formatDistance(r.distance)} • D+ ${r.ascent} m</span>
-              <span class="flex gap-1 flex-wrap justify-end">${tags}</span>
-            </div>
-          </button>`;
-        })
+      list.innerHTML = altCardsHtml(alts.slice(0, 3));
+      list.querySelectorAll('.home-alt').forEach((b) => b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.halt, 10), true)));
+    }
+
+    function altCardsHtml(alts) {
+      return alts
+        .map(
+          (a, i) => `
+          <button data-halt="${i}" class="home-alt ${i === AppState.selectedAltIdx ? 'on' : ''}">
+            <div class="alt-name">${a.name || (i ? 'Autre' : 'Conseillé')}</div>
+            <div class="text-lg leading-tight font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
+            <div class="text-[11px] font-semibold text-slate-500 truncate">${formatDistance(a.distance)} · ↗ ${a.ascent} m</div>
+            ${a.cycleShare != null ? `<div class="alt-cyc">${a.cycleShare} % pistes</div>` : ''}
+            ${a.roughShare >= 5 ? `<div class="alt-rough">${a.roughShare} % chemin</div>` : ''}
+            ${a.maxGrade >= 6 ? `<div class="alt-rough">côte à ${a.maxGrade} %</div>` : ''}
+          </button>`
+        )
         .join('');
-      list.querySelectorAll('.alt-card').forEach((b) =>
-        b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.alt, 10), true))
-      );
     }
 
     // Le trajet en cours est gardé dans le téléphone (et synchronisé) : il revient à la réouverture, même hors ligne
@@ -4293,19 +4220,23 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // 13. GESTION DES ONGLETS, BOTTOM SHEET MOBILE & ÉVÉNEMENTS UI
     // -------------------------------------------------------------------------
+    // Les pages du grand panneau (une page = un sujet)
+    const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
+      if (tabName === 'gpx') tabName = 'rides';
+      if (!SHEET_PAGES[tabName]) tabName = 'route';
       document.querySelectorAll('.tab-btn').forEach((btn) => {
         const active = btn.dataset.tab === tabName;
         btn.className = active
           ? 'tab-btn py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition'
           : 'tab-btn py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
       });
-
-      ['route', 'places', 'gpx'].forEach((id) => {
-        const section = document.getElementById(`tab-${id}`);
-        if (id === tabName) section.classList.remove('hidden');
-        else section.classList.add('hidden');
-      });
+      Object.keys(SHEET_PAGES).forEach((id) => document.getElementById(`tab-${id}`).classList.toggle('hidden', id !== tabName));
+      document.getElementById('sheet-title').textContent = SHEET_PAGES[tabName];
+      try {
+        if (tabName === 'route' || tabName === 'places') Extras.renderPages();
+        if (tabName === 'settings') Sncf.renderState();
+      } catch {}
     }
 
     function expandMobileSheetIfCollapsed() {
@@ -4335,6 +4266,7 @@ ${trkpts}
       closePoiSheet();
       Profile.close();
       Menu.close();
+      Back.close();
     }
     window.addEventListener('popstate', () => {
       backStepPushed = false;
@@ -4717,10 +4649,7 @@ ${trkpts}
         btn.addEventListener('click', () => {
           AppState.selectedProfile = btn.dataset.profile;
           document.querySelectorAll('.profile-btn').forEach((b) => {
-            const active = b.dataset.profile === AppState.selectedProfile;
-            b.className = active
-              ? 'profile-btn p-2 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 text-emerald-800 text-center transition'
-              : 'profile-btn p-2 rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white text-center transition';
+            b.classList.toggle('on', b.dataset.profile === AppState.selectedProfile);
           });
           if (AppState.origin && AppState.dest) calculateBikeRoute();
         });
@@ -4838,9 +4767,13 @@ ${trkpts}
         startLiveGuidance();
       });
       document.getElementById('btn-home-clear').addEventListener('click', () => document.getElementById('btn-clear-route').click());
-      document.getElementById('btn-home-tour').addEventListener('click', () => openSheetAt('places', 'btn-make-tour'));
-      document.getElementById('btn-home-places').addEventListener('click', () => openSheetAt('places', 'my-places-list'));
-      document.getElementById('btn-find-stations').addEventListener('click', findStations);
+      document.getElementById('btn-home-tour').addEventListener('click', () => openSheetAt('tour'));
+      // Raccourcis des pages vers ce qui existe déjà ailleurs
+      document.getElementById('btn-page-profile').addEventListener('click', () => document.getElementById('btn-profile').click());
+      document.getElementById('btn-page-share').addEventListener('click', () => document.getElementById('btn-share-trip').click());
+      document.getElementById('btn-page-photos').addEventListener('click', () => document.getElementById('btn-dp-photos').click());
+      document.getElementById('btn-set-display').addEventListener('click', () => document.getElementById('btn-display').click());
+      document.getElementById('btn-set-shortcuts').addEventListener('click', openShortcutsModal);
       document.getElementById('btn-record').addEventListener('click', () => (Rides.isRecording() ? Rides.stop() : Rides.start(false)));
 
       // Vue 3D
@@ -4925,7 +4858,7 @@ ${trkpts}
       // Synchronisation cloud
       document.getElementById('btn-cloud-sync').addEventListener('click', () => {
         if (!localStorage.getItem('abicyclette.gh.token')) {
-          document.querySelector('#tab-places details').open = true;
+          openSheetAt('settings', 'fold-sync');
           showToast('Ajoutez d’abord un jeton GitHub (permission gist).', 'info');
           return;
         }
@@ -7048,31 +6981,45 @@ ${trkpts}
       const FAVS = [['home', 'Domicile', '<path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/>'], ['work', 'Travail', '<path d="M3 8h18v12H3zM8 8V5h8v3M3 13h18"/>']];
       const ico = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 
-      function showFavs(box) {
+      // Demande l'adresse d'un favori : elle se choisit dans la recherche
+      function askFav(k) {
+        pending = k;
+        const label = FAVS.find((f) => f[0] === k)[1];
+        collapseMobileSheet();
+        showToast(`${label} : tapez l’adresse dans la recherche puis choisissez-la.`, 'info', 5000);
+        setTimeout(() => document.getElementById('global-search-input').focus(), 80);
+      }
+      // opt.page : liste affichée dans une page (elle reste en place) ; opt.only : 'favs' ou 'trips'
+      function showFavs(box, opt = {}) {
         const favs = getJ(K_FAV, {});
         const trips = getJ(K_TRIPS, []);
         box.innerHTML =
-          FAVS.map(([k, label, d]) => {
-            const f = favs[k];
-            return `<div class="fav-row"><button data-fav="${k}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico(d)}<span class="truncate">${label}<small>${f ? escapeHtml(f.label) : 'Toucher pour choisir l’adresse'}</small></span></button>${f ? `<button class="fav-x" data-favedit="${k}" aria-label="Changer l’adresse : ${label}">✎</button>` : ''}</div>`;
-          }).join('') +
-          trips
-            .map((t) => `<div class="fav-row"><button data-trip="${t.id}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico('<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>')}<span class="truncate">${escapeHtml(t.name)}<small>${formatDistance(t.routes[0].distance)} · ${formatDuration(t.routes[0].duration)}</small></span></button><button class="fav-x" data-tripdel="${t.id}" aria-label="Supprimer ce trajet favori">✕</button></div>`)
-            .join('');
-        box.classList.remove('hidden');
-        const ask = (k) => {
-          pending = k;
+          (opt.only === 'trips'
+            ? ''
+            : FAVS.map(([k, label, d]) => {
+                const f = favs[k];
+                return `<div class="fav-row"><button data-fav="${k}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico(d)}<span class="truncate">${label}<small>${f ? escapeHtml(f.label) : 'Toucher pour choisir l’adresse'}</small></span></button>${f ? `<button class="fav-x" data-favedit="${k}" aria-label="Changer l’adresse : ${label}">✎</button>` : ''}</div>`;
+              }).join('')) +
+          (opt.only === 'favs'
+            ? ''
+            : trips
+                .map((t) => `<div class="fav-row"><button data-trip="${t.id}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico('<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>')}<span class="truncate">${escapeHtml(t.name)}<small>${formatDistance(t.routes[0].distance)} · ${formatDuration(t.routes[0].duration)}</small></span></button><button class="fav-x" data-tripdel="${t.id}" aria-label="Supprimer ce trajet favori">✕</button></div>`)
+                .join(''));
+        if (!opt.page) box.classList.remove('hidden');
+        const done = () => {
+          if (opt.page) return collapseMobileSheet();
           box.classList.add('hidden');
-          const label = FAVS.find((f) => f[0] === k)[1];
-          showToast(`${label} : tapez l’adresse dans la recherche puis choisissez-la.`, 'info', 5000);
-          document.getElementById('global-search-input').focus();
+          document.getElementById('global-search-input').blur();
+        };
+        const ask = (k) => {
+          if (!opt.page) box.classList.add('hidden');
+          askFav(k);
         };
         box.querySelectorAll('[data-fav]').forEach((b) =>
           b.addEventListener('click', () => {
             const f = getJ(K_FAV, {})[b.dataset.fav];
             if (!f) return ask(b.dataset.fav);
-            box.classList.add('hidden');
-            document.getElementById('global-search-input').blur();
+            done();
             window.routeToPoint(f.lat, f.lon, FAVS.find((x) => x[0] === b.dataset.fav)[1]);
           })
         );
@@ -7080,8 +7027,7 @@ ${trkpts}
         box.querySelectorAll('[data-trip]').forEach((b) =>
           b.addEventListener('click', () => {
             const t = getJ(K_TRIPS, []).find((x) => x.id === b.dataset.trip);
-            box.classList.add('hidden');
-            document.getElementById('global-search-input').blur();
+            done();
             if (t && Trip.apply(t)) {
               Trip.save();
               collapseMobileSheet();
@@ -7092,9 +7038,20 @@ ${trkpts}
           b.addEventListener('click', () => {
             if (!confirm('Supprimer ce trajet favori ?')) return;
             setJ(K_TRIPS, getJ(K_TRIPS, []).filter((x) => x.id !== b.dataset.tripdel));
-            showFavs(box);
+            if (opt.page) renderPages();
+            else showFavs(box, opt);
           })
         );
+      }
+      // Pages « Mes lieux » (domicile, travail) et « Itinéraire » (trajets favoris)
+      function renderPages() {
+        const fr = document.getElementById('fav-rows');
+        if (fr) showFavs(fr, { page: true, only: 'favs' });
+        const tl = document.getElementById('saved-trips-list');
+        if (tl) {
+          showFavs(tl, { page: true, only: 'trips' });
+          document.getElementById('saved-trips-box').classList.toggle('hidden', !getJ(K_TRIPS, []).length);
+        }
       }
       function takePending(lat, lon, name) {
         if (!pending) return false;
@@ -7103,6 +7060,7 @@ ${trkpts}
         setJ(K_FAV, favs);
         showToast(`${FAVS.find((f) => f[0] === pending)[1]} enregistré : ${name}`, 'success', 3000);
         pending = null;
+        renderPages();
         return true;
       }
       function saveTrip() {
@@ -7112,7 +7070,8 @@ ${trkpts}
         if (!name) return;
         const trips = getJ(K_TRIPS, []);
         trips.unshift({ ...t, id: 't' + Date.now(), name: name.trim().slice(0, 60) });
-        if (setJ(K_TRIPS, trips.slice(0, 20))) showToast('Trajet gardé : il est dans la recherche, sous Domicile et Travail.', 'success', 4500);
+        if (setJ(K_TRIPS, trips.slice(0, 20))) showToast('Trajet gardé : il est dans la recherche et dans Itinéraire.', 'success', 4500);
+        renderPages();
       }
 
       // --- Résumé de fin de sortie ---
@@ -7230,7 +7189,7 @@ ${trkpts}
         autoNightTick();
         setInterval(autoNightTick, 300000);
       }
-      return { init, showFavs, takePending, showSummary, isNight, isPending: () => !!pending };
+      return { init, showFavs, askFav, renderPages, takePending, showSummary, isNight, isPending: () => !!pending };
     })();
 
     // « Rentrer » : vers Domicile s'il est enregistré, sinon vers le point de départ de la sortie
@@ -7259,50 +7218,31 @@ ${trkpts}
       await calculateBikeRoute({ single: AppState.isGuiding, keepView: AppState.isGuiding });
       if (AppState.isGuiding && AppState.currentRoute) loadCompanion(AppState.currentRoute);
     }
-    function openGoHome() {
-      const ch = goHomeChoices();
-      if (!ch.length) return showToast('Enregistrez Domicile dans la recherche (touchez la barre vide).', 'info', 4500);
-      if (ch.length === 1) return goHome(ch[0]);
-      const el = document.getElementById('nearby-sheet');
-      el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:16px;font-weight:800">Rentrer</span><button data-nbclose aria-label="Fermer" style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;color:#334155;font-weight:800">✕</button></div>` +
-        ch.map((c, i) => `<button data-home="${i}" class="nb-row" style="width:100%;text-align:left;--c:#059669"><span class="nb-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></span><span style="flex:1;min-width:0"><span style="display:block;font-size:15.5px;font-weight:800">${escapeHtml(c.label)}</span><span class="truncate" style="display:block;font-size:12.5px;font-weight:700;color:#64748b">${escapeHtml(c.sub || '')}</span></span></button>`).join('');
-      el.classList.remove('hidden');
-      document.body.classList.add('nb-open');
-      Nearby.sheet = 'home';
-      el.querySelector('[data-nbclose]').addEventListener('click', closeNearbySheet);
-      el.querySelectorAll('[data-home]').forEach((b) =>
-        b.addEventListener('click', () => {
-          closeNearbySheet();
-          goHome(ch[+b.dataset.home]);
-        })
-      );
-    }
-
     // -------------------------------------------------------------------------
-    // MENU « ⋯ » : chaque sujet a sa ligne ; le grand panneau n'affiche que le sujet choisi
+    // MENU « ⋯ » : trois actions en grand, trois pages ; rien d'autre
     // -------------------------------------------------------------------------
     const Menu = (() => {
-      const I = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-      // kids = cartes de l'onglet à montrer (les autres sont masquées)
-      const ITEMS = [
-        { id: 'route', label: 'Itinéraire', sub: 'départ, arrivée, étapes, feuille de route', icon: '<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/>', tab: 'route' },
-        { id: 'tour', label: 'Balade visite', sub: 'une boucle par des lieux à voir', icon: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', tab: 'places', kids: [1] },
-        { id: 'around', label: 'Lieux et points d’eau', sub: 'la liste de ce qu’il y a autour', icon: '<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', tab: 'places', kids: [0] },
-        { id: 'train', label: 'Rentrer en train', sub: 'les gares les plus proches', icon: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>', tab: 'places', kids: [2] },
-        { id: 'mine', label: 'Mes lieux', sub: 'mes adresses, synchronisation', icon: '<path d="M12 3l2.7 5.8 6.3.6-4.8 4.200 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.400l6.3-.6z"/>', tab: 'places', kids: [3] },
-        { id: 'rides', label: 'Mes sorties', sub: 'statistiques, enregistrer une sortie', icon: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', tab: 'gpx', kids: [1, 2] },
-        { id: 'gpx', label: 'Traces GPX', sub: 'importer ou exporter un parcours', icon: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', tab: 'gpx', kids: [0] },
-        { id: 'offline', label: 'Cartes hors ligne', sub: 'télécharger une zone', icon: '<path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3z"/><path d="M9 4v13M15 7v13"/>', run: () => document.getElementById('btn-offline-modal').click() },
-        { id: 'photos', label: 'Mes photos', sub: 'prises pendant les sorties', icon: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', run: () => document.getElementById('btn-dp-photos').click() },
+      const I = (d, sz = 22) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      const TILES = [
+        { id: 'route', label: 'Itinéraire', icon: '<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/>', main: true },
+        { id: 'tour', label: 'Balade', icon: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>' },
+        { id: 'back', label: 'Rentrer', icon: '<path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/>' },
+      ];
+      const ROWS = [
+        { id: 'places', label: 'Mes lieux', sub: 'domicile, travail, adresses gardées', icon: '<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>' },
+        { id: 'rides', label: 'Mes sorties', sub: 'enregistrer, statistiques, photos', icon: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>' },
+        { id: 'settings', label: 'Réglages', sub: 'affichage, hors ligne, synchronisation, trains', icon: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>' },
       ];
       const el = () => document.getElementById('menu-sheet');
       function open() {
         if (AppState.poiCatFilter) closeHomeResults();
         closePoiSheet();
         Profile.close();
+        Back.close();
         el().innerHTML =
           `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 6px 4px"><span style="font-size:17px;font-weight:800">Menu</span><button data-mnclose aria-label="Fermer" class="w-10 h-10 rounded-full bg-slate-200/70 text-slate-700 text-base font-bold">✕</button></div>` +
-          ITEMS.map((it) => `<button class="mn-row" data-mn="${it.id}"><span class="mn-ico">${I(it.icon)}</span><span style="min-width:0"><b>${it.label}</b><small class="truncate">${it.sub}</small></span><i>›</i></button>`).join('');
+          `<div class="mn-tiles">${TILES.map((t) => `<button class="mn-tile${t.main ? ' main' : ''}" data-mn="${t.id}">${I(t.icon, 28)}<span>${t.label}</span></button>`).join('')}</div>` +
+          ROWS.map((it) => `<button class="mn-row" data-mn="${it.id}"><span class="mn-ico">${I(it.icon)}</span><span style="min-width:0"><b>${it.label}</b><small class="truncate">${it.sub}</small></span><i>›</i></button>`).join('');
         el().classList.remove('hidden');
         document.body.classList.add('menu-open');
         pushBackStep();
@@ -7313,34 +7253,355 @@ ${trkpts}
         el().classList.add('hidden');
         document.body.classList.remove('menu-open');
       }
-      function clearFocus() {
-        document.body.classList.remove('focus-mode');
-        document.querySelectorAll('.focus-hide').forEach((c) => c.classList.remove('focus-hide'));
-      }
       function go(id) {
-        const it = ITEMS.find((x) => x.id === id);
         close();
-        if (!it) return;
-        if (it.run) return it.run();
-        clearFocus();
-        switchSidebarTab(it.tab);
-        const sec = document.getElementById(`tab-${it.tab}`);
-        if (it.kids) [...sec.children].forEach((c, i) => c.classList.toggle('focus-hide', !it.kids.includes(i)));
-        document.getElementById('sheet-title').textContent = it.label;
-        document.body.classList.add('focus-mode');
-        expandMobileSheetIfCollapsed();
-        sec.parentElement.scrollTop = 0;
+        if (id === 'back') return Back.open();
+        openSheetAt(id);
       }
       function init() {
         document.getElementById('btn-sheet-menu').addEventListener('click', () => {
           collapseMobileSheet();
           setTimeout(open, 60);
         });
-        // Dès que le grand panneau se referme, tout redevient visible
-        const drawer = document.getElementById('side-drawer');
-        new MutationObserver(() => !drawer.classList.contains('sheet-expanded') && clearFocus()).observe(drawer, { attributes: true, attributeFilter: ['class'] });
       }
       return { open, close, go, init };
+    })();
+
+    // -------------------------------------------------------------------------
+    // HORAIRES DES TRAINS : API SNCF (clé gratuite saisie dans Réglages, gardée dans cet appareil seulement)
+    // -------------------------------------------------------------------------
+    const Sncf = (() => {
+      const K = 'abicyclette.sncf.key';
+      const BASE = 'https://api.sncf.com/v1/coverage/sncf/';
+      const key = () => {
+        try {
+          return (localStorage.getItem(K) || '').trim();
+        } catch {
+          return '';
+        }
+      };
+      const setKey = (v) => {
+        try {
+          if (v) localStorage.setItem(K, v.trim());
+          else localStorage.removeItem(K);
+        } catch {}
+      };
+      const p2 = (n) => String(n).padStart(2, '0');
+      // Les dates de l'API (« 20261126T174200 ») sont à l'heure française
+      const parseDT = (s) => {
+        const m = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)?/.exec(s || '');
+        return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) : null;
+      };
+      const fmtDT = (d) => `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}T${p2(d.getHours())}${p2(d.getMinutes())}00`;
+      const hm = (d) => (d ? `${p2(d.getHours())}:${p2(d.getMinutes())}` : '–');
+      const clean = (n) => String(n || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+
+      async function get(path) {
+        const k = key();
+        if (!k) throw new Error('nokey');
+        const url = BASE + path;
+        const headers = { Authorization: 'Basic ' + btoa(k + ':') };
+        // Appli iPhone : requête faite par le téléphone lui-même (pas de blocage entre sites)
+        if (IS_NATIVE && window.Capacitor?.nativePromise) {
+          try {
+            const r = await window.Capacitor.nativePromise('CapacitorHttp', 'request', { url, method: 'GET', headers, connectTimeout: 12000, readTimeout: 12000 });
+            if (r.status === 401 || r.status === 403) throw new Error('auth');
+            if ((r.status >= 200 && r.status < 300) || r.status === 404) return typeof r.data === 'string' ? JSON.parse(r.data || '{}') : r.data || {};
+          } catch (e) {
+            if (e.message === 'auth') throw e;
+          }
+        }
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12000);
+        try {
+          const r = await fetch(url, { headers, signal: ctrl.signal });
+          if (r.status === 401 || r.status === 403) throw new Error('auth');
+          if (!r.ok && r.status !== 404) throw new Error('http' + r.status);
+          return await r.json();
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      // Gares autour d'un point, de la plus proche à la plus lointaine
+      const memo = new Map();
+      async function stationsNear(lat, lon, dist = 20000, count = 6) {
+        const mk = `${lat.toFixed(3)},${lon.toFixed(3)},${dist},${count}`;
+        const hit = memo.get(mk);
+        if (hit && Date.now() - hit.at < 600000) return hit.list;
+        const list = await stationsNearRaw(lat, lon, dist, count);
+        memo.set(mk, { at: Date.now(), list });
+        return list;
+      }
+      async function stationsNearRaw(lat, lon, dist, count) {
+        const j = await get(`coords/${lon.toFixed(5)};${lat.toFixed(5)}/places_nearby?type%5B%5D=stop_area&distance=${dist}&count=${count}`);
+        return (j.places_nearby || [])
+          .filter((p) => p.embedded_type === 'stop_area' && p.stop_area?.coord)
+          .map((p) => {
+            const la = +p.stop_area.coord.lat, lo = +p.stop_area.coord.lon;
+            return { id: p.id, name: clean(p.stop_area.name || p.name), lat: la, lon: lo, d: haversineDistance(lat, lon, la, lo) };
+          })
+          .sort((a, b) => a.d - b.d);
+      }
+
+      // Prochains départs d'une gare (heure réelle quand la SNCF la donne)
+      async function departures(stopId, count = 6) {
+        const j = await get(`stop_areas/${stopId}/departures?count=${count}&data_freshness=realtime`);
+        return (j.departures || [])
+          .map((d) => {
+            const di = d.display_informations || {};
+            const st = d.stop_date_time || {};
+            const t = parseDT(st.departure_date_time);
+            const base = parseDT(st.base_departure_date_time);
+            return { t, late: t && base ? Math.round((t - base) / 60000) : 0, mode: di.commercial_mode || di.physical_mode || 'Train', dir: clean(di.direction), num: di.headsign || di.trip_short_name || '' };
+          })
+          .filter((d) => d.t);
+      }
+
+      // Trajets en train de gare à gare, à partir d'une heure donnée
+      async function journeys(fromId, toId, after) {
+        const j = await get(`journeys?from=${fromId}&to=${toId}&datetime=${fmtDT(after)}&count=3&data_freshness=realtime`);
+        return (j.journeys || [])
+          .map((x) => {
+            const pt = (x.sections || []).filter((s) => s.type === 'public_transport');
+            if (!pt.length) return null;
+            const first = pt[0], last = pt[pt.length - 1];
+            const dep = parseDT(first.departure_date_time) || parseDT(x.departure_date_time);
+            const arr = parseDT(last.arrival_date_time) || parseDT(x.arrival_date_time);
+            const base = parseDT(first.base_departure_date_time);
+            if (!dep || !arr) return null;
+            return {
+              dep, arr,
+              late: base ? Math.round((dep - base) / 60000) : 0,
+              transfers: Math.max(0, pt.length - 1),
+              legs: pt.map((s) => ({ mode: s.display_informations?.commercial_mode || 'Train', dir: clean(s.display_informations?.direction), from: clean(s.from?.name), to: clean(s.to?.name) })),
+            };
+          })
+          .filter(Boolean);
+      }
+
+      function renderState() {
+        const el = document.getElementById('sncf-state');
+        if (el) el.textContent = key() ? 'clé SNCF enregistrée' : 'clé SNCF gratuite : à ajouter';
+        const inp = document.getElementById('input-sncf-key');
+        if (inp && !inp.value && key()) inp.placeholder = 'Clé enregistrée (••••' + key().slice(-4) + ')';
+      }
+
+      function init() {
+        const inp = document.getElementById('input-sncf-key');
+        document.getElementById('btn-save-sncf').addEventListener('click', async () => {
+          const v = inp.value.trim();
+          if (!v && !key()) return showToast('Collez d’abord la clé reçue par courriel.', 'info');
+          if (v) setKey(v);
+          inp.value = '';
+          renderState();
+          showToast('Vérification de la clé…', 'info', 2000);
+          try {
+            await get('places?q=Paris&count=1');
+            showToast('Clé SNCF valide : « Rentrer » affiche maintenant les trains.', 'success', 4500);
+          } catch (e) {
+            if (e.message === 'auth') showToast('La SNCF refuse cette clé : vérifiez qu’elle est copiée en entier.', 'warning', 6000);
+            else showToast('Clé gardée, mais l’API SNCF ne répond pas pour l’instant.', 'warning', 6000);
+          }
+        });
+        document.getElementById('btn-forget-sncf').addEventListener('click', () => {
+          setKey('');
+          inp.value = '';
+          inp.placeholder = 'Clé SNCF';
+          renderState();
+          showToast('Clé SNCF oubliée sur cet appareil.', 'info');
+        });
+        renderState();
+      }
+      return { key, stationsNear, departures, journeys, hm, renderState, init };
+    })();
+
+    // -------------------------------------------------------------------------
+    // « RENTRER » : à vélo (domicile, point de départ) ou en train (gares, prochains trains)
+    // -------------------------------------------------------------------------
+    const Back = (() => {
+      const BIKE = 4.2; // m/s ≈ 15 km/h
+      const MARGIN = 240; // attacher le vélo, trouver le quai
+      const bikeSec = (m) => (m * 1.3) / BIKE; // distance à vol d'oiseau → durée sur route
+      const el = () => document.getElementById('back-sheet');
+      let token = 0;
+      const ICO = {
+        home: '<path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/>',
+        flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+        train: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>',
+      };
+      const svg = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+      const here = () => AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
+      // Une clé refusée doit remonter jusqu'au message ; le reste (gare sans réponse…) est ignoré
+      const soft = (e) => {
+        if (e.message === 'auth') throw e;
+        return [];
+      };
+      const inMin = (d) => {
+        const m = Math.round((d - Date.now()) / 60000);
+        return m <= 0 ? 'maintenant' : m < 60 ? `dans ${m} min` : `dans ${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+      };
+
+      function close() {
+        token++;
+        el().classList.add('hidden');
+        document.body.classList.remove('back-open');
+      }
+      function go(dest) {
+        close();
+        if (AppState.isGuiding) return goHome(dest);
+        collapseMobileSheet();
+        window.routeToPoint(dest.lat, dest.lon, dest.label);
+      }
+
+      function open() {
+        if (!el().classList.contains('hidden')) return close();
+        if (AppState.poiCatFilter) closeHomeResults();
+        closePoiSheet();
+        Profile.close();
+        Menu.close();
+        if (AppState.isGuiding) closeNearbySheet();
+        const u = here();
+        const ch = goHomeChoices();
+        const home = ch.find((c) => c.label === 'Domicile') || null;
+        const rows = ch.map((c, i) => {
+          const d = haversineDistance(u.lat, u.lon, c.lat, c.lon);
+          if (d < 150) return '';
+          return `<button class="bk-row" data-bk="${i}"><span class="bk-ico">${svg(c.label === 'Domicile' ? ICO.home : ICO.flag)}</span><span class="bk-txt"><b>${escapeHtml(c.label)}</b><small>à vélo · environ ${formatDistance(d * 1.3)} · ${formatDuration(bikeSec(d))}</small></span><i>›</i></button>`;
+        });
+        if (!home) rows.unshift(`<button class="bk-row" data-bkset><span class="bk-ico">${svg(ICO.home)}</span><span class="bk-txt"><b>Indiquer mon domicile</b><small>pour y revenir d’un geste, à vélo ou en train</small></span><i>›</i></button>`);
+        el().innerHTML =
+          `<div class="bk-head"><span>Rentrer</span><button data-bkclose aria-label="Fermer">✕</button></div>` +
+          rows.join('') +
+          (AppState.userLocation ? '' : '<div class="bk-note">Position GPS inconnue : calculé depuis le centre de la carte.</div>') +
+          `<div class="bk-title">En train</div><div id="bk-train"><div class="bk-note">Recherche des gares…</div></div>`;
+        el().classList.remove('hidden');
+        document.body.classList.add('back-open');
+        if (!AppState.isGuiding) pushBackStep();
+        el().querySelector('[data-bkclose]').addEventListener('click', close);
+        el().querySelectorAll('[data-bk]').forEach((b) => b.addEventListener('click', () => go(ch[+b.dataset.bk])));
+        el().querySelector('[data-bkset]')?.addEventListener('click', () => {
+          close();
+          Extras.askFav('home');
+        });
+        loadTrain(u, home, ++token);
+      }
+
+      // Liens utiles quel que soit le résultat
+      function links(u, home) {
+        const maps = home
+          ? `<a class="bk-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&origin=${u.lat.toFixed(5)},${u.lon.toFixed(5)}&destination=${home.lat.toFixed(5)},${home.lon.toFixed(5)}&travelmode=transit">Itinéraire en transports (Google Maps)</a>`
+          : '';
+        return `<div class="bk-links">${maps}<a class="bk-link" target="_blank" rel="noopener" href="https://www.sncf-connect.com/">Billets et vélo à bord (SNCF Connect)</a></div>`;
+      }
+      const gare = (n) => (/^gare/i.test(n) ? n : (/^[aeiouyhéèêàâ]/i.test(n) ? 'Gare d’' : 'Gare de ') + n);
+      const stationRow = (s, extra = '') =>
+        `<div class="bk-st"><div class="bk-st-head"><span class="bk-ico">${svg(ICO.train)}</span><span class="bk-txt"><b>${escapeHtml(gare(s.name))}</b><small>${formatDistance(s.d * 1.3)} · ${formatDuration(bikeSec(s.d))} à vélo</small></span><button class="bk-go" data-st="${s.lat},${s.lon}" data-name="${escapeHtml(s.name)}">Y aller</button></div>${extra}</div>`;
+      function bindStations(box) {
+        box.querySelectorAll('[data-st]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const [lat, lon] = b.dataset.st.split(',').map(Number);
+            go({ lat, lon, label: gare(b.dataset.name) });
+          })
+        );
+        box.querySelector('[data-bkkey]')?.addEventListener('click', () => {
+          close();
+          openSheetAt('settings', 'fold-sncf');
+        });
+      }
+
+      // Sans clé SNCF (ou si l'API ne répond pas) : les gares d'OpenStreetMap, sans horaires
+      async function renderPlain(u, home, tk, note) {
+        const box = el().querySelector('#bk-train');
+        let st = [];
+        try {
+          st = await nearestStations(u);
+        } catch {}
+        if (tk !== token || !box) return;
+        const hint = note || `Pour voir ici les prochains trains et l’heure à laquelle partir : <button data-bkkey class="bk-inl">ajoutez la clé SNCF gratuite</button>.`;
+        box.innerHTML = (st.length ? st.slice(0, 3).map((s) => stationRow(s)).join('') : '<div class="bk-note">Aucune gare trouvée à moins de 25 km.</div>') + `<div class="bk-note">${hint}</div>` + links(u, home);
+        bindStations(box);
+      }
+
+      async function loadTrain(u, home, tk) {
+        const box = el().querySelector('#bk-train');
+        if (isOfflineMode()) {
+          box.innerHTML = '<div class="bk-note">Les trains ne sont pas consultables hors ligne.</div>';
+          return;
+        }
+        if (!Sncf.key()) return renderPlain(u, home, tk);
+        try {
+          const near = await Sncf.stationsNear(u.lat, u.lon, 20000, 6);
+          if (tk !== token) return;
+          if (!near.length) {
+            box.innerHTML = '<div class="bk-note">Aucune gare à moins de 20 km.</div>' + links(u, home);
+            return;
+          }
+          // Loin du domicile : vrais trajets, de la gare la plus proche d'ici à celle la plus proche de la maison
+          if (home && haversineDistance(u.lat, u.lon, home.lat, home.lon) > 8000) {
+            const hs = await Sncf.stationsNear(home.lat, home.lon, 15000, 4).catch(soft);
+            if (tk !== token) return;
+            const pairs = [];
+            near.slice(0, 2).forEach((a) => hs.slice(0, 2).forEach((b) => a.id !== b.id && pairs.push([a, b])));
+            const found = (
+              await Promise.all(
+                pairs.map(async ([a, b]) => {
+                  const lead = (bikeSec(a.d) + MARGIN) * 1000;
+                  const js = await Sncf.journeys(a.id, b.id, new Date(Date.now() + lead)).catch(soft);
+                  return js.map((j) => ({ ...j, a, b, leave: new Date(j.dep - lead), home: new Date(+j.arr + (bikeSec(b.d) + 120) * 1000) }));
+                })
+              )
+            ).flat();
+            if (tk !== token) return;
+            found.sort((x, y) => x.home - y.home || y.leave - x.leave);
+            const seen = new Set();
+            // Un même train n'apparaît qu'une fois (monté ou descendu à une autre gare : on garde le mieux placé)
+            const best = found.filter((j) => {
+              const k1 = `d${j.a.id}|${+j.dep}`, k2 = `a${j.b.id}|${+j.arr}`, k3 = `t${+j.dep}|${j.legs[0].dir}`;
+              if (seen.has(k1) || seen.has(k2) || seen.has(k3)) return false;
+              seen.add(k1).add(k2).add(k3);
+              return true;
+            }).slice(0, 3);
+            if (best.length) {
+              box.innerHTML =
+                best
+                  .map((j) => {
+                    const l0 = j.legs[0];
+                    const modes = [...new Set(j.legs.map((l) => l.mode))].join(' + ');
+                    return `<div class="bk-st"><div class="bk-st-head"><span class="bk-txt"><b class="bk-time">${Sncf.hm(j.dep)} → ${Sncf.hm(j.arr)}${j.late > 0 ? `<em>+${j.late} min</em>` : ''}</b><small>${escapeHtml(j.a.name)} → ${escapeHtml(j.b.name)} · ${escapeHtml(modes)}${l0.dir ? ' vers ' + escapeHtml(l0.dir) : ''} · ${j.transfers ? j.transfers + ' corresp.' : 'direct'}</small></span><button class="bk-go" data-st="${j.a.lat},${j.a.lon}" data-name="${escapeHtml(j.a.name)}">Y aller</button></div><div class="bk-leave">Partez à vélo avant ${Sncf.hm(j.leave)} <span>(${inMin(j.leave)})</span></div><div class="bk-sub">${formatDistance(j.a.d * 1.3)} jusqu’à la gare · chez vous vers ${Sncf.hm(j.home)}</div></div>`;
+                  })
+                  .join('') + links(u, home);
+              bindStations(box);
+              return;
+            }
+          }
+          // Sinon : les prochains départs des deux gares les plus proches
+          const boards = await Promise.all(near.slice(0, 2).map(async (s) => ({ s, deps: await Sncf.departures(s.id, 5).catch(soft) })));
+          if (tk !== token) return;
+          box.innerHTML =
+            boards
+              .map(({ s, deps }) => {
+                const reach = Date.now() + (bikeSec(s.d) + MARGIN) * 1000;
+                const lines = deps.length
+                  ? deps.map((d) => `<div class="bk-dep${d.t < reach ? ' off' : ''}"><b>${Sncf.hm(d.t)}</b><span>${escapeHtml(d.mode)}</span><span class="bk-dir">${escapeHtml(d.dir || '')}</span>${d.late > 0 ? `<em>+${d.late} min</em>` : ''}</div>`).join('')
+                  : '<div class="bk-sub">Pas de départ annoncé.</div>';
+                return stationRow(s, lines);
+              })
+              .join('') +
+            (boards.some((b) => b.deps.some((d) => d.t < Date.now() + (bikeSec(b.s.d) + MARGIN) * 1000)) ? '<div class="bk-note">En gris : trop tôt pour y être à vélo.</div>' : '') +
+            links(u, home);
+          bindStations(box);
+        } catch (e) {
+          if (tk !== token) return;
+          renderPlain(u, home, tk, e.message === 'auth' ? `La SNCF refuse la clé enregistrée : <button data-bkkey class="bk-inl">vérifier la clé</button>.` : 'Horaires indisponibles pour l’instant (l’API SNCF ne répond pas).');
+        }
+      }
+
+      function init() {
+        document.getElementById('btn-hud-home').addEventListener('click', open);
+        document.getElementById('btn-home-back').addEventListener('click', open);
+      }
+      return { open, close, init };
     })();
 
     // -------------------------------------------------------------------------
@@ -8478,19 +8739,7 @@ ${trkpts}
         box.innerHTML = r.cycleShare != null ? `<div class="alt-cyc text-[12px] font-extrabold" style="color:#0f9f8f">${r.cycleShare} % sur pistes cyclables · ↗ ${r.ascent} m${r.roughShare >= 5 ? ` · <span style="color:#b45309">${r.roughShare} % chemin</span>` : ''}</div>` : '';
         return;
       }
-      box.innerHTML = alts
-        .map(
-          (a, i) => `
-          <button data-halt="${i}" class="home-alt ${i === AppState.selectedAltIdx ? 'on' : ''}">
-            <div class="alt-name">${a.name || (i ? 'Autre' : 'Conseillé')}</div>
-            <div class="text-lg leading-tight font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
-            <div class="text-[11px] font-semibold text-slate-500 truncate">${formatDistance(a.distance)} · ↗ ${a.ascent} m</div>
-            ${a.cycleShare != null ? `<div class="alt-cyc">${a.cycleShare} % pistes</div>` : ''}
-            ${a.roughShare >= 5 ? `<div class="alt-rough">${a.roughShare} % chemin</div>` : ''}
-            ${a.maxGrade >= 6 ? `<div class="alt-rough">côte à ${a.maxGrade} %</div>` : ''}
-          </button>`
-        )
-        .join('');
+      box.innerHTML = altCardsHtml(alts);
       box.querySelectorAll('.home-alt').forEach((b) => b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.halt, 10), true)));
     }
 
@@ -8686,8 +8935,7 @@ ${trkpts}
       }
       syncHomeChips();
       setPlacesGroup(group);
-      openSheetAt('places');
-      document.querySelector('#side-drawer .overflow-y-auto')?.scrollTo({ top: 0 });
+      openSheetAt('places', 'place-groups');
     }
 
     function toggleGroup(group) {
@@ -8726,6 +8974,10 @@ ${trkpts}
     function openSheetAt(tab, elementId) {
       switchSidebarTab(tab);
       expandMobileSheetIfCollapsed();
+      const target = elementId && document.getElementById(elementId);
+      const fold = target?.closest('details');
+      if (fold) fold.open = true;
+      if (!elementId) document.querySelector('#side-drawer .overflow-y-auto')?.scrollTo({ top: 0 });
       if (elementId) setTimeout(() => document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
     }
 
@@ -9124,7 +9376,6 @@ ${trkpts}
         })
       );
       document.getElementById('btn-hud-onroute').addEventListener('click', openRouteSearch);
-      document.getElementById('btn-hud-home').addEventListener('click', openGoHome);
       document.getElementById('btn-hud-display').addEventListener('click', () => document.getElementById('btn-display').click());
     }
 
@@ -9205,48 +9456,24 @@ ${trkpts}
     }
 
     // -------------------------------------------------------------------------
-    // 17 octies. RENTRER EN TRAIN : gares les plus proches
+    // 17 octies. GARES LES PLUS PROCHES (OpenStreetMap) — la fiche « Rentrer » s'en sert sans clé SNCF
     // -------------------------------------------------------------------------
-    async function findStations() {
-      const list = document.getElementById('stations-list');
-      if (isOfflineMode()) return showToast('Recherche de gares indisponible hors ligne.', 'warning');
-      const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
-      list.innerHTML = '<div class="text-[11px] text-slate-500">Recherche…</div>';
+    async function nearestStations(ref) {
+      let elements;
       try {
-        let elements;
-        try {
-          const dLat = 12 / 111.32, dLon = 12 / (111.32 * Math.cos((ref.lat * Math.PI) / 180));
-          const { pois } = await tilePlaces(ref.lat - dLat, ref.lon - dLon, ref.lat + dLat, ref.lon + dLon, 12, 16);
-          elements = pois.filter((p) => p.cat === 'station').map((p) => ({ tags: { name: p.name.replace(/^Gare (de |d’|d')?/i, '') }, lat: p.lat, lon: p.lon }));
-          if (!elements.length) throw new Error('aucune');
-        } catch {
-          const q = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
-          elements = (await fetchOverpassWithFallback(q)).elements || [];
-        }
-        const st = elements
-          .filter((e) => e.tags?.name && !/subway|light_rail|tram/.test(e.tags.station || '') && e.tags.subway !== 'yes')
-          .map((e) => ({ name: e.tags.name, lat: e.lat, lon: e.lon, d: haversineDistance(ref.lat, ref.lon, e.lat, e.lon) }))
-          .sort((a, b) => a.d - b.d)
-          .slice(0, 4);
-        if (!st.length) {
-          list.innerHTML = '<div class="text-[11px] text-slate-500">Aucune gare à moins de 25 km.</div>';
-          return;
-        }
-        list.innerHTML =
-          st
-            .map(
-              (g) => `
-          <div class="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-slate-200">
-            <span class="text-base">🚉</span>
-            <div class="min-w-0 flex-1"><div class="text-xs font-bold text-slate-800 truncate">Gare de ${escapeHtml(g.name)}</div><div class="text-[10px] text-slate-500">${formatDistance(g.d)} · ~${formatDuration(g.d / 4.5)} à vélo</div></div>
-            <button onclick="routeToPoint(${g.lat}, ${g.lon}, 'Gare de ${escapeJsString(g.name)}')" class="shrink-0 px-2 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-bold">Y aller</button>
-          </div>`
-            )
-            .join('') +
-          `<a href="https://www.sncf-connect.com/" target="_blank" rel="noopener" class="block text-center text-[11px] font-bold text-sky-700 underline py-1">Horaires et places vélo sur SNCF Connect</a>`;
+        const dLat = 12 / 111.32, dLon = 12 / (111.32 * Math.cos((ref.lat * Math.PI) / 180));
+        const { pois } = await tilePlaces(ref.lat - dLat, ref.lon - dLon, ref.lat + dLat, ref.lon + dLon, 12, 16);
+        elements = pois.filter((p) => p.cat === 'station').map((p) => ({ tags: { name: p.name.replace(/^Gare (de |d’|d')?/i, '') }, lat: p.lat, lon: p.lon }));
+        if (!elements.length) throw new Error('aucune');
       } catch {
-        list.innerHTML = '<div class="text-[11px] text-rose-600">Serveur occupé, réessayez.</div>';
+        const q = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
+        elements = (await fetchOverpassWithFallback(q)).elements || [];
       }
+      return elements
+        .filter((e) => e.tags?.name && !/subway|light_rail|tram/.test(e.tags.station || '') && e.tags.subway !== 'yes')
+        .map((e) => ({ name: e.tags.name, lat: e.lat, lon: e.lon, d: haversineDistance(ref.lat, ref.lon, e.lat, e.lon) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 4);
     }
 
     // -------------------------------------------------------------------------
@@ -9331,7 +9558,7 @@ ${trkpts}
 
       function updateButton() {
         const b = document.getElementById('btn-record');
-        b.textContent = rec ? '■ Arrêter' : '● Enregistrer';
+        b.textContent = rec ? '■ Arrêter l’enregistrement' : '● Enregistrer une sortie';
         b.classList.toggle('bg-slate-900', !!rec);
         b.classList.toggle('bg-rose-600', !rec);
       }
@@ -9344,6 +9571,10 @@ ${trkpts}
         document.getElementById('rides-summary').textContent = rides.length
           ? `${rides.length} sortie(s) · ${totalKm.toFixed(0)} km au total`
           : 'Enregistrées pendant le guidage, ou à la demande';
+        if (!rides.length) {
+          el.innerHTML = '<div class="text-xs text-slate-500 text-center py-4 bg-white/50 rounded-xl">Aucune sortie pour l’instant.</div>';
+          return;
+        }
         el.innerHTML = rides
           .slice(0, 30)
           .map((r) => {
@@ -9495,6 +9726,9 @@ ${trkpts}
       Share.init();
       Stats.init();
       Menu.init();
+      Sncf.init();
+      Back.init();
+      Extras.renderPages();
       if (!new URLSearchParams(location.search).get('suivi')) {
         Share.handleIncoming().then((got) => {
           if (!got) Trip.restore();
