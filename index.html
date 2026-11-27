@@ -6964,6 +6964,9 @@ ${trkpts}
         window.addEventListener('mouseup', () => drag && !drag.touch && dragEnd(false));
         m.on('click', 'route-casing', (e) => {
           if (e.defaultPrevented || AppState.isGuiding) return;
+          // Un lieu posé sur le trajet : c'est lui qu'on ouvre, pas le profil
+          const b = [[e.point.x - 14, e.point.y - 14], [e.point.x + 14, e.point.y + 14]];
+          if (m.queryRenderedFeatures(b, { layers: ['pts-icons', 'pts-top'].filter((l) => m.getLayer(l)) }).length) return;
           e.preventDefault();
           Profile.open();
         });
@@ -7106,8 +7109,9 @@ ${trkpts}
           });
         // Lieux proposés comme étapes (« Voir ces lieux sur la carte »)
         if (Stops.onMap) {
-          const shown = new Set(feats.map((f) => f.properties.poiId));
-          Stops.found.forEach((p) => !shown.has(p.id) && feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id, rank: 1 })));
+          const ids = new Set(Stops.found.map((p) => p.id));
+          for (let i = feats.length - 1; i >= 0; i--) if (ids.has(feats[i].properties.poiId)) feats.splice(i, 1); // pas de doublon avec les lieux déjà affichés
+          Stops.found.forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id, top: true, rank: 1 })));
         }
         visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p), top: true, rank: 0 })));
         m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
