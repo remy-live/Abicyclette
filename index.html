@@ -395,6 +395,13 @@
     .gs-num { width: 30px; height: 30px; border-radius: 9999px; background: #f59e0b; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
     .gs-row.past { opacity: .45; }
     .gs-row .fav-x { width: 40px; height: 40px; }
+    .hp { border-top: 1px solid rgba(148,163,184,.3); }
+    .hp summary { list-style: none; padding: 11px 2px; font-size: 15px; font-weight: 800; color: #0f172a; cursor: pointer; display: flex; justify-content: space-between; }
+    .hp summary::-webkit-details-marker { display: none; }
+    .hp summary::after { content: '+'; color: #94a3b8; font-weight: 800; }
+    .hp[open] summary::after { content: '–'; }
+    .hp p { padding: 0 2px 12px; font-size: 14px; line-height: 1.5; color: #334155; font-weight: 500; }
+    body.night-mode .hp summary { color: #e6edf3; } body.night-mode .hp p { color: #c9d1d9; }
     .mn-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 8px; }
     .mn-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 94px; border-radius: 18px; background: #f1f5f9; color: #0f172a; font-size: 14.5px; font-weight: 800; }
     .mn-tile.main { background: #059669; color: #fff; }
@@ -1306,6 +1313,19 @@
 
       <!-- PAGE RÉGLAGES -->
       <section id="tab-settings" class="pp hidden space-y-2.5">
+        <details id="fold-help" class="dp-adv">
+          <summary><span style="transform:none;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25">Aide<small style="font-size:12px;font-weight:600;color:#64748b">comment faire, en deux lignes</small></span><span>›</span></summary>
+          <div class="pt-1 px-1">
+            <details class="hp"><summary>Faire un trajet</summary><p>Tapez une adresse dans « Où va-t-on ? », choisissez-la, comparez les 3 trajets proposés puis touchez <b>Démarrer</b>.</p></details>
+            <details class="hp"><summary>Modifier le trajet</summary><p>Appui long sur la ligne verte puis glissez : une étape se crée. Appui long sur une étape pour la déplacer, toucher pour la retirer. <b>↩ Annuler</b> revient en arrière.</p></details>
+            <details class="hp"><summary>Ajouter des lieux</summary><p>Menu ⋯ → Itinéraire → <b>Ajouter des étapes</b> (à voir, manger), ou <b>✦ lieux à voir</b> sous les trajets. <b>↺ Boucle</b> revient au départ par un autre chemin.</p></details>
+            <details class="hp"><summary>En roulant</summary><p>Toucher le bandeau du bas : vue d'ensemble et liste des étapes. La boussole choisit nord en haut ou sens de la marche. ⏸ Pause à l'arrivée sur une étape. La maison : <b>Rentrer</b> (à vélo ou en train).</p></details>
+            <details class="hp"><summary>Voix</summary><p>Affichage → Guidage : voix complète ou <b>discrète</b> (seulement les virages), annonce des étapes, infos sur l'écran verrouillé.</p></details>
+            <details class="hp"><summary>Sans réseau</summary><p>Avant de partir, touchez ⬇ sous le trajet : carte et trajet sont gardés dans le téléphone, le guidage marche hors ligne (sans recalcul).</p></details>
+            <details class="hp"><summary>Sorties et photos</summary><p>Menu ⋯ → Mes sorties : enregistrer, statistiques, photos prises en route (bouton appareil photo sur la carte).</p></details>
+            <details class="hp"><summary>Sur tous mes appareils</summary><p>Réglages → Synchronisation : avec un jeton GitHub, lieux, sorties et trajet se retrouvent partout.</p></details>
+          </div>
+        </details>
         <button id="btn-set-display" class="dp-link pp-link"><span>Affichage et carte<small>style, 3D, contraste, vélo, guidage</small></span><i>›</i></button>
         <button id="btn-open-offline-from-tab" class="dp-link pp-link"><span>Cartes hors ligne<small id="offline-summary-mini">0 tuiles et 0 points d'eau en cache</small></span><i>›</i></button>
         <button id="btn-set-shortcuts" class="dp-link pp-link"><span>Icônes du bas<small>les raccourcis affichés sur la carte</small></span><i>›</i></button>
@@ -1355,7 +1375,13 @@
           </div>
         </details>
 
-        <p class="text-[12px] font-semibold text-slate-400 text-center pt-3">À bicyclette · Rémy DEVODDERE</p>
+        <div class="text-center pt-4 pb-2 space-y-0.5">
+          <img src="icon-192.png" alt="" class="w-14 h-14 rounded-2xl mx-auto mb-2 shadow" />
+          <p class="text-[16px] font-extrabold text-slate-800">À bicyclette</p>
+          <p class="text-[12.5px] font-semibold text-slate-500">Version <span id="app-version"></span></p>
+          <p class="text-[13px] font-semibold text-slate-600 pt-1">Imaginée, codée et testée à vélo par<br /><b class="text-slate-900">l’incroyable Rémy DEVODDERE</b> 🚲</p>
+          <p class="text-[11.5px] font-semibold text-slate-400 pt-1">Cartes © OpenStreetMap · CyclOSM · trajets BRouter</p>
+        </div>
       </section>
 
       <!-- Éléments que le code utilise encore, sans affichage (leurs réglages sont dans Affichage et dans la fiche Profil) -->
@@ -4603,6 +4629,7 @@ ${trkpts}
     // 13. GESTION DES ONGLETS, BOTTOM SHEET MOBILE & ÉVÉNEMENTS UI
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
+    const APP_VERSION = '51 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -4617,7 +4644,10 @@ ${trkpts}
       document.getElementById('sheet-title').textContent = SHEET_PAGES[tabName];
       try {
         if (tabName === 'route' || tabName === 'places') Extras.renderPages();
-        if (tabName === 'settings') Sncf.renderState();
+        if (tabName === 'settings') {
+          Sncf.renderState();
+          document.getElementById('app-version').textContent = APP_VERSION;
+        }
       } catch {}
     }
 
@@ -8124,7 +8154,7 @@ ${trkpts}
       const ROWS = [
         { id: 'places', label: 'Mes lieux', sub: 'domicile, travail, adresses gardées', icon: '<path d="M12 3l2.7 5.8 6.3.6-4.8 4.2 1.4 6.2L12 16.7 6.4 19.8l1.4-6.2L3 9.4l6.3-.6z"/>' },
         { id: 'rides', label: 'Mes sorties', sub: 'enregistrer, statistiques, photos', icon: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>' },
-        { id: 'settings', label: 'Réglages', sub: 'affichage, hors ligne, synchronisation, trains', icon: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>' },
+        { id: 'settings', label: 'Réglages', sub: 'affichage, hors ligne, aide, version', icon: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>' },
       ];
       const el = () => document.getElementById('menu-sheet');
       function open() {
