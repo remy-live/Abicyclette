@@ -17,11 +17,10 @@ const swap = (a, b) => {
   html = html.split(a).join(b);
 };
 
-// 1. Tailwind : la feuille compilée tw.css (reconstruite ici pour être sûr qu'elle suit index.html)
+// 1. Tailwind : la feuille est reconstruite directement dans www/ (jamais dans le dépôt, sinon « git pull » se bloque)
 fs.writeFileSync(path.join(__dirname, '.tw.in.css'), '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
-execSync(`npx tailwindcss -c ${JSON.stringify(path.join(src, 'tailwind.config.js'))} -i .tw.in.css -o ${JSON.stringify(path.join(src, 'tw.css'))} --minify`, { cwd: __dirname, stdio: 'inherit' });
+execSync(`npx tailwindcss -c ${JSON.stringify(path.join(src, 'tailwind.config.js'))} -i .tw.in.css -o ${JSON.stringify(path.join(dst, 'tw.css'))} --minify`, { cwd: __dirname, stdio: 'inherit' });
 fs.rmSync(path.join(__dirname, '.tw.in.css'));
-fs.copyFileSync(path.join(src, 'tw.css'), path.join(dst, 'tw.css'));
 
 // 2. Leaflet et MapLibre : copiés depuis node_modules
 fs.cpSync(path.join(nm, 'leaflet', 'dist'), path.join(dst, 'lib', 'leaflet'), { recursive: true });
