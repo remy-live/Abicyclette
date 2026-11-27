@@ -6916,39 +6916,55 @@ ${trkpts}
         drag = { m, hit, pos, prev, next, sx: cx, sy: cy, moved: false, touch, marker: new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(m) };
         m.dragPan.disable();
         if (touch) navigator.vibrate?.(15);
-        if (!m.getSource('dragline')) {
-          m.addSource('dragline', { type: 'geojson', data: emptyFC() });
-          m.addLayer({ id: 'dragline', type: 'line', source: 'dragline', paint: { 'line-color': '#f59e0b', 'line-width': 4, 'line-dasharray': [1.5, 1.5] } });
-        }
+        // Pointillé dessiné par-dessus la carte (pas dans la carte) : il suit le doigt sans aucun délai
+        const cont = m.getCanvasContainer();
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('style', 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3');
+        svg.innerHTML = '<polyline fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 10"/><circle r="15" fill="#f59e0b" stroke="#fff" stroke-width="3"/>';
+        cont.appendChild(svg);
+        const a = m.project([prev.lon, prev.lat]), b = m.project([next.lon, next.lat]);
+        Object.assign(drag, { svg, a, b, raf: 0 });
+        drag.marker.remove();
         dragMove(cx, cy);
       }
       function dragMove(cx, cy) {
         const d = drag;
-        const r = d.m.getCanvasContainer().getBoundingClientRect();
-        const ll = d.m.unproject([cx - r.left, cy - r.top]);
-        d.ll = ll;
+        d.cx = cx;
+        d.cy = cy;
         if (Math.hypot(cx - d.sx, cy - d.sy) > 8) d.moved = true;
-        d.marker.setLngLat(ll);
-        d.m.getSource('dragline')?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[d.prev.lon, d.prev.lat], [ll.lng, ll.lat], [d.next.lon, d.next.lat]] } }] });
+        if (d.raf) return;
+        d.raf = requestAnimationFrame(() => {
+          d.raf = 0;
+          const r = d.m.getCanvasContainer().getBoundingClientRect();
+          const x = d.cx - r.left, y = d.cy - r.top;
+          d.svg.firstChild.setAttribute('points', `${d.a.x},${d.a.y} ${x},${y} ${d.b.x},${d.b.y}`);
+          d.svg.lastChild.setAttribute('cx', x);
+          d.svg.lastChild.setAttribute('cy', y);
+        });
       }
       function dragEnd(cancel) {
         const d = drag;
         if (!d) return;
         drag = null;
-        d.marker.remove();
-        d.m.getSource('dragline')?.setData(emptyFC());
+        cancelAnimationFrame(d.raf);
         d.m.dragPan.enable();
-        if (cancel) return;
-        if (!d.moved) {
-          if (d.touch) showToast('Gardez le doigt appuyé et glissez pour modifier le trajet.', 'info', 2500);
+        if (cancel || !d.moved) {
+          d.svg.remove();
+          if (!cancel && d.touch) showToast('Gardez le doigt appuyé et glissez pour modifier le trajet.', 'info', 2500);
           return;
         }
         AppState.dragBlockUntil = Date.now() + 400;
-        const v = { lat: d.ll.lat, lon: d.ll.lng, label: 'Point de passage' };
+        const r = d.m.getCanvasContainer().getBoundingClientRect();
+        const ll = d.m.unproject([d.cx - r.left, d.cy - r.top]);
+        const v = { lat: ll.lat, lon: ll.lng, label: 'Point de passage' };
         if (d.hit.viaIdx >= 0) AppState.vias[d.hit.viaIdx] = v;
         else AppState.vias.splice(d.pos, 0, v);
         renderVias();
-        calculateBikeRoute({ keepView: true });
+        // Le pointillé reste affiché le temps du calcul (≈ 1 s, en ligne), puis laisse place au nouveau tracé
+        d.svg.style.opacity = '.6';
+        const clear = () => d.svg.remove();
+        d.m.once('movestart', clear);
+        Promise.resolve(calculateBikeRoute({ keepView: true })).then(clear, clear);
       }
 
       function bindEvents(m) {
