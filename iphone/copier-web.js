@@ -17,15 +17,11 @@ const swap = (a, b) => {
   html = html.split(a).join(b);
 };
 
-// 1. Tailwind : feuille de style compilée une fois pour toutes (au lieu du script en ligne)
-const cfgStart = html.indexOf('<script src="https://cdn.tailwindcss.com"></script>');
-const cfgEnd = html.indexOf('</script>', html.indexOf('tailwind.config', cfgStart)) + '</script>'.length;
-const cfgBlock = html.slice(cfgStart, cfgEnd);
-const theme = cfgBlock.slice(cfgBlock.indexOf('tailwind.config =') + 'tailwind.config ='.length, cfgBlock.lastIndexOf(';'));
-fs.writeFileSync(path.join(__dirname, '.tw.config.js'), `module.exports = Object.assign(${theme}, { content: [${JSON.stringify(path.join(src, 'index.html'))}] });`);
+// 1. Tailwind : la feuille compilée tw.css (reconstruite ici pour être sûr qu'elle suit index.html)
 fs.writeFileSync(path.join(__dirname, '.tw.in.css'), '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
-execSync(`npx tailwindcss -c .tw.config.js -i .tw.in.css -o ${JSON.stringify(path.join(dst, 'tw.css'))} --minify`, { cwd: __dirname, stdio: 'inherit' });
-html = html.slice(0, cfgStart) + '<link rel="stylesheet" href="tw.css" />' + html.slice(cfgEnd);
+execSync(`npx tailwindcss -c ${JSON.stringify(path.join(src, 'tailwind.config.js'))} -i .tw.in.css -o ${JSON.stringify(path.join(src, 'tw.css'))} --minify`, { cwd: __dirname, stdio: 'inherit' });
+fs.rmSync(path.join(__dirname, '.tw.in.css'));
+fs.copyFileSync(path.join(src, 'tw.css'), path.join(dst, 'tw.css'));
 
 // 2. Leaflet et MapLibre : copiés depuis node_modules
 fs.cpSync(path.join(nm, 'leaflet', 'dist'), path.join(dst, 'lib', 'leaflet'), { recursive: true });
@@ -36,6 +32,4 @@ swap('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', 'lib/leaflet/leaflet.js'
 swap("const LIB = 'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl';", "const LIB = 'lib/maplibre-gl';");
 
 fs.writeFileSync(path.join(dst, 'index.html'), html);
-fs.rmSync(path.join(__dirname, '.tw.config.js'));
-fs.rmSync(path.join(__dirname, '.tw.in.css'));
 console.log('✔ Appli web prête dans iphone/www (Tailwind, Leaflet et MapLibre embarqués)');

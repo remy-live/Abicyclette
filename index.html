@@ -18,36 +18,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <!-- Leaflet 1.9.4 CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#ecfdf5',
-              100: '#d1fae5',
-              500: '#10b981',
-              600: '#059669',
-              700: '#047857',
-            },
-            water: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              500: '#0ea5e9',
-              600: '#0284c7',
-            }
-          }
-        }
-      }
-    };
-  </script>
+  <!-- Tailwind : feuille compilée (node construire-css.js), bien plus léger que le script qui recalcule en continu -->
+  <link rel="stylesheet" href="tw.css" />
 
   <style>
     /* Styles système type macOS / Apple Maps */
@@ -6494,10 +6468,7 @@ ${trkpts}
         // Itinéraires vélo balisés (EuroVelo, véloroutes) par-dessus le fond
         if (AppState.showBikeRoutes) {
           sources.wmt = { type: 'raster', tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'], tileSize: window.devicePixelRatio >= 2 ? 128 : 256, maxzoom: 18, attribution: 'Itinéraires © Waymarked Trails' };
-          // Images Waymarked : nettes jusqu'au zoom 18 de leurs tuiles ; au-delà elles seraient agrandies (V6 flou) → fondu puis masquées
-          const wOp = theme === 'night' || theme === 'noir' ? 0.55 : 0.85;
-          const wNat = window.devicePixelRatio >= 2 ? 17 : 18;
-          layers.push({ id: 'wmt', type: 'raster', source: 'wmt', maxzoom: wNat + 1, paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], wNat + 0.2, wOp, wNat + 0.9, 0] } });
+          layers.push({ id: 'wmt', type: 'raster', source: 'wmt', paint: { 'raster-opacity': theme === 'night' || theme === 'noir' ? 0.55 : 0.85 } });
         }
         layers.push(
           { id: 'alts-line', type: 'line', source: 'alts', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': theme === 'noir' ? '#bdbdbd' : theme === 'bw' ? '#000' : '#64748b', 'line-width': 6 * k, 'line-opacity': 0.7, 'line-dasharray': [0.5, 2] } },

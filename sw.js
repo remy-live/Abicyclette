@@ -1,6 +1,6 @@
 /* Service worker « À bicyclette » : garde la coque de l'appli disponible hors ligne.
    Les tuiles de carte et les données (eau, lieux, pistes) sont gérées à part, dans IndexedDB. */
-const CACHE = 'abicyclette-v34';
+const CACHE = 'abicyclette-v35';
 const SHELL = [
   './',
   './index.html',
@@ -8,12 +8,12 @@ const SHELL = [
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
+  './tw.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://cdn.tailwindcss.com',
 ];
 // Ressources de code mises en cache au fil de l'eau (police, moteur 3D…)
-const RUNTIME_HOSTS = ['unpkg.com', 'cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const RUNTIME_HOSTS = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -80,6 +80,8 @@ self.addEventListener('fetch', (event) => {
   // Le reste : cache d'abord, mise à jour en arrière-plan
   event.respondWith(
     caches.match(req).then((cached) => {
+      // Une réponse « opaque » ne peut pas servir une requête qui demande la lecture (sinon le navigateur la rejette)
+      if (cached && cached.type === 'opaque' && req.mode !== 'no-cors') cached = null;
       const network = fetch(req)
         .then((res) => {
           if (res.ok || res.type === 'opaque') {
