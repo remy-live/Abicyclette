@@ -4660,7 +4660,7 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
     const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-    const APP_VERSION = '58 · 27 novembre 2026';
+    const APP_VERSION = '59 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -6494,33 +6494,46 @@ ${trkpts}
       const radius = stopRadius(route, group);
       const cats = POI_CATEGORIES.filter((c) => c.group === group && c.id !== 'pharmacy' && c.id !== 'grocery').map((c) => c.id);
         const maxStops = Math.min(30, Math.max(12, Math.round(route.distance / 3000))); // plus le trajet est long, plus on en propose
-        let tiles = stopTiles(route, radius);
-        let raw = [];
-        if (tiles.length <= 90) {
-          const res = await Promise.all(tiles.map(([x, y]) => z14Tile(x, y)));
-          raw = res.flat();
-        } else {
-          // Long trajet : une seule question à OpenStreetMap (Overpass), le long du tracé
+        const tiles = stopTiles(route, radius);
+        const overpass = async () => {
+          // Une seule question à OpenStreetMap (Overpass), le long du tracé
           const n = Math.min(110, Math.max(2, Math.round(route.distance / 900)));
           const poly = Array.from({ length: n }, (_, i) => route.coords[Math.round((i * (route.coords.length - 1)) / (n - 1))])
             .map((c) => `${c[0].toFixed(4)},${c[1].toFixed(4)}`)
             .join(',');
-          const long = cats.filter((c) => group !== 'visit' || (c !== 'worship' && c !== 'nature')); // sinon des centaines d'églises et de parcs
+          const long = cats.filter((c) => group !== 'visit' || route.distance < 30000 || (c !== 'worship' && c !== 'nature')); // long trajet : sinon des centaines d'églises
           const q = `[out:json][timeout:25];(${long.flatMap((id) => POI_BY_ID[id]?.q || []).map((x) => `${x}(around:${Math.round(radius)},${poly});`).join('')});out center 600;`;
+          return parsePOIElements((await fetchOverpassWithFallback(q)).elements || [], long);
+        };
+        const keep = (raw) => {
+          const seen = new Set();
+          return raw
+            .filter((p) => cats.includes(p.cat) && p.name && p.name !== POI_BY_ID[p.cat].label.replace(/s( &|$)/, '$1') && !seen.has(p.id) && seen.add(p.id))
+            .map((p) => ({ ...p, snap: snapToRoute(p.lat, p.lon, route) }))
+            .filter((p) => p.snap.dist <= radius && p.snap.along > 150 && p.snap.along < route.distance - 150);
+        };
+        let found = [];
+        let failed = 0;
+        if (tiles.length <= 90) {
+          // Morceaux de carte détaillés : un morceau qui ne répond pas ne fait plus échouer toute la recherche
+          const res = await Promise.allSettled(tiles.map(([x, y]) => z14Tile(x, y)));
+          failed = res.filter((r) => r.status !== 'fulfilled').length;
+          found = keep(res.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])));
+        }
+        if (found.length < 4) {
+          // Peu de résultats (ou trajet long) : on complète avec Overpass, sans doublon
           try {
-            raw = parsePOIElements((await fetchOverpassWithFallback(q)).elements || [], long);
+            const more = keep(await overpass());
+            more.forEach((p) => !found.some((q) => q.name === p.name && haversineDistance(q.lat, q.lon, p.lat, p.lon) < 300) && found.push(p));
           } catch {
-            // Overpass occupé : tuiles moins détaillées (seuls les lieux importants y figurent)
-            const lats = route.coords.map((c) => c[0]), lons = route.coords.map((c) => c[1]);
-            const pad = radius / 111320;
-            raw = (await tilePlaces(Math.min(...lats) - pad, Math.min(...lons) - pad, Math.max(...lats) + pad, Math.max(...lons) + pad, 13, 64)).pois;
+            if (!found.length && (failed || tiles.length > 90)) {
+              if (tiles.length <= 90) throw new Error('réseau');
+              const lats = route.coords.map((c) => c[0]), lons = route.coords.map((c) => c[1]);
+              const pad = radius / 111320;
+              found = keep((await tilePlaces(Math.min(...lats) - pad, Math.min(...lons) - pad, Math.max(...lats) + pad, Math.max(...lons) + pad, 13, 64)).pois);
+            }
           }
         }
-        const seen = new Set();
-        let found = raw
-          .filter((p) => cats.includes(p.cat) && p.name && p.name !== POI_BY_ID[p.cat].label.replace(/s( &|$)/, '$1') && !seen.has(p.id) && seen.add(p.id))
-          .map((p) => ({ ...p, snap: snapToRoute(p.lat, p.lon, route) }))
-          .filter((p) => p.snap.dist <= radius && p.snap.along > 150 && p.snap.along < route.distance - 150);
         if (group === 'visit') found = found.sort((a, b) => stopScore(b) - stopScore(a)).slice(0, maxStops);
         else {
           // Manger : on répartit le long du trajet (pas dix boulangeries au même endroit)
