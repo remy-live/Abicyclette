@@ -2629,7 +2629,7 @@
 
       const points = [AppState.origin, ...AppState.vias, AppState.dest];
       // En reroutage pendant le guidage, un seul trajet suffit (économie réseau & batterie)
-      const altCount = opts.single ? 1 : 3;
+      const altCount = opts.single ? 1 : 4; // BRouter donne jusqu'à 4 variantes ; certaines se ressemblent
 
       // « Pistes d'abord » : profil BRouter « safety » (évite le trafic), sauf en VTT
       const wanted = AppState.family ? 'safety' : AppState.selectedProfile === 'mtb' ? 'mtb' : AppState.avoidRough ? 'fastbike' : AppState.preferCycleways ? 'safety' : AppState.selectedProfile;
@@ -2645,6 +2645,17 @@
         if (!routes.length && wanted !== AppState.selectedProfile) routes = await tryProfile(AppState.selectedProfile);
         if (!routes.length) throw new Error('BRouter : aucun trajet');
         routes = dedupeRoutes(routes);
+        // Moins de 3 trajets vraiment différents : on complète avec un autre profil (route rapide, ou balade)
+        if (!opts.single && routes.length < 3) {
+          const others = ['fastbike', 'trekking', 'safety'].filter((p) => p !== wanted && !(AppState.selectedProfile === 'mtb' && p === 'fastbike'));
+          for (const p of others) {
+            if (routes.length >= 3) break;
+            const extra = await Promise.allSettled([fetchBRouterRoute(points, p, 0), fetchBRouterRoute(points, p, 1)]);
+            routes = dedupeRoutes(routes.concat(extra.filter((r) => r.status === 'fulfilled').map((r) => r.value)));
+          }
+        }
+        routes = routes.slice(0, 3);
+        routes.forEach((r, i) => (r.altIdx = i));
         routes.forEach((r) => {
           r.cumDist = r.cumDist || computeCumDist(r.coords);
           r.maxGrade = Math.round(findClimbs(r).reduce((m, c) => Math.max(m, c.grade), 0));
@@ -2673,12 +2684,17 @@
     }
 
     // Supprime les trajets quasi identiques renvoyés par BRouter
+    // (on compare les tracés eux-mêmes : deux trajets de même longueur peuvent passer par des rues différentes)
     function dedupeRoutes(routes) {
+      const sample = (c, n) => Array.from({ length: n }, (_, i) => c[Math.round((i * (c.length - 1)) / (n - 1))]);
+      const shared = (a, b) => {
+        const pa = sample(a.coords, 30), pb = sample(b.coords, Math.min(b.coords.length, 400));
+        const near = pa.filter((p) => pb.some((q) => haversineDistance(p[0], p[1], q[0], q[1]) < 60)).length;
+        return near / pa.length;
+      };
       const kept = [];
       routes.forEach((r) => {
-        const twin = kept.some(
-          (k) => Math.abs(k.distance - r.distance) / Math.max(1, k.distance) < 0.012 && Math.abs(k.ascent - r.ascent) < 8
-        );
+        const twin = kept.some((k) => Math.abs(k.distance - r.distance) / Math.max(1, k.distance) < 0.03 && shared(k, r) > 0.9);
         if (!twin) kept.push(r);
       });
       return kept;
