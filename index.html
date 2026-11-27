@@ -4654,7 +4654,7 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
     const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-    const APP_VERSION = '53 · 27 novembre 2026';
+    const APP_VERSION = '54 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -8362,7 +8362,7 @@ ${trkpts}
       function renderState() {
         const el = document.getElementById('sncf-state');
         if (el) el.textContent = key() ? 'clé SNCF enregistrée' : 'clé SNCF gratuite : à ajouter';
-        document.getElementById('fold-sncf')?.classList.toggle('hidden', !key());
+        document.getElementById('fold-sncf')?.classList.add('hidden');
         const inp = document.getElementById('input-sncf-key');
         if (inp && !inp.value && key()) inp.placeholder = 'Clé enregistrée (••••' + key().slice(-4) + ')';
       }
@@ -8499,7 +8499,7 @@ ${trkpts}
         } catch {}
         if (tk !== token || !box) return;
         const hint = note || 'Les horaires se consultent avec les boutons ci-dessous.';
-        box.innerHTML = (st.length ? st.slice(0, 3).map((s) => stationRow(s)).join('') : '<div class="bk-note">Aucune gare trouvée à moins de 25 km.</div>') + `<div class="bk-note">${hint}</div>` + links(u, home);
+        box.innerHTML = (st.length ? st.slice(0, 3).map((s) => stationRow(s)).join('') : '<div class="bk-note">Pas de gare trouvée pour l’instant (réseau lent ou aucune à moins de 25 km).</div>') + `<div class="bk-note">${hint}</div>` + links(u, home);
         bindStations(box);
       }
 
@@ -8509,7 +8509,7 @@ ${trkpts}
           box.innerHTML = '<div class="bk-note">Les trains ne sont pas consultables hors ligne.</div>';
           return;
         }
-        if (!Sncf.key()) return renderPlain(u, home, tk);
+        return renderPlain(u, home, tk); // horaires par clé SNCF : abandonné (clé introuvable), le code reste en dessous au cas où
         try {
           const near = await Sncf.stationsNear(u.lat, u.lon, 20000, 6);
           if (tk !== token) return;
@@ -10440,20 +10440,41 @@ ${trkpts}
     // 17 octies. GARES LES PLUS PROCHES (OpenStreetMap) — la fiche « Rentrer » s'en sert sans clé SNCF
     // -------------------------------------------------------------------------
     async function nearestStations(ref) {
-      let elements;
-      try {
+      const limit = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('trop long')), ms))]);
+      const need = (list) => {
+        if (!list.length) throw new Error('aucune');
+        return list;
+      };
+      // Trois sources interrogées en même temps ; la première qui répond avec des gares gagne (au pire 12 s)
+      const photon = async (path) => {
+        const r = await fetch(`https://photon.komoot.io/${path}&osm_tag=railway:station&osm_tag=railway:halt&lang=fr`);
+        if (!r.ok) throw new Error('photon');
+        return need(
+          ((await r.json()).features || [])
+            .filter((f) => f.properties?.osm_key === 'railway' && f.properties.name)
+            .map((f) => ({ tags: { name: f.properties.name.replace(/^Gare (de |du |des |d’|d')?/i, '') }, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] }))
+            .filter((e) => haversineDistance(ref.lat, ref.lon, e.lat, e.lon) < 30000)
+        );
+      };
+      const ll = `lat=${ref.lat.toFixed(4)}&lon=${ref.lon.toFixed(4)}`;
+      const tiles = async () => {
         const dLat = 12 / 111.32, dLon = 12 / (111.32 * Math.cos((ref.lat * Math.PI) / 180));
         const { pois } = await tilePlaces(ref.lat - dLat, ref.lon - dLon, ref.lat + dLat, ref.lon + dLon, 12, 16);
-        elements = pois.filter((p) => p.cat === 'station').map((p) => ({ tags: { name: p.name.replace(/^Gare (de |d’|d')?/i, '') }, lat: p.lat, lon: p.lon }));
-        if (!elements.length) throw new Error('aucune');
-      } catch {
-        const q = `[out:json][timeout:15];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
-        elements = (await fetchOverpassWithFallback(q)).elements || [];
-      }
+        return need(pois.filter((p) => p.cat === 'station').map((p) => ({ tags: { name: p.name.replace(/^Gare (de |d’|d')?/i, '') }, lat: p.lat, lon: p.lon })));
+      };
+      const overpass = async () => {
+        const q = `[out:json][timeout:10];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
+        return need((await fetchOverpassWithFallback(q)).elements || []);
+      };
+      let elements = [];
+      try {
+        elements = await limit(Promise.any([photon(`reverse?${ll}&radius=25&limit=8`), photon(`api/?q=gare&${ll}&limit=10`), tiles(), overpass()]), 12000);
+      } catch {}
       return elements
         .filter((e) => e.tags?.name && !/subway|light_rail|tram/.test(e.tags.station || '') && e.tags.subway !== 'yes')
         .map((e) => ({ name: e.tags.name, lat: e.lat, lon: e.lon, d: haversineDistance(ref.lat, ref.lon, e.lat, e.lon) }))
         .sort((a, b) => a.d - b.d)
+        .filter((e, i, l) => !l.slice(0, i).some((p) => haversineDistance(p.lat, p.lon, e.lat, e.lon) < 300)) // même gare vue par deux sources
         .slice(0, 4);
     }
 
