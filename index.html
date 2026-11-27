@@ -386,6 +386,15 @@
     body.bw-mode .via-name { border: 2px solid #000; }
     body.night-mode .st-row b { color: #e6edf3; } body.night-mode .st-row .st-ico { background: #2a2110; }
     body.bw-mode .st-row .st-ico { background: #fff; border: 2px solid #000; } body.bw-mode .st-row.on .st-chk { background: #000; border-color: #000; }
+    #btn-undo { position: fixed; z-index: 45; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 84px); height: 44px; padding: 0 18px; border-radius: 9999px; background: #0f172a; color: #fff; font-size: 15px; font-weight: 800; box-shadow: 0 6px 18px rgba(15,23,42,.3); animation: pill-in .2s ease; }
+    @media (min-width: 768px) { #btn-undo { left: calc(432px + 220px); top: 84px; } }
+    body.guiding #btn-undo { display: none; }
+    body.noir-mode #btn-undo { filter: invert(1); }
+    .gs-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px; }
+    .gs-row + .gs-row { border-top: 1px solid rgba(148,163,184,.3); }
+    .gs-num { width: 30px; height: 30px; border-radius: 9999px; background: #f59e0b; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+    .gs-row.past { opacity: .45; }
+    .gs-row .fav-x { width: 40px; height: 40px; }
     .mn-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 8px; }
     .mn-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 94px; border-radius: 18px; background: #f1f5f9; color: #0f172a; font-size: 14.5px; font-weight: 800; }
     .mn-tile.main { background: #059669; color: #fff; }
@@ -770,6 +779,7 @@
       <button id="btn-hud-home" aria-label="Rentrer" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></svg></button>
       <button id="btn-hud-photo" aria-label="Prendre une photo" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       <button id="btn-hud-onroute" aria-label="Chercher sur mon trajet" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+      <button id="btn-hud-pause" class="hidden h-14 px-4 rounded-2xl bg-amber-500 text-white text-sm font-extrabold items-center gap-2 shadow-lg">⏸ Pause</button>
       <button id="btn-hud-recenter" aria-label="Recentrer sur ma position" class="hidden h-14 px-4 rounded-2xl bg-sky-600 text-white text-sm font-extrabold items-center gap-2 shadow-lg"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>Recentrer</button>
       <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="hidden glass-panel w-14 h-14 rounded-2xl items-center justify-center text-slate-400">
         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path id="hud-visits-slash" d="M3 3l18 18"/></svg>
@@ -903,6 +913,10 @@
           <input id="dp-voice" type="checkbox" class="dp-switch" checked />
         </label>
         <label class="dp-row">
+          <span>Annoncer les étapes<small>« Château de X dans 300 mètres, à gauche »</small></span>
+          <input id="dp-announce-stops" type="checkbox" class="dp-switch" checked />
+        </label>
+        <label class="dp-row">
           <span>Annoncer les lieux à voir</span>
           <input id="toggle-announce-visits" type="checkbox" class="dp-switch" />
         </label>
@@ -1007,7 +1021,10 @@
           <div id="home-dist" class="text-sm font-semibold text-slate-500 shrink-0"></div>
         </div>
         <div id="home-alts" class="flex gap-2"></div>
-        <button id="btn-home-tourist" class="hidden w-full h-9 rounded-xl text-[13.5px] font-extrabold text-amber-700 bg-amber-500/10 flex items-center justify-center gap-1.5"></button>
+        <div class="flex gap-2">
+          <button id="btn-home-tourist" class="hidden flex-1 min-w-0 h-9 px-2 rounded-xl text-[13.5px] font-extrabold text-amber-700 bg-amber-500/10 flex items-center justify-center gap-1.5 truncate"></button>
+          <button id="btn-home-loop" class="hidden shrink-0 h-9 px-3 rounded-xl text-[13.5px] font-extrabold text-slate-700 bg-slate-500/10">↺ Boucle</button>
+        </div>
         <p id="home-weather" class="hidden text-[12px] font-semibold text-slate-600"></p>
         <div class="flex gap-2">
           <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Démarrer</button>
@@ -1379,6 +1396,7 @@
   <!-- Menu « ⋯ » : une ligne par sujet, au lieu des anciens onglets -->
   <div id="menu-sheet" class="hidden glass-panel"></div>
   <div id="back-sheet" class="hidden glass-panel"></div>
+  <button id="btn-undo" class="hidden">↩ Annuler</button>
 
   <!-- Profil du trajet : dénivelé, côtes, pistes -->
   <div id="profile-sheet" class="hidden glass-panel"></div>
@@ -2709,6 +2727,11 @@
           routes.sort((a, b) => score(b) - score(a));
           routes.forEach((r, i) => (r.altIdx = i));
         }
+        if (!opts.noSpike && trimSpikes(routes[0])) {
+          // Étapes ramenées au bord de la route : on recalcule une fois sans les impasses
+          btn.disabled = false;
+          return calculateBikeRoute({ ...opts, noSpike: true });
+        }
         setAlternatives(routes, opts.keepView);
         if (Tourist.on && !opts.single && !opts.tourist && !AppState.isGuiding && !AppState.vias.length && Tourist.done !== odSig() && routes[0].distance > 2500) {
           setTimeout(() => autoTourist(false), 0);
@@ -3334,6 +3357,104 @@
       if (poi?.osmId) Object.assign(v, { osmId: poi.osmId, osmType: poi.osmType, poiId: poi.id });
       AppState.vias.splice(bestPos, 0, v);
     }
+    // Une étape « passer devant » est calculée sur la route, mais affichée sur le lieu lui-même
+    const viaPos = (v) => (v.poiLat != null && !v.visit ? { lat: v.poiLat, lon: v.poiLon } : v);
+    // Point du tracé à une distance donnée depuis le départ
+    function pointAlong(route, along) {
+      const cd = route.cumDist;
+      let i = 1;
+      while (i < cd.length - 1 && cd[i] < along) i++;
+      const a = route.coords[i - 1], b = route.coords[i];
+      const t = Math.max(0, Math.min(1, (along - cd[i - 1]) / Math.max(1e-6, cd[i] - cd[i - 1])));
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    }
+    // « Passer devant » : si le trajet entre dans une impasse (allée, parking) pour toucher l'étape puis
+    // ressort par le même chemin, on pose l'étape à l'entrée de l'impasse (au plus 300 m du lieu)
+    function trimSpikes(route) {
+      route.cumDist = route.cumDist || computeCumDist(route.coords);
+      let changed = false;
+      AppState.vias.forEach((v) => {
+        if (!v.cat || v.visit || v.trimmed) return;
+        v.trimmed = true;
+        const sn = snapToRoute(v.lat, v.lon, route);
+        if (sn.dist > 120) return;
+        const total = route.cumDist[route.cumDist.length - 1];
+        let k = 0;
+        for (let x = 10; x <= 600 && sn.along - x > 0 && sn.along + x < total; x += 10) {
+          const p = pointAlong(route, sn.along - x), q = pointAlong(route, sn.along + x);
+          if (haversineDistance(p[0], p[1], q[0], q[1]) > 25) break;
+          k = x;
+        }
+        if (k < 40 || k > 300) return;
+        const base = pointAlong(route, sn.along - k);
+        v.poiLat = v.poiLat ?? v.lat;
+        v.poiLon = v.poiLon ?? v.lon;
+        v.lat = base[0];
+        v.lon = base[1];
+        changed = true;
+      });
+      return changed;
+    }
+    window.toggleViaVisit = function (i) {
+      const v = AppState.vias[i];
+      if (!v) return;
+      pushUndo();
+      v.visit = !v.visit;
+      if (v.visit && v.poiLat != null) {
+        v.lat = v.poiLat;
+        v.lon = v.poiLon;
+      }
+      if (!v.visit) v.trimmed = false;
+      renderVias();
+      showToast(v.visit ? 'Le trajet ira jusqu’au lieu.' : 'Le trajet passera devant, sans détour.', 'info', 2500);
+      calculateBikeRoute({ keepView: true });
+    };
+    // Annuler : jusqu'à 5 retours en arrière sur le départ, l'arrivée et les étapes
+    const UndoStack = [];
+    let undoTimer = null;
+    function pushUndo() {
+      if (AppState.isGuiding || !AppState.origin || !AppState.dest) return;
+      UndoStack.push(JSON.parse(JSON.stringify({ o: AppState.origin, d: AppState.dest, v: AppState.vias })));
+      if (UndoStack.length > 5) UndoStack.shift();
+      const b = document.getElementById('btn-undo');
+      b.classList.remove('hidden');
+      clearTimeout(undoTimer);
+      undoTimer = setTimeout(() => b.classList.add('hidden'), 8000);
+    }
+    function undoLast() {
+      const st = UndoStack.pop();
+      const b = document.getElementById('btn-undo');
+      clearTimeout(undoTimer);
+      if (!st) return b.classList.add('hidden');
+      setRouteOrigin(st.o.lat, st.o.lon, st.o.label);
+      setRouteDestination(st.d.lat, st.d.lon, st.d.label);
+      AppState.vias = st.v;
+      renderVias();
+      calculateBikeRoute({ keepView: true });
+      if (UndoStack.length) undoTimer = setTimeout(() => b.classList.add('hidden'), 8000);
+      else b.classList.add('hidden');
+    }
+    // Boucle : on revient au départ par un autre côté (un point de passage décalé du trajet aller)
+    function makeLoop() {
+      const A = AppState.origin, B = AppState.dest, route = AppState.currentRoute;
+      if (!A || !B || !route) return;
+      const ab = haversineDistance(A.lat, A.lon, B.lat, B.lon);
+      if (ab < 300) return showToast('C’est déjà une boucle.', 'info');
+      pushUndo();
+      const ky = 111320, kx = 111320 * Math.cos((A.lat * Math.PI) / 180);
+      const ax = 0, ay = 0, bx = (B.lon - A.lon) * kx, by = (B.lat - A.lat) * ky;
+      const mid = route.coords[Math.floor(route.coords.length / 2)];
+      const mx = (mid[1] - A.lon) * kx, my = (mid[0] - A.lat) * ky;
+      const side = Math.sign(bx * my - by * mx) || 1; // côté où passe l'aller
+      const off = Math.min(8000, Math.max(1200, ab * 0.35));
+      const nx = -by / ab, ny = bx / ab; // perpendiculaire (gauche)
+      const wx = (ax + bx) / 2 - side * nx * off, wy = (ay + by) / 2 - side * ny * off;
+      AppState.vias = [...AppState.vias, { lat: B.lat, lon: B.lon, label: B.label }, { lat: A.lat + wy / ky, lon: A.lon + wx / kx, label: 'Point de passage' }];
+      setRouteDestination(A.lat, A.lon, 'Retour au départ');
+      renderVias();
+      calculateBikeRoute({ keepView: false });
+    }
+
     // Remet les étapes dans l'ordre qui fait le moins de chemin (à vol d'oiseau), départ et arrivée fixes
     function optimizeVias() {
       const v = AppState.vias;
@@ -3368,6 +3489,7 @@
           setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
         }
       } else {
+        pushUndo();
         insertVia(lat, lon, label);
         optimizeVias();
       }
@@ -3376,6 +3498,7 @@
     }
 
     window.removeVia = function (idx) {
+      pushUndo();
       AppState.vias.splice(idx, 1);
       if (AppState.isGuiding) {
         // En route : on repart de la position actuelle, sans les étapes déjà dépassées
@@ -3395,7 +3518,8 @@
     function renderVias() {
       AppState.viaMarkers.forEach((m) => AppState.map.removeLayer(m));
       AppState.viaMarkers = AppState.vias.map((v, i) => {
-        const mk = L.marker([v.lat, v.lon], { icon: createPinIcon('#f59e0b', String(i + 1), viaShortName(v)) }).addTo(AppState.map);
+        const vp = viaPos(v);
+        const mk = L.marker([vp.lat, vp.lon], { icon: createPinIcon('#f59e0b', String(i + 1), viaShortName(v)) }).addTo(AppState.map);
         if (viaShortName(v)) mk.on('click', () => openViaSheet(i));
         return mk;
       });
@@ -3673,6 +3797,8 @@
       AppState.lastSpokenThreshold = null;
       AppState.guidanceStepIdx = 1;
       AppState.offRouteCount = 0;
+      AppState.stopSpoken = {};
+      AppState.paused = false;
       AppState.lastGuidedLoad = null;
 
       document.getElementById('guidance-hud').classList.remove('hidden');
@@ -3702,6 +3828,8 @@
 
     function stopLiveGuidance() {
       AppState.isGuiding = false;
+      if (AppState.paused) togglePause();
+      showPauseButton(false);
       AppState.wasGuiding = false;
       closeNearbySheet();
       document.getElementById('hud-nearby').classList.add('hidden');
@@ -3767,9 +3895,88 @@
       });
     }
 
+    // Annonce des étapes nommées : à ~300 m (avec le côté), puis à l'arrivée ; propose la pause
+    function stopAnnounceTick(route, snap) {
+      if (localStorage.getItem('abicyclette.announceStops') === '0') return;
+      AppState.stopSpoken = AppState.stopSpoken || {};
+      AppState.vias.forEach((v) => {
+        const name = viaShortName(v);
+        if (!name) return;
+        const key = `${name}|${v.lat.toFixed(4)}`;
+        const said = AppState.stopSpoken[key];
+        const sv = snapToRoute(v.lat, v.lon, route);
+        if (sv.dist > 150) return;
+        const d = sv.along - snap.along;
+        if (d <= 320 && d > 70 && !said) {
+          AppState.stopSpoken[key] = 'near';
+          const vp = viaPos(v);
+          let side = '';
+          const at = pointAlong(route, sv.along), ahead = pointAlong(route, sv.along + 25);
+          if (haversineDistance(at[0], at[1], vp.lat, vp.lon) > 15) {
+            const diff = (computeBearing(at[0], at[1], vp.lat, vp.lon) - computeBearing(at[0], at[1], ahead[0], ahead[1]) + 360) % 360;
+            side = diff < 180 ? ', à droite' : ', à gauche';
+          }
+          speakFrench(`${name} dans ${Math.round(d / 50) * 50} mètres${side}.`);
+        } else if (d <= 30 && d > -40 && said !== 'here') {
+          AppState.stopSpoken[key] = 'here';
+          speakFrench(`${name}, vous y êtes.`);
+          showPauseButton(true);
+        } else if (said === 'here' && d < -200 && !AppState.paused) showPauseButton(false);
+      });
+    }
+    function showPauseButton(on) {
+      const b = document.getElementById('btn-hud-pause');
+      b.classList.toggle('hidden', !on);
+      b.classList.toggle('flex', on);
+    }
+    function togglePause() {
+      const b = document.getElementById('btn-hud-pause');
+      if (!AppState.paused) {
+        AppState.paused = true;
+        AppState.pausedAt = Date.now();
+        b.textContent = '▶ Repartir';
+        b.classList.replace('bg-amber-500', 'bg-emerald-600');
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        showToast('Pause : le guidage et l’enregistrement attendent.', 'info', 3000);
+      } else {
+        AppState.paused = false;
+        Rides.shift(Date.now() - (AppState.pausedAt || Date.now()));
+        AppState.offRouteCount = 0;
+        b.textContent = '⏸ Pause';
+        b.classList.replace('bg-emerald-600', 'bg-amber-500');
+        showPauseButton(false);
+        speakFrench('C’est reparti.');
+      }
+    }
+    // Pendant le guidage, toucher le bandeau du bas : vue d'ensemble + liste des étapes
+    function openGuidanceStops() {
+      const route = AppState.currentRoute;
+      if (!route || !AppState.vias.length) return;
+      const el = document.getElementById('back-sheet');
+      const along = route._lastAlong || 0;
+      el.innerHTML =
+        `<div class="bk-head"><span>Étapes</span><button data-gsclose aria-label="Fermer">✕</button></div>` +
+        AppState.vias
+          .map((v, i) => {
+            const d = snapToRoute(v.lat, v.lon, route).along - along;
+            return `<div class="gs-row${d < -30 ? ' past' : ''}"><span class="gs-num">${i + 1}</span><span class="bk-txt"><b class="truncate">${escapeHtml(v.label.replace(/^Pause : /, ''))}</b><small>${d < -30 ? 'passée' : d < 40 ? 'vous y êtes' : 'dans ' + formatDistance(d)}</small></span><button class="fav-x" data-gsdel="${i}" aria-label="Retirer cette étape">✕</button></div>`;
+          })
+          .join('');
+      el.classList.remove('hidden');
+      document.body.classList.add('back-open');
+      el.querySelector('[data-gsclose]').addEventListener('click', () => Back.close());
+      el.querySelectorAll('[data-gsdel]').forEach((b) =>
+        b.addEventListener('click', () => {
+          Back.close();
+          removeVia(+b.dataset.gsdel);
+        })
+      );
+    }
+
     function processLiveGuidancePosition(lat, lon, speedMs) {
       const route = AppState.currentRoute;
       if (!route || !route.steps.length) return;
+      if (AppState.paused) return; // en pause : ni recalcul, ni annonce
       ensureStepAlong(route);
 
       // Recherche locale autour de la dernière position connue sur le tracé, puis globale si besoin
@@ -3793,6 +4000,10 @@
         calculateBikeRoute({ single: true, keepView: true });
         return;
       }
+
+      try {
+        stopAnnounceTick(route, snap);
+      } catch {}
 
       if (AppState.offRouteCount >= 3 && isOfflineMode() && Date.now() - AppState.lastRerouteAt > 60000) {
         AppState.lastRerouteAt = Date.now();
@@ -4298,7 +4509,7 @@ ${trkpts}
         AppState.userAccuracyCircle.setLatLng([lat, lon]).setRadius(accuracy);
       }
       if (AppState.glOn && !AppState.isGuiding) Map3D.updateUser(lat, lon);
-      if (Rides.isRecording()) Rides.addPoint(lat, lon, accuracy);
+      if (Rides.isRecording() && !AppState.paused) Rides.addPoint(lat, lon, accuracy);
     }
 
     // -------------------------------------------------------------------------
@@ -4909,6 +5120,12 @@ ${trkpts}
       });
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
       document.getElementById('btn-add-stops').addEventListener('click', addPickedStops);
+      document.getElementById('btn-undo').addEventListener('click', undoLast);
+      document.getElementById('btn-home-loop').addEventListener('click', makeLoop);
+      document.getElementById('btn-hud-pause').addEventListener('click', togglePause);
+      const as = document.getElementById('dp-announce-stops');
+      as.checked = localStorage.getItem('abicyclette.announceStops') !== '0';
+      as.addEventListener('change', () => localStorage.setItem('abicyclette.announceStops', as.checked ? '1' : '0'));
       document.getElementById('btn-stops-map').addEventListener('click', () => {
         Stops.onMap = true;
         collapseMobileSheet();
@@ -5774,8 +5991,9 @@ ${trkpts}
         p.website ? `<a href="${escapeHtml(p.website)}" target="_blank" rel="noopener">Site web</a>` : '',
         p.wikipedia ? `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':')[1] || p.wikipedia)}" target="_blank" rel="noopener">Wikipédia</a>` : '',
       ].filter(Boolean).join('');
+      const vv = p.viaIdx != null ? AppState.vias[p.viaIdx] : null;
       const etape = p.viaIdx != null
-        ? `<button onclick="closePoiSheet(); removeVia(${p.viaIdx})" class="ps-btn">Retirer l’étape</button>`
+        ? `<button onclick="closePoiSheet(); removeVia(${p.viaIdx})" class="ps-btn">Retirer</button>${vv?.cat ? `<button onclick="closePoiSheet(); toggleViaVisit(${p.viaIdx})" class="ps-btn">${vv.visit ? 'Passer devant' : 'Jusqu’au lieu'}</button>` : ''}`
         : `<button onclick="closePoiSheet(); viaToPoint(${p.lat}, ${p.lon}, '${name}')" class="ps-btn">+ Étape</button>`;
       document.getElementById('poi-sheet').innerHTML = `
         <div id="ps-photo" class="ps-photo hidden"></div>
@@ -5806,7 +6024,8 @@ ${trkpts}
         if (confirm(`Retirer l’étape « ${v.label.replace(/^Pause : /, '')} » ?`)) removeVia(i);
         return;
       }
-      const p = { id: v.poiId || `via_${v.lat.toFixed(5)}_${v.lon.toFixed(5)}`, lat: v.lat, lon: v.lon, cat: v.cat && POI_BY_ID[v.cat] ? v.cat : 'attraction', name: v.label.replace(/^Pause : /, ''), osmId: v.osmId, osmType: v.osmType, viaIdx: i };
+      const vp = viaPos(v);
+      const p = { id: v.poiId || `via_${v.lat.toFixed(5)}_${v.lon.toFixed(5)}`, lat: vp.lat, lon: vp.lon, cat: v.cat && POI_BY_ID[v.cat] ? v.cat : 'attraction', name: v.label.replace(/^Pause : /, ''), osmId: v.osmId, osmType: v.osmType, viaIdx: i };
       if (v.poiId) applyOSMDetails(p);
       collapseMobileSheet();
       openPoiSheet(p);
@@ -6195,6 +6414,7 @@ ${trkpts}
           if (manual) showToast('Pas de lieu marquant repéré près de ce trajet.', 'info', 3500);
           return;
         }
+        pushUndo();
         take.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat, p));
         optimizeVias();
         renderVias();
@@ -6212,6 +6432,9 @@ ${trkpts}
       if (!b) return;
       const named = AppState.vias.filter((v) => v.cat && POI_BY_ID[v.cat]?.group === 'visit').length;
       b.classList.toggle('hidden', !AppState.currentRoute || AppState.isGuiding);
+      const lp = document.getElementById('btn-home-loop');
+      const o = AppState.origin, de = AppState.dest;
+      lp.classList.toggle('hidden', !AppState.currentRoute || AppState.isGuiding || !o || !de || haversineDistance(o.lat, o.lon, de.lat, de.lon) < 300);
       b.textContent = named ? `✦ ${named} lieu${named > 1 ? 'x' : ''} à voir sur ce trajet · modifier` : '✦ Passer par des lieux à voir';
     }
     function updateStopsButton() {
@@ -6223,6 +6446,7 @@ ${trkpts}
     function addPickedStops() {
       const picks = [...Stops.picked].map((i) => Stops.found[i]).filter(Boolean);
       if (!picks.length) return;
+      pushUndo();
       picks.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat, p));
       optimizeVias();
       Stops.picked.clear();
@@ -6948,7 +7172,8 @@ ${trkpts}
       function dragHit(m, x, y) {
         let best = -1, bd = 26;
         AppState.vias.forEach((v, i) => {
-          const p = m.project([v.lon, v.lat]);
+          const vp = viaPos(v);
+          const p = m.project([vp.lon, vp.lat]);
           const d = Math.hypot(p.x - x, p.y - y);
           if (d < bd) {
             bd = d;
@@ -6983,10 +7208,12 @@ ${trkpts}
         const cont = m.getCanvasContainer();
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('style', 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3');
-        svg.innerHTML = '<polyline fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 10"/><circle r="15" fill="#f59e0b" stroke="#fff" stroke-width="3"/>';
+        svg.innerHTML = '<polyline fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 10"/><circle r="15" fill="#f59e0b" stroke="#fff" stroke-width="3"/><text font-family="Inter,sans-serif" font-size="15" font-weight="800" fill="#0f172a" stroke="#fff" stroke-width="5" paint-order="stroke"></text>';
         cont.appendChild(svg);
         const a = m.project([prev.lon, prev.lat]), b = m.project([next.lon, next.lat]);
-        Object.assign(drag, { svg, a, b, raf: 0 });
+        const old = hit.viaIdx >= 0 ? AppState.vias[hit.viaIdx] : null;
+        const base = old ? haversineDistance(prev.lat, prev.lon, old.lat, old.lon) + haversineDistance(old.lat, old.lon, next.lat, next.lon) : haversineDistance(prev.lat, prev.lon, next.lat, next.lon);
+        Object.assign(drag, { svg, a, b, raf: 0, base });
         drag.marker.remove();
         dragMove(cx, cy);
       }
@@ -7001,8 +7228,20 @@ ${trkpts}
           const r = d.m.getCanvasContainer().getBoundingClientRect();
           const x = d.cx - r.left, y = d.cy - r.top;
           d.svg.firstChild.setAttribute('points', `${d.a.x},${d.a.y} ${x},${y} ${d.b.x},${d.b.y}`);
-          d.svg.lastChild.setAttribute('cx', x);
-          d.svg.lastChild.setAttribute('cy', y);
+          const c = d.svg.querySelector('circle');
+          c.setAttribute('cx', x);
+          c.setAttribute('cy', y);
+          // Estimation du détour (à vol d'oiseau × 1,25, à 15 km/h) ; le vrai chiffre arrive au lâcher
+          const ll = d.m.unproject([x, y]);
+          const extra = (haversineDistance(d.prev.lat, d.prev.lon, ll.lat, ll.lng) + haversineDistance(ll.lat, ll.lng, d.next.lat, d.next.lon) - d.base) * 1.25;
+          const t = d.svg.querySelector('text');
+          const sign = extra < 0 ? '−' : '+';
+          const km = Math.abs(extra) / 1000;
+          t.textContent = Math.abs(extra) < 50 ? '' : `${sign} ${km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km)} km · ${sign} ${Math.max(1, Math.round(Math.abs(extra) / 4.2 / 60))} min`;
+          const left = x > r.width - 190;
+          t.setAttribute('x', left ? x - 24 : x + 24);
+          t.setAttribute('text-anchor', left ? 'end' : 'start');
+          t.setAttribute('y', y - 22);
         });
       }
       function dragEnd(cancel) {
@@ -7017,6 +7256,7 @@ ${trkpts}
           return;
         }
         AppState.dragBlockUntil = Date.now() + 400;
+        pushUndo();
         const r = d.m.getCanvasContainer().getBoundingClientRect();
         const ll = d.m.unproject([d.cx - r.left, d.cy - r.top]);
         const v = { lat: ll.lat, lon: ll.lng, label: 'Point de passage' };
@@ -7208,7 +7448,7 @@ ${trkpts}
         };
         add(AppState.origin, '#10b981', 'D');
         AppState.vias.forEach((v, i) => {
-          add(v, '#f59e0b', String(i + 1), viaShortName(v));
+          add(viaPos(v), '#f59e0b', String(i + 1), viaShortName(v));
           const el = htmlMarkers[htmlMarkers.length - 1].getElement();
           el.style.cursor = 'pointer';
           el.addEventListener('click', (e) => {
@@ -7459,7 +7699,7 @@ ${trkpts}
       // Dernières destinations (les 6 plus récentes), proposées dans la recherche vide
       const K_RECENT = 'abicyclette.recents';
       function addRecent(lat, lon, label) {
-        if (!label || /^(Ma position GPS|Centre de la carte|Domicile|Travail|Point de départ|Point de passage)$|^Point carte|^Étape /.test(label)) return;
+        if (!label || /^(Ma position GPS|Centre de la carte|Domicile|Travail|Point de départ|Point de passage|Retour au départ)$|^Point carte|^Étape /.test(label)) return;
         const list = getJ(K_RECENT, []).filter((r) => r.label !== label);
         list.unshift({ lat, lon, label });
         setJ(K_RECENT, list.slice(0, 6));
@@ -7680,7 +7920,10 @@ ${trkpts}
           localStorage.setItem('abicyclette.avoidRough', ar.checked ? '1' : '0');
           if (AppState.origin && AppState.dest && !AppState.isGuiding) calculateBikeRoute({ keepView: true });
         });
-        document.querySelector('#hud-bottom > div').addEventListener('click', showGuidanceOverview);
+        document.querySelector('#hud-bottom > div').addEventListener('click', () => {
+          showGuidanceOverview();
+          openGuidanceStops();
+        });
         autoNightTick();
         setInterval(autoNightTick, 300000);
       }
@@ -10140,6 +10383,7 @@ ${trkpts}
 
       return {
         load, render, start, stop, addPoint, show, gpx, confirmDelete,
+        shift: (ms) => rec && (rec.startedAt += ms), // une pause ne compte pas dans la durée
         isRecording: () => !!rec,
         startPoint: () => (rec && rec.pts.length ? { lat: rec.pts[0][0], lon: rec.pts[0][1] } : null),
         isAuto: () => !!rec?.auto,
