@@ -3331,6 +3331,31 @@
       if (poi?.osmId) Object.assign(v, { osmId: poi.osmId, osmType: poi.osmType, poiId: poi.id });
       AppState.vias.splice(bestPos, 0, v);
     }
+    // Remet les étapes dans l'ordre qui fait le moins de chemin (à vol d'oiseau), départ et arrivée fixes
+    function optimizeVias() {
+      const v = AppState.vias;
+      if (v.length < 2 || v.length > 7 || !AppState.origin || !AppState.dest) return;
+      const d = (a, b) => haversineDistance(a.lat, a.lon, b.lat, b.lon);
+      let best = null, bestLen = Infinity;
+      const walk = (rest, path, len) => {
+        if (len >= bestLen) return;
+        if (!rest.length) {
+          const total = len + d(path.length ? path[path.length - 1] : AppState.origin, AppState.dest);
+          if (total < bestLen) {
+            bestLen = total;
+            best = path.slice();
+          }
+          return;
+        }
+        rest.forEach((p, i) => {
+          path.push(p);
+          walk(rest.filter((_, j) => j !== i), path, len + d(path.length > 1 ? path[path.length - 2] : AppState.origin, p));
+          path.pop();
+        });
+      };
+      walk(v, [], 0);
+      if (best) AppState.vias = best;
+    }
     function addVia(lat, lon, label) {
       if (!AppState.origin || !AppState.dest) {
         // Pas encore de trajet : la visite devient la destination
@@ -3339,7 +3364,10 @@
           const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
           setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
         }
-      } else insertVia(lat, lon, label);
+      } else {
+        insertVia(lat, lon, label);
+        optimizeVias();
+      }
       renderVias();
       calculateBikeRoute();
     }
@@ -6135,6 +6163,7 @@ ${trkpts}
           return;
         }
         take.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat, p));
+        optimizeVias();
         renderVias();
         showToast(`Trajet touriste : ${take.sort((a, b) => a.snap.along - b.snap.along).map((p) => p.name).join(' → ')}`, 'success', 5000);
         await calculateBikeRoute({ keepView: false, tourist: true });
@@ -6162,6 +6191,7 @@ ${trkpts}
       const picks = [...Stops.picked].map((i) => Stops.found[i]).filter(Boolean);
       if (!picks.length) return;
       picks.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat, p));
+      optimizeVias();
       Stops.picked.clear();
       updateStopsButton();
       renderVias();
