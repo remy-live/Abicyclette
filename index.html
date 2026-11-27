@@ -1173,10 +1173,12 @@
           <details id="fold-stops" class="pp-fold rounded-2xl bg-white border border-slate-200">
             <summary><span>Ajouter des étapes<small class="text-slate-500">à voir, manger : sur le trajet ou avec un petit détour</small></span></summary>
             <div class="space-y-2.5">
-              <div class="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-slate-200/60">
+              <div class="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-slate-200/60">
                 <button data-sg="visit" class="pg-btn st-grp on">À voir</button>
                 <button data-sg="eat" class="pg-btn st-grp">Manger</button>
+                <button data-sg="addr" class="pg-btn st-grp">Adresse</button>
               </div>
+              <div id="stop-addr-box" class="hidden"></div>
               <button id="btn-route-visits" class="w-full h-11 rounded-xl bg-slate-900 text-white text-sm font-bold">Chercher</button>
               <div id="route-visits-list" class="rounded-xl overflow-hidden"></div>
               <button id="btn-stops-map" class="hidden w-full h-11 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Voir ces lieux sur la carte</button>
@@ -4658,7 +4660,7 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
     const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-    const APP_VERSION = '56 · 27 novembre 2026';
+    const APP_VERSION = '57 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -5347,8 +5349,20 @@ ${trkpts}
       });
       document.querySelectorAll('.st-grp').forEach((b) =>
         b.addEventListener('click', () => {
-          Stops.group = b.dataset.sg;
           document.querySelectorAll('.st-grp').forEach((x) => x.classList.toggle('on', x === b));
+          const addr = b.dataset.sg === 'addr';
+          const ab = document.getElementById('stop-addr-box');
+          ab.classList.toggle('hidden', !addr);
+          ['btn-route-visits', 'route-visits-list'].forEach((id) => document.getElementById(id).classList.toggle('hidden', addr));
+          if (addr) {
+            document.getElementById('btn-stops-map').classList.add('hidden');
+            return addrBox(ab, (p) => {
+              collapseMobileSheet();
+              addVia(p.lat, p.lon, p.name);
+              showToast(`Étape ajoutée : ${p.name}`, 'success', 2500);
+            });
+          }
+          Stops.group = b.dataset.sg;
           findVisitsAlongRoute();
         })
       );
@@ -6643,6 +6657,35 @@ ${trkpts}
         return;
       }
       setTimeout(() => showToast(text, 'info', 7000), delay);
+    }
+    // Petit champ « une adresse » réutilisable : on tape, on choisit, onPick reçoit { lat, lon, name }
+    function addrBox(box, onPick) {
+      box.innerHTML = `<input type="text" placeholder="Adresse, ville, lieu…" autocomplete="off" class="pp-in w-full bg-white border border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500" /><div class="ab-res"></div>`;
+      const inp = box.querySelector('input'), res = box.querySelector('.ab-res');
+      let t = null, n = 0;
+      inp.addEventListener('input', () => {
+        clearTimeout(t);
+        const q = inp.value.trim();
+        if (q.length < 3) return (res.innerHTML = '');
+        t = setTimeout(async () => {
+          const k = ++n;
+          res.innerHTML = '<div class="bk-note">Recherche…</div>';
+          const items = await searchNominatim(q).catch(() => []);
+          if (k !== n) return;
+          res.innerHTML = items.length
+            ? items.map((it, i) => `<button class="st-row" data-ab="${i}"><span class="min-w-0 flex-1"><b class="truncate">${escapeHtml(it.display_name.split(',')[0])}</b><small class="truncate">${escapeHtml(it.display_name.split(',').slice(1).join(',').trim())}${it._dist ? ' · à ' + formatDistance(it._dist) : ''}</small></span><span class="bk-go" style="height:36px;display:flex;align-items:center">+ Étape</span></button>`).join('')
+            : '<div class="bk-note">Aucune adresse trouvée.</div>';
+          res.querySelectorAll('[data-ab]').forEach((b) =>
+            b.addEventListener('click', () => {
+              const it = items[+b.dataset.ab];
+              inp.value = '';
+              res.innerHTML = '';
+              onPick({ lat: parseFloat(it.lat), lon: parseFloat(it.lon), name: it.display_name.split(',')[0] });
+            })
+          );
+        }, 350);
+      });
+      setTimeout(() => inp.focus(), 50);
     }
     function updateStopsButton() {
       const b = document.getElementById('btn-add-stops');
@@ -10254,7 +10297,7 @@ ${trkpts}
       } else {
         rows = comp.pois.filter((x) => x.cat === Nearby.routeCat && x.along > along + 15 && !(Nearby.openOnly && nbClosed(x))).slice(0, 4);
         head = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:16px;font-weight:800">Sur mon trajet</span><button data-nbclose aria-label="Fermer" style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;color:#334155;font-weight:800">✕</button></div>
-          <div class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:4px">${NB_CATS.map((c) => `<button class="nb-chip ${c === Nearby.routeCat ? 'on' : ''}" data-nbcat="${c}" style="--c:${nbColor(c)}" aria-label="${escapeHtml(nbLabel(c))}">${nbSvg(c, 22)}</button>`).join('')}</div>`;
+          <div class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:4px">${NB_CATS.map((c) => `<button class="nb-chip ${c === Nearby.routeCat ? 'on' : ''}" data-nbcat="${c}" style="--c:${nbColor(c)}" aria-label="${escapeHtml(nbLabel(c))}">${nbSvg(c, 22)}</button>`).join('')}<button class="nb-chip" data-nbaddr style="--c:#475569;width:auto;padding:0 14px;font-size:14px;font-weight:800">Adresse…</button></div>`;
         if (!rows.length) foot = `<div style="font-size:13.5px;font-weight:700;color:#64748b;padding:10px 0">Rien de repéré devant vous pour « ${escapeHtml(nbLabel(Nearby.routeCat))} ».</div>`;
         const need = rows.filter((x) => x.ref && x.ref.osmId && !x._asked).map((x) => ((x._asked = true), x.ref));
         if (need.length) fetchOSMDetails(need).then(() => Nearby.sheet === 'route' && renderNearbySheet());
@@ -10269,6 +10312,15 @@ ${trkpts}
           Nearby.sig = '';
         }
         closeNearbySheet();
+      });
+      el.querySelector('[data-nbaddr]')?.addEventListener('click', () => {
+        el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:16px;font-weight:800">Ajouter une adresse</span><button data-nbclose aria-label="Fermer" style="width:36px;height:36px;border-radius:9999px;background:rgba(226,232,240,.7);font-weight:800">✕</button></div><div id="nb-addr"></div>`;
+        el.querySelector('[data-nbclose]').addEventListener('click', closeNearbySheet);
+        addrBox(el.querySelector('#nb-addr'), (p) => {
+          closeNearbySheet();
+          const route = AppState.currentRoute;
+          addViaWhileGuiding({ lat: p.lat, lon: p.lon, name: p.name, id: 'addr_' + Date.now(), along: route ? snapToRoute(p.lat, p.lon, route).along : 0 });
+        });
       });
       el.querySelectorAll('[data-nbcat]').forEach((b) =>
         b.addEventListener('click', () => {
