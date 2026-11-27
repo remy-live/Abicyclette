@@ -251,6 +251,10 @@
     body.sun-mode .pg-btn.on { background: #000 !important; color: #fff !important; }
     .sc-tile { flex: 1 0 58px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; font-size: 11px; font-weight: 700; color: #1e293b; background: transparent; border: 0; }
     .sc-tile .sc-ico { color: var(--c); height: 28px; display: flex; align-items: center; }
+    /* Le menu « ⋯ » reste toujours visible à droite, même avec beaucoup d'icônes (les autres défilent dessous) */
+    .sc-more { position: sticky; right: 0; z-index: 1; flex: 0 0 52px !important; background: #f8fafc; border-radius: 14px; box-shadow: -10px 0 10px -6px rgba(15,23,42,.18); }
+    body.night-mode .sc-more { background: #161b22; }
+    body.bw-mode .sc-more { background: #fff; box-shadow: none; border-left: 2px solid #000 !important; border-radius: 0; }
     body.bw-mode .sc-tile .sc-ico { color: #000 !important; }
     body.night-mode .sc-tile { color: #e6edf3; }
     body.contrast-1 .sc-tile, body.contrast-2 .sc-tile { font-size: 12px; font-weight: 800; }
@@ -4654,7 +4658,7 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
     const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-    const APP_VERSION = '55 · 27 novembre 2026';
+    const APP_VERSION = '56 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
