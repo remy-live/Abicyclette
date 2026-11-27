@@ -1156,7 +1156,7 @@
           </div>
         </details>
 
-        <p class="text-[12.5px] font-semibold text-slate-500 text-center">Un appui long sur la carte place le départ, l'arrivée ou une étape.</p>
+        <p class="text-[12.5px] font-semibold text-slate-500 text-center">Un appui long sur la carte place le départ, l'arrivée ou une étape. Appui long sur le trajet puis glisser : il se modifie.</p>
       </section>
 
       <!-- PAGE BALADE VISITE -->
@@ -6864,7 +6864,89 @@ ${trkpts}
         document.getElementById('btn-hud-3d').textContent = on ? '2D' : '3D';
       }
 
+      // Modifier le trajet en tirant dessus (comme Google Maps) : la ligne crée une étape, une étape se déplace
+      let drag = null;
+      const dragGuard = () => AppState.currentRoute && !AppState.isGuiding && !AppState.pickViaMode && AppState.origin && AppState.dest;
+      function dragHit(m, x, y) {
+        let best = -1, bd = 26;
+        AppState.vias.forEach((v, i) => {
+          const p = m.project([v.lon, v.lat]);
+          const d = Math.hypot(p.x - x, p.y - y);
+          if (d < bd) {
+            bd = d;
+            best = i;
+          }
+        });
+        if (best >= 0) return { viaIdx: best };
+        if (m.getLayer('route-casing') && m.queryRenderedFeatures([[x - 16, y - 16], [x + 16, y + 16]], { layers: ['route-casing'] }).length) return { viaIdx: -1 };
+        return null;
+      }
+      function dragStart(m, hit, cx, cy, touch) {
+        const r = m.getCanvasContainer().getBoundingClientRect();
+        const ll = m.unproject([cx - r.left, cy - r.top]);
+        const route = AppState.currentRoute;
+        const seq = [AppState.origin, ...AppState.vias, AppState.dest];
+        let pos = hit.viaIdx, prev, next;
+        if (pos < 0) {
+          const along = snapToRoute(ll.lat, ll.lng, route).along;
+          pos = AppState.vias.filter((v) => snapToRoute(v.lat, v.lon, route).along < along).length;
+          prev = seq[pos];
+          next = seq[pos + 1];
+        } else {
+          prev = seq[pos];
+          next = seq[pos + 2];
+        }
+        const el = htmlPin('#f59e0b', '✥');
+        el.style.pointerEvents = 'none';
+        drag = { m, hit, pos, prev, next, sx: cx, sy: cy, moved: false, touch, marker: new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(m) };
+        m.dragPan.disable();
+        if (touch) navigator.vibrate?.(15);
+        if (!m.getSource('dragline')) {
+          m.addSource('dragline', { type: 'geojson', data: emptyFC() });
+          m.addLayer({ id: 'dragline', type: 'line', source: 'dragline', paint: { 'line-color': '#f59e0b', 'line-width': 4, 'line-dasharray': [1.5, 1.5] } });
+        }
+        dragMove(cx, cy);
+      }
+      function dragMove(cx, cy) {
+        const d = drag;
+        const r = d.m.getCanvasContainer().getBoundingClientRect();
+        const ll = d.m.unproject([cx - r.left, cy - r.top]);
+        d.ll = ll;
+        if (Math.hypot(cx - d.sx, cy - d.sy) > 8) d.moved = true;
+        d.marker.setLngLat(ll);
+        d.m.getSource('dragline')?.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[d.prev.lon, d.prev.lat], [ll.lng, ll.lat], [d.next.lon, d.next.lat]] } }] });
+      }
+      function dragEnd(cancel) {
+        const d = drag;
+        if (!d) return;
+        drag = null;
+        d.marker.remove();
+        d.m.getSource('dragline')?.setData(emptyFC());
+        d.m.dragPan.enable();
+        if (cancel) return;
+        if (!d.moved) {
+          if (d.touch) showToast('Gardez le doigt appuyé et glissez pour modifier le trajet.', 'info', 2500);
+          return;
+        }
+        AppState.dragBlockUntil = Date.now() + 400;
+        const v = { lat: d.ll.lat, lon: d.ll.lng, label: 'Point de passage' };
+        if (d.hit.viaIdx >= 0) AppState.vias[d.hit.viaIdx] = v;
+        else AppState.vias.splice(d.pos, 0, v);
+        renderVias();
+        calculateBikeRoute({ keepView: true });
+      }
+
       function bindEvents(m) {
+        m.on('click', (e) => {
+          if (Date.now() < (AppState.dragBlockUntil || 0)) e.preventDefault();
+        });
+        m.on('mousedown', 'route-casing', (e) => {
+          if (!dragGuard() || e.originalEvent.button !== 0) return;
+          e.preventDefault();
+          dragStart(m, { viaIdx: -1 }, e.originalEvent.clientX, e.originalEvent.clientY, false);
+        });
+        window.addEventListener('mousemove', (ev) => drag && !drag.touch && dragMove(ev.clientX, ev.clientY));
+        window.addEventListener('mouseup', () => drag && !drag.touch && dragEnd(false));
         m.on('click', 'route-casing', (e) => {
           if (e.defaultPrevented || AppState.isGuiding) return;
           e.preventDefault();
@@ -6904,6 +6986,8 @@ ${trkpts}
           clearTimeout(lpTimer);
           lpTimer = setTimeout(() => {
             const r = cont.getBoundingClientRect();
+            const hit = dragGuard() && dragHit(m, lpStart.x - r.left, lpStart.y - r.top);
+            if (hit) return dragStart(m, hit, lpStart.x, lpStart.y, true);
             const ll = m.unproject([lpStart.x - r.left, lpStart.y - r.top]);
             openMapClickContextMenu({ lat: ll.lat, lng: ll.lng }, { clientX: lpStart.x, clientY: lpStart.y });
           }, 600);
@@ -6913,6 +6997,20 @@ ${trkpts}
           if (lpStart && Math.hypot(t.clientX - lpStart.x, t.clientY - lpStart.y) > 10) clearTimeout(lpTimer);
         }, { passive: true });
         cont.addEventListener('touchend', () => clearTimeout(lpTimer), { passive: true });
+        // Pendant qu'on tire le trajet : la carte ne bouge pas, le point suit le doigt
+        cont.addEventListener('touchmove', (ev) => {
+          if (!drag) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          dragMove(ev.touches[0].clientX, ev.touches[0].clientY);
+        }, { capture: true, passive: false });
+        cont.addEventListener('touchend', (ev) => {
+          if (!drag) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          dragEnd(false);
+        }, { capture: true, passive: false });
+        cont.addEventListener('touchcancel', () => dragEnd(true), { capture: true });
 
         // La carte Leaflet (invisible) suit la vue : elle sert au chargement des lieux
         m.on('moveend', () => {
@@ -7008,14 +7106,19 @@ ${trkpts}
         add(AppState.origin, '#10b981', 'D');
         AppState.vias.forEach((v, i) => {
           add(v, '#f59e0b', String(i + 1), viaShortName(v));
-          if (viaShortName(v)) {
-            const el = htmlMarkers[htmlMarkers.length - 1].getElement();
-            el.style.cursor = 'pointer';
-            el.addEventListener('click', (e) => {
-              e.stopPropagation();
-              openViaSheet(i);
-            });
-          }
+          const el = htmlMarkers[htmlMarkers.length - 1].getElement();
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (Date.now() < (AppState.dragBlockUntil || 0)) return;
+            openViaSheet(i);
+          });
+          el.addEventListener('mousedown', (ev) => {
+            if (!dragGuard() || ev.button !== 0) return;
+            ev.stopPropagation();
+            ev.preventDefault();
+            dragStart(m, { viaIdx: i }, ev.clientX, ev.clientY, false);
+          });
         });
         add(AppState.dest, '#f43f5e', 'A');
         if (AppState.userLocation && !AppState.isGuiding) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
