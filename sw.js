@@ -1,6 +1,6 @@
 /* Service worker « À bicyclette » : garde la coque de l'appli disponible hors ligne.
    Les tuiles de carte et les données (eau, lieux, pistes) sont gérées à part, dans IndexedDB. */
-const CACHE = 'abicyclette-v52';
+const CACHE = 'abicyclette-v53';
 const SHELL = [
   './',
   './index.html',

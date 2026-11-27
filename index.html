@@ -402,6 +402,9 @@
     .hp[open] summary::after { content: '–'; }
     .hp p { padding: 0 2px 12px; font-size: 14px; line-height: 1.5; color: #334155; font-weight: 500; }
     body.night-mode .hp summary { color: #e6edf3; } body.night-mode .hp p { color: #c9d1d9; }
+    #hud-side:not(.more-open) [data-hudmore] { display: none !important; }
+    .hm-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; font-size: 11.5px; font-weight: 700; color: #475569; }
+    body.night-mode .hm-item { color: #9aa6b2; } body.bw-mode .hm-item { color: #000; }
     .mn-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 8px; }
     .mn-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 94px; border-radius: 18px; background: #f1f5f9; color: #0f172a; font-size: 14.5px; font-weight: 800; }
     .mn-tile.main { background: #059669; color: #fff; }
@@ -782,11 +785,12 @@
     <div id="nearby-sheet" class="hidden glass-panel"></div>
     <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col items-end gap-2">
       <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="hidden">3D</button>
-      <button id="btn-hud-north" aria-label="Sens de la marche ou nord en haut" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg id="icon-north" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 4.5l3 7.5h-6z" fill="#e11d48" stroke="#e11d48"/><path d="M12 19.5l-3-7.5h6z"/></svg></button>
-      <button id="btn-hud-display" aria-label="Affichage : style de carte, contraste, 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+      <button id="btn-hud-north" data-hudmore aria-label="Sens de la marche ou nord en haut" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg id="icon-north" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 4.5l3 7.5h-6z" fill="#e11d48" stroke="#e11d48"/><path d="M12 19.5l-3-7.5h6z"/></svg></button>
+      <button id="btn-hud-display" data-hudmore aria-label="Affichage : style de carte, contraste, 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
       <button id="btn-hud-home" aria-label="Rentrer" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></svg></button>
-      <button id="btn-hud-photo" aria-label="Prendre une photo" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
-      <button id="btn-hud-onroute" aria-label="Chercher sur mon trajet" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+      <button id="btn-hud-photo" data-hudmore aria-label="Prendre une photo" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      <button id="btn-hud-onroute" data-hudmore aria-label="Chercher sur mon trajet" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
+      <button id="btn-hud-more" aria-label="Plus : boussole, affichage, photo, chercher sur le trajet" aria-expanded="false" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800 text-2xl font-extrabold leading-none">⋯</button>
       <button id="btn-hud-pause" class="hidden h-14 px-4 rounded-2xl bg-amber-500 text-white text-sm font-extrabold items-center gap-2 shadow-lg">⏸ Pause</button>
       <button id="btn-hud-recenter" aria-label="Recentrer sur ma position" class="hidden h-14 px-4 rounded-2xl bg-sky-600 text-white text-sm font-extrabold items-center gap-2 shadow-lg"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>Recentrer</button>
       <button id="btn-hud-visits" aria-label="Annoncer les lieux à voir" aria-pressed="false" class="hidden glass-panel w-14 h-14 rounded-2xl items-center justify-center text-slate-400">
@@ -915,7 +919,7 @@
       </section>
 
       <section>
-        <h3 class="dp-title">Guidage</h3>
+        <h3 id="dp-guidance-title" class="dp-title">Guidage</h3>
         <label class="dp-row">
           <span>Voix</span>
           <input id="dp-voice" type="checkbox" class="dp-switch" checked />
@@ -1033,20 +1037,23 @@
       <div id="home-route" class="hidden space-y-2.5">
         <div class="flex items-baseline justify-between gap-3">
           <div id="home-dest" class="text-lg font-extrabold text-slate-900 truncate">Destination</div>
-          <button id="btn-profile" aria-label="Profil du trajet : dénivelé" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center" style="margin-left:auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20l6-9 4 5 3-4 7 8z"/></svg></button>
-          <button id="btn-share-trip" aria-label="Partager ce trajet par lien" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v7h14v-7"/></svg></button>
-          <button id="btn-save-trip" aria-label="Garder ce trajet dans mes favoris" class="shrink-0 w-9 h-9 rounded-full bg-slate-200/70 text-slate-700 text-base">☆</button>
           <div id="home-dist" class="text-sm font-semibold text-slate-500 shrink-0"></div>
         </div>
         <div id="home-alts" class="flex gap-2"></div>
         <div class="flex gap-2">
-          <button id="btn-home-tourist" class="hidden flex-1 min-w-0 h-9 px-2 rounded-xl text-[13.5px] font-extrabold text-amber-700 bg-amber-500/10 flex items-center justify-center gap-1.5 truncate"></button>
-          <button id="btn-home-loop" class="hidden shrink-0 h-9 px-3 rounded-xl text-[13.5px] font-extrabold text-slate-700 bg-slate-500/10">↺ Boucle</button>
+          <button id="btn-home-tourist" class="hidden flex-1 min-w-0 h-10 px-2 rounded-xl text-[13.5px] font-extrabold text-amber-700 bg-amber-500/10 flex items-center justify-center gap-1.5 truncate"></button>
+          <button id="btn-home-loop" class="hidden shrink-0 h-10 px-3 rounded-xl text-[13.5px] font-extrabold text-slate-700 bg-slate-500/10">↺ Boucle</button>
+          <button id="btn-home-more" aria-label="Plus : profil, partager, favori, hors ligne" aria-expanded="false" class="shrink-0 w-12 h-10 rounded-xl text-xl font-extrabold leading-none text-slate-700 bg-slate-500/10">⋯</button>
+        </div>
+        <div id="home-more" class="hidden flex gap-1 pt-1">
+          <div class="hm-item"><button id="btn-profile" aria-label="Profil du trajet : dénivelé" class="shrink-0 w-11 h-11 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20l6-9 4 5 3-4 7 8z"/></svg></button><span>Dénivelé</span></div>
+          <div class="hm-item"><button id="btn-share-trip" aria-label="Partager ce trajet par lien" class="shrink-0 w-11 h-11 rounded-full bg-slate-200/70 text-slate-700 flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v7h14v-7"/></svg></button><span>Partager</span></div>
+          <div class="hm-item"><button id="btn-save-trip" aria-label="Garder ce trajet dans mes favoris" class="shrink-0 w-11 h-11 rounded-full bg-slate-200/70 text-slate-700 text-base">☆</button><span>Favori</span></div>
+          <div class="hm-item"><button id="btn-take-trip" aria-label="Emporter ce trajet : le télécharger pour rouler sans réseau" class="w-11 h-11 rounded-full bg-slate-200/70 text-slate-800 text-sm font-extrabold flex items-center justify-center"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button><span>Hors ligne</span></div>
         </div>
         <p id="home-weather" class="hidden text-[12px] font-semibold text-slate-600"></p>
         <div class="flex gap-2">
           <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Démarrer</button>
-          <button id="btn-take-trip" aria-label="Emporter ce trajet : le télécharger pour rouler sans réseau" class="w-14 h-14 rounded-2xl bg-slate-200/70 text-slate-800 text-sm font-extrabold flex items-center justify-center"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button>
           <button id="btn-home-clear" aria-label="Effacer le trajet" class="w-14 h-14 rounded-2xl bg-slate-200/70 text-slate-600 text-lg font-bold">✕</button>
         </div>
       </div>
@@ -1326,7 +1333,8 @@
             <details class="hp"><summary>Sur tous mes appareils</summary><p>Réglages → Synchronisation : avec un jeton GitHub, lieux, sorties et trajet se retrouvent partout.</p></details>
           </div>
         </details>
-        <button id="btn-set-display" class="dp-link pp-link"><span>Affichage et carte<small>style, 3D, contraste, vélo, guidage</small></span><i>›</i></button>
+        <button id="btn-set-display" class="dp-link pp-link"><span>Carte et affichage<small>style, 3D, contraste, lieux affichés</small></span><i>›</i></button>
+        <button id="btn-set-guidance" class="dp-link pp-link"><span>Guidage et voix<small>voix complète ou discrète, annonces, écran verrouillé</small></span><i>›</i></button>
         <button id="btn-open-offline-from-tab" class="dp-link pp-link"><span>Cartes hors ligne<small id="offline-summary-mini">0 tuiles et 0 points d'eau en cache</small></span><i>›</i></button>
         <button id="btn-set-shortcuts" class="dp-link pp-link"><span>Icônes du bas<small>les raccourcis affichés sur la carte</small></span><i>›</i></button>
 
@@ -2770,6 +2778,7 @@
           return calculateBikeRoute({ ...opts, noSpike: true });
         }
         setAlternatives(routes, opts.keepView);
+        if (!AppState.isGuiding) tipOnce('drag', 'Astuce : appui long sur le trajet puis glissez, pour le faire passer ailleurs.', 2500);
         if (Tourist.on && !opts.single && !opts.tourist && !AppState.isGuiding && !AppState.vias.length && Tourist.done !== odSig() && routes[0].distance > 2500) {
           setTimeout(() => autoTourist(false), 0);
         }
@@ -3153,7 +3162,21 @@
       list.querySelectorAll('.home-alt').forEach((b) => b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.halt, 10), true)));
     }
 
-    function altCardsHtml(alts) {
+    // compact (carte) : durée, distance, pistes ; un seul avertissement, le plus gênant. Détail complet dans la page Itinéraire.
+    function altCardsHtml(alts, compact) {
+      const warn = (a) => (a.roughShare >= 15 ? `${a.roughShare} % chemin` : a.maxGrade >= 8 ? `côte à ${a.maxGrade} %` : '');
+      if (compact)
+        return alts
+          .map(
+            (a, i) => `
+          <button data-halt="${i}" class="home-alt ${i === AppState.selectedAltIdx ? 'on' : ''}">
+            <div class="alt-name">${a.name || (i ? 'Autre' : 'Conseillé')}</div>
+            <div class="text-lg leading-tight font-extrabold text-slate-900">${formatDuration(a.duration)}</div>
+            <div class="text-[11px] font-semibold text-slate-500 truncate">${formatDistance(a.distance)}</div>
+            ${warn(a) ? `<div class="alt-rough">${warn(a)}</div>` : a.cycleShare != null ? `<div class="alt-cyc">${a.cycleShare} % pistes</div>` : ''}
+          </button>`
+          )
+          .join('');
       return alts
         .map(
           (a, i) => `
@@ -3855,6 +3878,7 @@
 
       startGeoWatch();
       Live.start();
+      tipOnce('overview', 'Astuce : touchez le bandeau du bas pour voir tout le trajet et vos étapes.', 6000);
       LockInfo.start();
       if (!AppState.tripStart || !AppState.wasGuiding) AppState.tripStart = AppState.userLocation ? { lat: AppState.userLocation.lat, lon: AppState.userLocation.lon } : AppState.origin && { lat: AppState.origin.lat, lon: AppState.origin.lon };
       AppState.wasGuiding = true;
@@ -4629,7 +4653,8 @@ ${trkpts}
     // 13. GESTION DES ONGLETS, BOTTOM SHEET MOBILE & ÉVÉNEMENTS UI
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
-    const APP_VERSION = '52 · 27 novembre 2026';
+    const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+    const APP_VERSION = '53 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -5185,6 +5210,27 @@ ${trkpts}
       document.getElementById('btn-page-share').addEventListener('click', () => document.getElementById('btn-share-trip').click());
       document.getElementById('btn-page-photos').addEventListener('click', () => document.getElementById('btn-dp-photos').click());
       document.getElementById('btn-set-display').addEventListener('click', () => document.getElementById('btn-display').click());
+      document.getElementById('btn-set-guidance').addEventListener('click', () => {
+        document.getElementById('btn-display').click();
+        setTimeout(() => document.getElementById('dp-guidance-title').scrollIntoView({ block: 'start' }), 120);
+      });
+      // « ⋯ » : actions secondaires, sur la carte résultat et pendant le guidage
+      const hm = document.getElementById('btn-home-more');
+      hm.addEventListener('click', () => {
+        const open = document.getElementById('home-more').classList.toggle('hidden') === false;
+        hm.setAttribute('aria-expanded', String(open));
+      });
+      const hs = document.getElementById('hud-side'), hb = document.getElementById('btn-hud-more');
+      let hsTimer = null;
+      const hudMore = (open) => {
+        hs.classList.toggle('more-open', open);
+        hb.setAttribute('aria-expanded', String(open));
+        hb.textContent = open ? '✕' : '⋯';
+        clearTimeout(hsTimer);
+        if (open) hsTimer = setTimeout(() => hudMore(false), 8000); // se referme seul : rien à ranger en roulant
+      };
+      hb.addEventListener('click', () => hudMore(!hs.classList.contains('more-open')));
+      hs.querySelectorAll('[data-hudmore]').forEach((b) => b.addEventListener('click', () => b.id !== 'btn-hud-north' && hudMore(false)));
       document.getElementById('btn-set-shortcuts').addEventListener('click', openShortcutsModal);
       document.getElementById('btn-record').addEventListener('click', () => (Rides.isRecording() ? Rides.stop() : Rides.start(false)));
 
@@ -6030,7 +6076,7 @@ ${trkpts}
         const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => inBounds(p) && AppState.poiEnabled.has(p.cat));
         AppState.poiPoints = cached;
         renderPOIs(cached);
-        statusEl.textContent = `${cached.length} lieu(x) (cache hors ligne)`;
+        statusEl.textContent = `${plur(cached.length, 'lieu', 'lieux')} (cache hors ligne)`;
         return;
       }
 
@@ -6062,9 +6108,9 @@ ${trkpts}
         AppState.poiPoints = pts;
         OfflineDB.putExtraPOIs(pts);
         renderPOIs(pts);
-        statusEl.textContent = `${pts.length} lieu(x) dans la zone${hint ? ' · ' + hint.toLowerCase() : ''}`;
+        statusEl.textContent = `${plur(pts.length, 'lieu', 'lieux')} dans la zone${hint ? ' · ' + hint.toLowerCase() : ''}`;
         if (hint) setMapStatus(hint, { autoHide: 4000 });
-        else setMapStatus(pts.length ? `${pts.length} lieu(x) affiché(s)` : 'Aucun lieu de ces types ici', { autoHide: 2500 });
+        else setMapStatus(pts.length ? `${plur(pts.length, 'lieu affiché', 'lieux affichés')}` : 'Aucun lieu de ces types ici', { autoHide: 2500 });
         // Horaires des lieux de la liste, en un seul appel à OpenStreetMap
         fetchOSMDetails(pts.filter((p) => POI_BY_ID[p.cat]?.group === AppState.placesGroup).slice(0, 25)).then(() => {
           if (seq === poiRequestSeq) renderPOIList(AppState.poiPoints);
@@ -6088,16 +6134,16 @@ ${trkpts}
         AppState.poiPoints = pts;
         OfflineDB.putExtraPOIs(pts);
         renderPOIs(pts);
-        statusEl.textContent = `${pts.length} lieu(x) dans la zone${hint ? ' · ' + hint.toLowerCase() : ''}`;
+        statusEl.textContent = `${plur(pts.length, 'lieu', 'lieux')} dans la zone${hint ? ' · ' + hint.toLowerCase() : ''}`;
         if (hint) setMapStatus(hint, { autoHide: 4000 });
-        else setMapStatus(pts.length ? `${pts.length} lieu(x) affiché(s)` : 'Aucun lieu de ces types ici', { autoHide: 2500 });
+        else setMapStatus(pts.length ? `${plur(pts.length, 'lieu affiché', 'lieux affichés')}` : 'Aucun lieu de ces types ici', { autoHide: 2500 });
       } catch {
         if (seq !== poiRequestSeq) return;
         const cached = (await OfflineDB.getAllExtraPOIs()).filter((p) => inBounds(p) && AppState.poiEnabled.has(p.cat));
         AppState.poiPoints = cached;
         renderPOIs(cached);
-        statusEl.textContent = cached.length ? `${cached.length} lieu(x) (secours local)` : 'Serveur des lieux occupé — touchez ↻ dans un instant';
-        setMapStatus(cached.length ? `${cached.length} lieu(x) en mémoire · toucher pour réessayer` : 'Serveur des lieux occupé · toucher pour réessayer', { retry: true });
+        statusEl.textContent = cached.length ? `${plur(cached.length, 'lieu', 'lieux')} (secours local)` : 'Serveur des lieux occupé — touchez ↻ dans un instant';
+        setMapStatus(cached.length ? `${plur(cached.length, 'lieu', 'lieux')} en mémoire · toucher pour réessayer` : 'Serveur des lieux occupé · toucher pour réessayer', { retry: true });
         retryPOIsSoon();
       }
     }
@@ -6584,6 +6630,16 @@ ${trkpts}
       lp.classList.toggle('hidden', !AppState.currentRoute || AppState.isGuiding || !o || !de || haversineDistance(o.lat, o.lon, de.lat, de.lon) < 300);
       b.textContent = named ? `✦ ${named} lieu${named > 1 ? 'x' : ''} à voir sur ce trajet · modifier` : '✦ Passer par des lieux à voir';
     }
+    // Astuces montrées une seule fois, au moment où elles servent
+    function tipOnce(key, text, delay = 1200) {
+      try {
+        if (localStorage.getItem('abicyclette.tip.' + key)) return;
+        localStorage.setItem('abicyclette.tip.' + key, '1');
+      } catch {
+        return;
+      }
+      setTimeout(() => showToast(text, 'info', 7000), delay);
+    }
     function updateStopsButton() {
       const b = document.getElementById('btn-add-stops');
       const n = Stops.picked.size;
@@ -6874,7 +6930,7 @@ ${trkpts}
 
       async function sync(silent = true) {
         if (!getToken()) {
-          setStatus(`${visiblePlaces().length} lieu(x) sur cet appareil`);
+          setStatus(`${plur(visiblePlaces().length, 'lieu', 'lieux')} sur cet appareil`);
           refreshInfo();
           return;
         }
@@ -6941,7 +6997,7 @@ ${trkpts}
           renderMyPlaces();
           Rides.replaceAll(mergedRides);
           const t = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-          setStatus(`☁️ Synchronisé à ${t} • ${visiblePlaces().length} lieu(x), ${Rides.all().filter((r) => !r.deleted).length} sortie(s)`);
+          setStatus(`☁️ Synchronisé à ${t} • ${plur(visiblePlaces().length, 'lieu', 'lieux')}, ${plur(Rides.all().filter((r) => !r.deleted).length, 'sortie', 'sorties')}`);
           if (!silent) showToast('Lieux synchronisés.', 'success', 2000);
         } catch (e) {
           if (e.status === 401 || e.status === 403) {
@@ -6974,7 +7030,7 @@ ${trkpts}
         localStorage.removeItem(K_TOKEN);
         localStorage.removeItem(K_GIST);
         refreshInfo();
-        setStatus(`${visiblePlaces().length} lieu(x) sur cet appareil`);
+        setStatus(`${plur(visiblePlaces().length, 'lieu', 'lieux')} sur cet appareil`);
         showToast('Jeton oublié. Vos lieux restent sur cet appareil.', 'info');
       }
 
@@ -8306,6 +8362,7 @@ ${trkpts}
       function renderState() {
         const el = document.getElementById('sncf-state');
         if (el) el.textContent = key() ? 'clé SNCF enregistrée' : 'clé SNCF gratuite : à ajouter';
+        document.getElementById('fold-sncf')?.classList.toggle('hidden', !key());
         const inp = document.getElementById('input-sncf-key');
         if (inp && !inp.value && key()) inp.placeholder = 'Clé enregistrée (••••' + key().slice(-4) + ')';
       }
@@ -8441,7 +8498,7 @@ ${trkpts}
           st = await nearestStations(u);
         } catch {}
         if (tk !== token || !box) return;
-        const hint = note || `Pour voir ici les prochains trains et l’heure à laquelle partir : <button data-bkkey class="bk-inl">ajoutez la clé SNCF gratuite</button>.`;
+        const hint = note || 'Les horaires se consultent avec les boutons ci-dessous.';
         box.innerHTML = (st.length ? st.slice(0, 3).map((s) => stationRow(s)).join('') : '<div class="bk-note">Aucune gare trouvée à moins de 25 km.</div>') + `<div class="bk-note">${hint}</div>` + links(u, home);
         bindStations(box);
       }
@@ -9663,7 +9720,7 @@ ${trkpts}
         box.innerHTML = r.cycleShare != null ? `<div class="alt-cyc text-[12px] font-extrabold" style="color:#0f9f8f">${r.cycleShare} % sur pistes cyclables · ↗ ${r.ascent} m${r.roughShare >= 5 ? ` · <span style="color:#b45309">${r.roughShare} % chemin</span>` : ''}</div>` : '';
         return;
       }
-      box.innerHTML = altCardsHtml(alts);
+      box.innerHTML = altCardsHtml(alts, true);
       box.querySelectorAll('.home-alt').forEach((b) => b.addEventListener('click', () => selectAlternative(parseInt(b.dataset.halt, 10), true)));
     }
 
@@ -10493,7 +10550,7 @@ ${trkpts}
         const rides = visible();
         const totalKm = rides.reduce((a, r) => a + r.distance, 0) / 1000;
         document.getElementById('rides-summary').textContent = rides.length
-          ? `${rides.length} sortie(s) · ${totalKm.toFixed(0)} km au total`
+          ? `${plur(rides.length, 'sortie', 'sorties')} · ${totalKm.toFixed(0)} km au total`
           : 'Enregistrées pendant le guidage, ou à la demande';
         if (!rides.length) {
           el.innerHTML = '<div class="text-xs text-slate-500 text-center py-4 bg-white/50 rounded-xl">Aucune sortie pour l’instant.</div>';
