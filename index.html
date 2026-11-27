@@ -4660,7 +4660,7 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
     const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-    const APP_VERSION = '57 · 27 novembre 2026';
+    const APP_VERSION = '58 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -7607,7 +7607,13 @@ ${trkpts}
         });
         m.on('style.load', async () => {
           try {
-            m.setTerrain(AppState.view3D && m.getSource('dem') ? { source: 'dem', exaggeration: 1.5 } : null);
+            // Ciel assorti au style (sinon une bande claire apparaît à l'horizon en 3D sombre)
+            const dark = AppState.theme === 'night' || AppState.theme === 'noir';
+            const c = dark ? '#0b1220' : AppState.theme === 'bw' ? '#ffffff' : '#dbe7f3';
+            m.setSky?.({ 'sky-color': c, 'horizon-color': c, 'fog-color': c, 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.4 });
+          } catch {}
+          try {
+            m.setTerrain(AppState.view3D && !AppState.isGuiding && m.getSource('dem') ? { source: 'dem', exaggeration: 1.5 } : null);
           } catch {}
           const quick = AppState.sunMode ? 0 : 500;
           if (AppState.view3D) m.easeTo({ pitch: Math.max(55, m.getPitch()), duration: quick });
@@ -7864,6 +7870,10 @@ ${trkpts}
         if (!m) return;
         ensureArrow(true);
         if (!userMarker._map) userMarker.setLngLat([lon, lat]).addTo(m);
+        // Pas de relief pendant le guidage : avec le relief, la flèche se décale de la caméra (elle partait vers l'horizon)
+        try {
+          if (m.getTerrain()) m.setTerrain(null);
+        } catch {}
         const now = performance.now();
         // Durée = temps écoulé depuis la position précédente : la carte glisse en continu jusqu'à la suivante
         const dt = lastFollowAt ? Math.min(2500, Math.max(300, now - lastFollowAt)) : 600;
@@ -7886,11 +7896,12 @@ ${trkpts}
         const h = m.getContainer().clientHeight;
         m.easeTo({
           center: [lon, lat], bearing: AppState.northUp ? 0 : smoothBearing,
-          pitch: AppState.view3D ? 62 : 0,
+          pitch: AppState.view3D ? 55 : 0,
           zoom: lastZoom,
           duration: dt, easing: (t) => t,
           // La flèche reste au tiers bas de l'écran : on voit loin devant
-          padding: { top: Math.round(h * (AppState.view3D ? 0.72 : 0.38)), bottom: 40, left: 0, right: 0 },
+          // Position de la flèche à l'écran = haut + (reste)/2 → environ 64 % de la hauteur, en 2D comme en 3D
+          padding: { top: Math.round(h * (AppState.view3D ? 0.34 : 0.38)), bottom: 40, left: 0, right: 0 },
           essential: true,
         });
       }
@@ -7914,6 +7925,10 @@ ${trkpts}
         lastFollowAt = 0;
         lastZoom = null;
         ensureArrow(false);
+        try {
+          const m = AppState.map3d;
+          if (m && AppState.view3D && m.getSource('dem') && !m.getTerrain()) m.setTerrain({ source: 'dem', exaggeration: 1.5 });
+        } catch {}
         AppState.map3d?.easeTo({ pitch: AppState.view3D ? 55 : 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
       }
 
