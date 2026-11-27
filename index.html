@@ -1133,6 +1133,7 @@
               </div>
               <button id="btn-route-visits" class="w-full h-11 rounded-xl bg-slate-900 text-white text-sm font-bold">Chercher</button>
               <div id="route-visits-list" class="rounded-xl overflow-hidden"></div>
+              <button id="btn-stops-map" class="hidden w-full h-11 rounded-xl bg-slate-100 text-slate-800 text-sm font-bold">Voir ces lieux sur la carte</button>
               <button id="btn-add-stops" class="hidden pp-main bg-amber-500 text-white"></button>
             </div>
           </details>
@@ -3295,6 +3296,9 @@
       document.getElementById('stat-elevation').textContent = `+${routeData.ascent} / -${routeData.descent} m`;
       document.getElementById('route-visits-list').innerHTML = '';
       document.getElementById('btn-route-visits').textContent = 'Chercher';
+      document.getElementById('btn-stops-map').classList.add('hidden');
+      Stops.found = [];
+      Stops.onMap = false;
       Stops.picked.clear();
       updateStopsButton();
 
@@ -4863,6 +4867,15 @@ ${trkpts}
       });
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
       document.getElementById('btn-add-stops').addEventListener('click', addPickedStops);
+      document.getElementById('btn-stops-map').addEventListener('click', () => {
+        Stops.onMap = true;
+        collapseMobileSheet();
+        if (AppState.glOn) {
+          Map3D.refreshOverlays();
+          if (AppState.routePolyline) Map3D.fitBounds(AppState.routePolyline.getBounds());
+        }
+        showToast('Touchez un lieu sur la carte, puis « + Étape ».', 'info', 4000);
+      });
       const tt = document.getElementById('toggle-tourist');
       tt.checked = Tourist.on;
       tt.addEventListener('change', () => {
@@ -6045,6 +6058,8 @@ ${trkpts}
       try {
         const found = await searchStops(route, group);
         Stops.found = found;
+        Stops.onMap = false;
+        document.getElementById('btn-stops-map').classList.toggle('hidden', !found.length);
         if (!found.length) {
           listEl.innerHTML = `<div class="bk-note">${group === 'visit' ? 'Rien de notable repéré autour du trajet.' : 'Rien pour manger repéré au bord du trajet.'}</div>`;
           return;
@@ -7039,7 +7054,7 @@ ${trkpts}
         closePopups();
         const m = AppState.map3d;
         const p = f.properties;
-        const sheetPoi = p.poiId && AppState.poiPoints.find((x) => x.id === p.poiId);
+        const sheetPoi = p.poiId && (AppState.poiPoints.find((x) => x.id === p.poiId) || (Stops.onMap && Stops.found.find((x) => x.id === p.poiId)));
         if (sheetPoi) return openPoiSheet(sheetPoi);
         popup = new maplibregl.Popup({ offset: 14, maxWidth: '270px' }).setLngLat(f.geometry.coordinates).setHTML(p.html).addTo(m);
         // Lieu : horaires à l'ouverture de la fiche
@@ -7089,6 +7104,11 @@ ${trkpts}
             const generic = p.name === POI_BY_ID[p.cat]?.label.replace(/s( &|$)/, '$1') || p.name === POI_BY_ID[p.cat]?.label;
             feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: generic ? '' : p.name, html: poiPopupHtml(p), poiId: p.id, rank: p.cat === 'parking' ? 6 : RANK[POI_BY_ID[p.cat]?.group] ?? 5 }));
           });
+        // Lieux proposés comme étapes (« Voir ces lieux sur la carte »)
+        if (Stops.onMap) {
+          const shown = new Set(feats.map((f) => f.properties.poiId));
+          Stops.found.forEach((p) => !shown.has(p.id) && feats.push(point(p.lat, p.lon, { icon: 'ico-' + p.cat, name: p.name, html: poiPopupHtml(p), poiId: p.id, rank: 1 })));
+        }
         visiblePlaces().forEach((p) => feats.push(point(p.lat, p.lon, { icon: 'ico-place-' + (PLACE_CATS[p.cat] ? p.cat : 'autre'), name: '★ ' + p.name, html: placePopupHtml(p), top: true, rank: 0 })));
         m.getSource('pts').setData({ type: 'FeatureCollection', features: feats });
 
