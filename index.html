@@ -332,6 +332,7 @@
     .pp-ib { width: 48px; height: 48px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center; }
     .pp-main { width: 100%; height: 54px; border-radius: 18px; font-size: 17px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .pp-main:disabled { opacity: .75; }
+    .pp-main.hidden { display: none; }
     .pp-choice { height: 76px; flex-direction: column; gap: 0; }
     .pp-choice b { font-size: 20px; font-weight: 800; line-height: 1.15; }
     .pp-choice span { font-size: 12.5px; font-weight: 700; opacity: .75; }
@@ -365,6 +366,20 @@
       #side-drawer.sheet-expanded { height: auto; }
       #side-drawer.sheet-expanded > .overflow-y-auto { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
     }
+    .st-row { display: flex; align-items: center; gap: 10px; padding: 10px 6px; width: 100%; text-align: left; }
+    .st-row + .st-row { border-top: 1px solid rgba(148,163,184,.3); }
+    .st-row .st-ico { width: 38px; height: 38px; border-radius: 12px; background: #fef3c7; display: flex; align-items: center; justify-content: center; flex: none; }
+    .st-row b { display: block; font-size: 15px; font-weight: 800; line-height: 1.25; color: #0f172a; }
+    .st-row small { display: block; font-size: 12.5px; font-weight: 600; color: #64748b; }
+    .st-row .st-star { color: #b45309; font-weight: 800; }
+    .st-chk { width: 30px; height: 30px; border-radius: 9999px; border: 2px solid #cbd5e1; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 900; color: transparent; }
+    .st-row.on .st-chk { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+    .st-row.on { background: rgba(245,158,11,.08); }
+    .via-name { margin-left: 6px; padding: 3px 8px; border-radius: 9999px; background: #fff; color: #0f172a; font: 800 12px Inter, sans-serif; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+    body.night-mode .via-name { background: #161b22; color: #e6edf3; }
+    body.bw-mode .via-name { border: 2px solid #000; }
+    body.night-mode .st-row b { color: #e6edf3; } body.night-mode .st-row .st-ico { background: #2a2110; }
+    body.bw-mode .st-row .st-ico { background: #fff; border: 2px solid #000; } body.bw-mode .st-row.on .st-chk { background: #000; border-color: #000; }
     .mn-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 8px; }
     .mn-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 94px; border-radius: 18px; background: #f1f5f9; color: #0f172a; font-size: 14.5px; font-weight: 800; }
     .mn-tile.main { background: #059669; color: #fff; }
@@ -1097,11 +1112,16 @@
             <div><div id="route-steps-list" class="space-y-1"></div></div>
           </details>
 
-          <details class="pp-fold rounded-2xl bg-white border border-slate-200">
-            <summary><span>À visiter sur le trajet<small class="text-slate-500">châteaux, points de vue, musées à moins de 500 m</small></span></summary>
-            <div class="space-y-2">
+          <details id="fold-stops" class="pp-fold rounded-2xl bg-white border border-slate-200">
+            <summary><span>Ajouter des étapes<small class="text-slate-500">à voir, manger : sur le trajet ou avec un petit détour</small></span></summary>
+            <div class="space-y-2.5">
+              <div class="grid grid-cols-2 gap-1 p-1 rounded-2xl bg-slate-200/60">
+                <button data-sg="visit" class="pg-btn st-grp on">À voir</button>
+                <button data-sg="eat" class="pg-btn st-grp">Manger</button>
+              </div>
               <button id="btn-route-visits" class="w-full h-11 rounded-xl bg-slate-900 text-white text-sm font-bold">Chercher</button>
-              <div id="route-visits-list" class="space-y-1.5"></div>
+              <div id="route-visits-list" class="rounded-xl overflow-hidden"></div>
+              <button id="btn-add-stops" class="hidden pp-main bg-amber-500 text-white"></button>
             </div>
           </details>
 
@@ -2124,9 +2144,15 @@
       });
     }
 
-    function createPinIcon(colorHex, label) {
+    // Nom court affiché à côté d'une étape (rien pour les simples points de passage)
+    function viaShortName(v) {
+      const n = (v.label || '').replace(/^Pause : /, '');
+      return !n || /^(Point de passage|Étape \d+)$/.test(n) ? '' : n;
+    }
+    function createPinIcon(colorHex, label, name) {
       const html = `
-        <div class="flex flex-col items-center -ml-4 -mt-9 drop-shadow-md">
+        <div class="flex flex-col items-center -ml-4 -mt-9 drop-shadow-md" style="position:relative">
+          ${name ? `<div class="via-name" style="position:absolute;left:30px;top:5px">${escapeHtml(name)}</div>` : ''}
           <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-xs shadow" style="background:${colorHex}">
             ${label}
           </div>
@@ -3253,6 +3279,9 @@
       document.getElementById('stat-duration').textContent = formatDuration(routeData.duration);
       document.getElementById('stat-elevation').textContent = `+${routeData.ascent} / -${routeData.descent} m`;
       document.getElementById('route-visits-list').innerHTML = '';
+      document.getElementById('btn-route-visits').textContent = 'Chercher';
+      Stops.picked.clear();
+      updateStopsButton();
 
       renderElevationChart(routeData.coords, routeData.distance);
       renderRouteSteps(routeData.steps);
@@ -3265,6 +3294,21 @@
     }
 
     // ----- Étapes intermédiaires (via) -----
+    // Place une étape là où elle rallonge le moins le trajet
+    function insertVia(lat, lon, label, cat) {
+      const seq = [AppState.origin, ...AppState.vias, AppState.dest];
+      let bestPos = 0;
+      let bestCost = Infinity;
+      for (let i = 0; i < seq.length - 1; i++) {
+        const a = seq[i], b = seq[i + 1];
+        const cost = haversineDistance(a.lat, a.lon, lat, lon) + haversineDistance(lat, lon, b.lat, b.lon) - haversineDistance(a.lat, a.lon, b.lat, b.lon);
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestPos = i;
+        }
+      }
+      AppState.vias.splice(bestPos, 0, cat ? { lat, lon, label, cat } : { lat, lon, label });
+    }
     function addVia(lat, lon, label) {
       if (!AppState.origin || !AppState.dest) {
         // Pas encore de trajet : la visite devient la destination
@@ -3273,23 +3317,7 @@
           const ref = AppState.userLocation || { lat: AppState.map.getCenter().lat, lon: AppState.map.getCenter().lng };
           setRouteOrigin(ref.lat, ref.lon, AppState.userLocation ? 'Ma position GPS' : 'Centre de la carte');
         }
-      } else {
-        // Insère l'étape là où elle rallonge le moins le trajet
-        const seq = [AppState.origin, ...AppState.vias, AppState.dest];
-        let bestPos = 0;
-        let bestCost = Infinity;
-        for (let i = 0; i < seq.length - 1; i++) {
-          const a = seq[i];
-          const b = seq[i + 1];
-          const cost =
-            haversineDistance(a.lat, a.lon, lat, lon) + haversineDistance(lat, lon, b.lat, b.lon) - haversineDistance(a.lat, a.lon, b.lat, b.lon);
-          if (cost < bestCost) {
-            bestCost = cost;
-            bestPos = i;
-          }
-        }
-        AppState.vias.splice(bestPos, 0, { lat, lon, label });
-      }
+      } else insertVia(lat, lon, label);
       renderVias();
       calculateBikeRoute();
     }
@@ -3303,7 +3331,7 @@
     function renderVias() {
       AppState.viaMarkers.forEach((m) => AppState.map.removeLayer(m));
       AppState.viaMarkers = AppState.vias.map((v, i) =>
-        L.marker([v.lat, v.lon], { icon: createPinIcon('#f59e0b', String(i + 1)) }).addTo(AppState.map)
+        L.marker([v.lat, v.lon], { icon: createPinIcon('#f59e0b', String(i + 1), viaShortName(v)) }).addTo(AppState.map)
       );
       const box = document.getElementById('vias-box');
       box.classList.toggle('hidden', !AppState.vias.length);
@@ -4814,6 +4842,14 @@ ${trkpts}
         else e.currentTarget.classList.add('hidden');
       });
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
+      document.getElementById('btn-add-stops').addEventListener('click', addPickedStops);
+      document.querySelectorAll('.st-grp').forEach((b) =>
+        b.addEventListener('click', () => {
+          Stops.group = b.dataset.sg;
+          document.querySelectorAll('.st-grp').forEach((x) => x.classList.toggle('on', x === b));
+          findVisitsAlongRoute();
+        })
+      );
       document.getElementById('btn-add-place-center').addEventListener('click', () => {
         const c = AppState.glOn && AppState.map3d ? AppState.map3d.getCenter() : AppState.map.getCenter();
         openPlaceModal(c.lat, c.lng);
@@ -5832,66 +5868,136 @@ ${trkpts}
       loadPOIsForCurrentView();
     }, 600);
 
-    // Lieux à visiter le long du trajet (à moins de 500 m du tracé)
+    // Étapes à ajouter le long du trajet : lieux à voir (détour possible) ou où manger (tout près du tracé)
+    var Stops = { group: 'visit', found: [], picked: new Set() };
+    const VISIT_WEIGHT = { heritage: 7, museum: 7, viewpoint: 6, attraction: 5, worship: 3, nature: 3 };
+    function stopScore(p) {
+      let w = VISIT_WEIGHT[p.cat] ?? 2;
+      if (/^ch[âa]teau|abbaye|cath[ée]drale|basilique|citadelle|donjon|fort\b/i.test(p.name)) w += 4;
+      if (/^(monument aux morts|calvaire|croix|stèle|plaque)/i.test(p.name)) w -= 4;
+      if (p.wikipedia || p.website) w += 1;
+      return w - p.snap.dist / 700; // un château à 2 km vaut mieux qu'une croix au bord du chemin
+    }
+    function stopTiles(route, radius) {
+      // Tuiles détaillées (z14, ~2 km) qui couvrent le trajet et une bande de « radius » mètres de chaque côté
+      const keys = new Map();
+      const step = 600;
+      let acc = Infinity;
+      for (let i = 0; i < route.coords.length; i++) {
+        if (i) acc += route.cumDist[i] - route.cumDist[i - 1];
+        if (acc < step && i !== route.coords.length - 1) continue;
+        acc = 0;
+        const [lat, lon] = route.coords[i];
+        const dLat = radius / 111320, dLon = radius / (111320 * Math.cos((lat * Math.PI) / 180));
+        const a = TileSource.tileXY(lat + dLat, lon - dLon, 14), c = TileSource.tileXY(lat - dLat, lon + dLon, 14);
+        for (let x = a.x; x <= c.x; x++) for (let y = a.y; y <= c.y; y++) keys.set(`${x}/${y}`, [x, y]);
+      }
+      return [...keys.values()];
+    }
     async function findVisitsAlongRoute() {
       const route = AppState.currentRoute;
       const listEl = document.getElementById('route-visits-list');
       if (!route) return;
-      if (isOfflineMode()) {
-        showToast('Recherche indisponible hors ligne.', 'warning');
-        return;
-      }
+      if (isOfflineMode()) return showToast('Recherche indisponible hors ligne.', 'warning');
+      route.cumDist = route.cumDist || computeCumDist(route.coords);
+      const group = Stops.group;
       const btn = document.getElementById('btn-route-visits');
       btn.disabled = true;
-      btn.textContent = '…';
-      listEl.innerHTML = `<div class="text-[11px] text-slate-500">Recherche le long du tracé…</div>`;
+      btn.textContent = 'Recherche…';
+      Stops.picked.clear();
+      updateStopsButton();
+      // Lieux à voir : bande large (un vrai détour peut valoir le coup) ; manger : tout près du tracé
+      const radius = group === 'visit' ? Math.min(4000, Math.max(1500, route.distance * 0.15)) : 600;
+      const cats = POI_CATEGORIES.filter((c) => c.group === group && c.id !== 'pharmacy' && c.id !== 'grocery').map((c) => c.id);
+      listEl.innerHTML = `<div class="bk-note">Recherche ${group === 'visit' ? 'des lieux à voir' : 'où manger'} jusqu’à ${formatDistance(radius)} du trajet…</div>`;
       try {
-        const lats = route.coords.map((c) => c[0]);
-        const lons = route.coords.map((c) => c[1]);
-        const pad = 0.006;
-        const visitIds = POI_CATEGORIES.filter((c) => c.group === 'visit').map((c) => c.id);
-        let raw;
-        try {
-          raw = (await tilePlaces(Math.min(...lats) - pad, Math.min(...lons) - pad, Math.max(...lats) + pad, Math.max(...lons) + pad, 13, 36)).pois.filter((p) => visitIds.includes(p.cat));
-        } catch {
-          const q = buildPOIQuery(
-            (Math.min(...lats) - pad).toFixed(4), (Math.min(...lons) - pad).toFixed(4),
-            (Math.max(...lats) + pad).toFixed(4), (Math.max(...lons) + pad).toFixed(4), 1500, visitIds
-          );
-          const data = await fetchOverpassWithFallback(q);
-          raw = parsePOIElements(data.elements || [], visitIds);
+        let tiles = stopTiles(route, radius);
+        let raw = [];
+        if (tiles.length <= 90) {
+          const res = await Promise.all(tiles.map(([x, y]) => z14Tile(x, y)));
+          raw = res.flat();
+        } else {
+          // Très long trajet : tuiles moins détaillées (seuls les lieux importants y figurent)
+          const lats = route.coords.map((c) => c[0]), lons = route.coords.map((c) => c[1]);
+          const pad = radius / 111320;
+          raw = (await tilePlaces(Math.min(...lats) - pad, Math.min(...lons) - pad, Math.max(...lats) + pad, Math.max(...lons) + pad, 13, 64)).pois;
         }
-        const found = raw
-          .filter((p) => p.name && p.name !== POI_BY_ID[p.cat].label)
+        const seen = new Set();
+        let found = raw
+          .filter((p) => cats.includes(p.cat) && p.name && p.name !== POI_BY_ID[p.cat].label.replace(/s( &|$)/, '$1') && !seen.has(p.id) && seen.add(p.id))
           .map((p) => ({ ...p, snap: snapToRoute(p.lat, p.lon, route) }))
-          .filter((p) => p.snap.dist <= 500)
-          .sort((a, b) => a.snap.along - b.snap.along);
-
+          .filter((p) => p.snap.dist <= radius && p.snap.along > 150 && p.snap.along < route.distance - 150);
+        if (group === 'visit') found = found.sort((a, b) => stopScore(b) - stopScore(a)).slice(0, 12);
+        else {
+          // Manger : on répartit le long du trajet (pas dix boulangeries au même endroit)
+          const pick = [];
+          found
+            .sort((a, b) => a.snap.dist - b.snap.dist)
+            .forEach((p) => {
+              if (pick.filter((q) => q.cat === p.cat && Math.abs(q.snap.along - p.snap.along) < 1500).length < 1 && pick.length < 12) pick.push(p);
+            });
+          found = pick;
+        }
+        found.sort((a, b) => a.snap.along - b.snap.along);
+        Stops.found = found;
         if (!found.length) {
-          listEl.innerHTML = `<div class="text-[11px] text-slate-500">Rien de notable repéré près du tracé.</div>`;
+          listEl.innerHTML = `<div class="bk-note">${group === 'visit' ? 'Rien de notable repéré autour du trajet.' : 'Rien pour manger repéré au bord du trajet.'}</div>`;
           return;
         }
+        const best = group === 'visit' && found.length > 3 ? new Set(found.slice().sort((a, b) => stopScore(b) - stopScore(a)).slice(0, 3).map((p) => p.id)) : new Set();
         listEl.innerHTML = found
-          .slice(0, 25)
-          .map((p) => {
+          .map((p, i) => {
             const c = POI_BY_ID[p.cat];
-            return `
-            <div class="flex items-center gap-2 p-2 rounded-xl bg-white/80 border border-amber-200/70">
-              <span class="shrink-0" style="color:${c.color}">${poiSvg(p.cat, 18)}</span>
-              <div class="min-w-0 flex-1 cursor-pointer" onclick="flyToActive(${p.lat}, ${p.lon}, 16)">
-                <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-500">Au km ${(p.snap.along / 1000).toFixed(1)} • à ${Math.round(p.snap.dist)} m du tracé</div>
-              </div>
-              <button onclick="viaToPoint(${p.lat}, ${p.lon}, '${escapeJsString(p.name)}')" class="shrink-0 px-2 py-1 rounded-lg bg-amber-500 text-white text-[11px] font-bold">+ Étape</button>
+            const det = p.snap.dist < 120 ? 'sur le trajet' : `détour ≈ ${formatDistance(Math.round((p.snap.dist * 2.4) / 100) * 100)}`;
+            return `<div class="st-row" data-st="${i}">
+              <span class="st-ico" style="color:${c.color}">${poiSvg(p.cat, 20)}</span>
+              <span class="min-w-0 flex-1" data-stinfo="${i}"><b class="truncate">${escapeHtml(p.name)}</b><small>${best.has(p.id) ? '<span class="st-star">★ à ne pas manquer · </span>' : ''}km ${(p.snap.along / 1000).toFixed(1)} · ${det}</small></span>
+              <button class="st-chk" data-stpick="${i}" aria-label="Choisir comme étape : ${escapeHtml(p.name)}">✓</button>
             </div>`;
           })
           .join('');
+        listEl.querySelectorAll('[data-stpick]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const i = +b.dataset.stpick;
+            if (Stops.picked.has(i)) Stops.picked.delete(i);
+            else Stops.picked.add(i);
+            b.closest('.st-row').classList.toggle('on', Stops.picked.has(i));
+            updateStopsButton();
+          })
+        );
+        listEl.querySelectorAll('[data-stinfo]').forEach((el) =>
+          el.addEventListener('click', () => {
+            const p = Stops.found[+el.dataset.stinfo];
+            collapseMobileSheet();
+            flyToActive(p.lat, p.lon, 16);
+            try {
+              openPoiSheet(p);
+            } catch {}
+          })
+        );
       } catch {
-        listEl.innerHTML = `<div class="text-[11px] text-rose-600">Serveur occupé, réessayez dans un instant.</div>`;
+        listEl.innerHTML = `<div class="bk-note">Serveur des lieux occupé, réessayez dans un instant.</div>`;
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Chercher';
+        btn.textContent = 'Chercher à nouveau';
       }
+    }
+    function updateStopsButton() {
+      const b = document.getElementById('btn-add-stops');
+      const n = Stops.picked.size;
+      b.classList.toggle('hidden', !n);
+      b.textContent = n > 1 ? `Ajouter ces ${n} étapes et recalculer` : 'Ajouter cette étape et recalculer';
+    }
+    function addPickedStops() {
+      const picks = [...Stops.picked].map((i) => Stops.found[i]).filter(Boolean);
+      if (!picks.length) return;
+      picks.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat));
+      Stops.picked.clear();
+      updateStopsButton();
+      renderVias();
+      collapseMobileSheet();
+      showToast(picks.length > 1 ? `${picks.length} étapes ajoutées` : `Étape ajoutée : ${picks[0].name}`, 'success', 2500);
+      calculateBikeRoute();
     }
 
     // -------------------------------------------------------------------------
@@ -6696,10 +6802,10 @@ ${trkpts}
       function point(lat, lon, props) {
         return { type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [lon, lat] } };
       }
-      function htmlPin(color, label) {
+      function htmlPin(color, label, name) {
         const el = document.createElement('div');
         el.className = 'm3d-marker';
-        el.innerHTML = `<div style="width:30px;height:30px;border-radius:9999px;background:${color};border:3px solid #fff;color:#fff;font:700 12px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.35)">${label}</div>`;
+        el.innerHTML = `<div style="position:relative;width:30px;height:30px;border-radius:9999px;background:${color};border:3px solid #fff;color:#fff;font:700 12px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.35)">${label}${name ? `<span class="via-name" style="position:absolute;left:28px;top:2px">${escapeHtml(name)}</span>` : ''}</div>`;
         return el;
       }
 
@@ -6741,11 +6847,11 @@ ${trkpts}
         pinsSig = sig;
         htmlMarkers.forEach((mk) => mk.remove());
         htmlMarkers = [];
-        const add = (pt, color, label) => {
-          if (pt) htmlMarkers.push(new maplibregl.Marker({ element: htmlPin(color, label) }).setLngLat([pt.lon, pt.lat]).addTo(m));
+        const add = (pt, color, label, name) => {
+          if (pt) htmlMarkers.push(new maplibregl.Marker({ element: htmlPin(color, label, name) }).setLngLat([pt.lon, pt.lat]).addTo(m));
         };
         add(AppState.origin, '#10b981', 'D');
-        AppState.vias.forEach((v, i) => add(v, '#f59e0b', String(i + 1)));
+        AppState.vias.forEach((v, i) => add(v, '#f59e0b', String(i + 1), viaShortName(v)));
         add(AppState.dest, '#f43f5e', 'A');
         if (AppState.userLocation && !AppState.isGuiding) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
       }
