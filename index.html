@@ -263,6 +263,12 @@
     .theme-dot.on { border-color: #059669 !important; }
     body.night-mode .theme-dot.on { border-color: #34d399 !important; }
     body.noir-mode .theme-dot.on, body.bw-mode .theme-dot.on { border-width: 3px !important; }
+    .ps-photo { margin: -14px -16px 12px; }
+    .ps-photo img { display: block; width: 100%; height: 170px; object-fit: cover; border-radius: 22px 22px 0 0; background: #e2e8f0; }
+    .ps-photo p { margin: 10px 16px 0; font-size: 13.5px; line-height: 1.45; color: #334155; font-weight: 500; }
+    .ps-photo a { color: #0369a1; font-weight: 800; white-space: nowrap; }
+    body.night-mode .ps-photo p { color: #c9d1d9; }
+    body.noir-mode .ps-photo img { filter: invert(1); }
     #poi-sheet { position: fixed; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 45; border-radius: 22px; padding: 14px 16px 14px; background: #fff; box-shadow: 0 8px 28px rgba(15,23,42,.22); animation: pill-in .22s ease; max-height: 70vh; overflow-y: auto; }
     @media (min-width: 768px) { #poi-sheet { left: 432px; right: auto; width: 400px; bottom: 16px; } }
     #poi-sheet .ps-hours { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; background: #f8fafc; font-size: 13.5px; font-weight: 600; color: #475569; }
@@ -1000,6 +1006,7 @@
           <div id="home-dist" class="text-sm font-semibold text-slate-500 shrink-0"></div>
         </div>
         <div id="home-alts" class="flex gap-2"></div>
+        <button id="btn-home-tourist" class="hidden w-full h-9 rounded-xl text-[13.5px] font-extrabold text-amber-700 bg-amber-500/10 flex items-center justify-center gap-1.5"></button>
         <p id="home-weather" class="hidden text-[12px] font-semibold text-slate-600"></p>
         <div class="flex gap-2">
           <button id="btn-go" class="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-extrabold">Démarrer</button>
@@ -1064,6 +1071,10 @@
           </div>
         </div>
 
+        <label class="dp-row rounded-2xl bg-white border border-slate-200 px-3">
+          <span>Trajet touriste<small>passer par les plus beaux lieux à voir, avec un petit détour</small></span>
+          <input id="toggle-tourist" type="checkbox" class="dp-switch" />
+        </label>
         <div class="grid grid-cols-3 gap-1.5">
           <button data-profile="trekking" class="profile-btn seg on">Balade</button>
           <button data-profile="fastbike" class="profile-btn seg">Route</button>
@@ -2694,6 +2705,9 @@
           routes.forEach((r, i) => (r.altIdx = i));
         }
         setAlternatives(routes, opts.keepView);
+        if (Tourist.on && !opts.single && !opts.tourist && !AppState.isGuiding && !AppState.vias.length && Tourist.done !== odSig() && routes[0].distance > 2500) {
+          setTimeout(() => autoTourist(false), 0);
+        }
       } catch (brouterErr) {
         console.warn('BRouter indisponible, repli sur OSRM:', brouterErr);
         try {
@@ -3295,7 +3309,7 @@
 
     // ----- Étapes intermédiaires (via) -----
     // Place une étape là où elle rallonge le moins le trajet
-    function insertVia(lat, lon, label, cat) {
+    function insertVia(lat, lon, label, cat, poi) {
       const seq = [AppState.origin, ...AppState.vias, AppState.dest];
       let bestPos = 0;
       let bestCost = Infinity;
@@ -3307,7 +3321,10 @@
           bestPos = i;
         }
       }
-      AppState.vias.splice(bestPos, 0, cat ? { lat, lon, label, cat } : { lat, lon, label });
+      const v = { lat, lon, label };
+      if (cat) v.cat = cat;
+      if (poi?.osmId) Object.assign(v, { osmId: poi.osmId, osmType: poi.osmType, poiId: poi.id });
+      AppState.vias.splice(bestPos, 0, v);
     }
     function addVia(lat, lon, label) {
       if (!AppState.origin || !AppState.dest) {
@@ -3330,9 +3347,11 @@
 
     function renderVias() {
       AppState.viaMarkers.forEach((m) => AppState.map.removeLayer(m));
-      AppState.viaMarkers = AppState.vias.map((v, i) =>
-        L.marker([v.lat, v.lon], { icon: createPinIcon('#f59e0b', String(i + 1), viaShortName(v)) }).addTo(AppState.map)
-      );
+      AppState.viaMarkers = AppState.vias.map((v, i) => {
+        const mk = L.marker([v.lat, v.lon], { icon: createPinIcon('#f59e0b', String(i + 1), viaShortName(v)) }).addTo(AppState.map);
+        if (viaShortName(v)) mk.on('click', () => openViaSheet(i));
+        return mk;
+      });
       const box = document.getElementById('vias-box');
       box.classList.toggle('hidden', !AppState.vias.length);
       document.getElementById('vias-list').innerHTML = AppState.vias
@@ -3340,7 +3359,7 @@
           (v, i) => `
           <div class="flex items-center gap-2 text-xs">
             <span class="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>
-            <span class="flex-1 truncate font-semibold text-slate-800">${escapeHtml(v.label)}</span>
+            <span class="flex-1 truncate font-semibold text-slate-800"${viaShortName(v) ? ` onclick="openViaSheet(${i})" style="cursor:pointer;text-decoration:underline dotted"` : ''}>${escapeHtml(v.label)}</span>
             <button onclick="removeVia(${i})" class="px-2 py-0.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50">✕</button>
           </div>`
         )
@@ -4843,6 +4862,19 @@ ${trkpts}
       });
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
       document.getElementById('btn-add-stops').addEventListener('click', addPickedStops);
+      const tt = document.getElementById('toggle-tourist');
+      tt.checked = Tourist.on;
+      tt.addEventListener('change', () => {
+        Tourist.on = tt.checked;
+        try {
+          localStorage.setItem('abicyclette.tourist', tt.checked ? '1' : '0');
+        } catch {}
+        if (tt.checked && AppState.currentRoute && !AppState.vias.length) autoTourist(true);
+      });
+      document.getElementById('btn-home-tourist').addEventListener('click', () => {
+        if (AppState.vias.some((v) => v.cat)) openSheetAt('route', 'vias-box');
+        else autoTourist(true);
+      });
       document.querySelectorAll('.st-grp').forEach((b) =>
         b.addEventListener('click', () => {
           Stops.group = b.dataset.sg;
@@ -5372,6 +5404,7 @@ ${trkpts}
         p.website = p.website || t.website || t['contact:website'] || null;
         p.phone = p.phone || t.phone || t['contact:phone'] || null;
         p.wikipedia = p.wikipedia || t.wikipedia || null;
+        p.wikidata = p.wikidata || t.wikidata || null;
         p.description = p.description || t.description || null;
         return p;
     }
@@ -5683,7 +5716,11 @@ ${trkpts}
         p.website ? `<a href="${escapeHtml(p.website)}" target="_blank" rel="noopener">Site web</a>` : '',
         p.wikipedia ? `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.split(':')[1] || p.wikipedia)}" target="_blank" rel="noopener">Wikipédia</a>` : '',
       ].filter(Boolean).join('');
+      const etape = p.viaIdx != null
+        ? `<button onclick="closePoiSheet(); removeVia(${p.viaIdx})" class="ps-btn">Retirer l’étape</button>`
+        : `<button onclick="closePoiSheet(); viaToPoint(${p.lat}, ${p.lon}, '${name}')" class="ps-btn">+ Étape</button>`;
       document.getElementById('poi-sheet').innerHTML = `
+        <div id="ps-photo" class="ps-photo hidden"></div>
         <div class="flex items-center gap-3">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:${c.color}1f;color:${c.color}">${poiSvg(p.cat, 28)}</div>
           <div class="min-w-0 flex-1">
@@ -5697,10 +5734,71 @@ ${trkpts}
         ${p.description ? `<div class="text-[13px] text-slate-600 mt-2">${escapeHtml(p.description)}</div>` : ''}
         <div class="flex gap-2 mt-3">
           <button onclick="closePoiSheet(); routeToPoint(${p.lat}, ${p.lon}, '${name}')" class="ps-btn ps-go">Y aller</button>
-          <button onclick="closePoiSheet(); viaToPoint(${p.lat}, ${p.lon}, '${name}')" class="ps-btn">+ Étape</button>
+          ${etape}
           <button onclick="closePoiSheet(); savePointAsPlace(${p.lat}, ${p.lon}, '${name}', '${p.cat}')" aria-label="Garder dans mes lieux" class="ps-btn" style="width:50px;padding:0">★</button>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:12px">${links}</div>`;
+    }
+    // Une étape du trajet → sa fiche (photo, horaires), avec « Retirer » au lieu de « + Étape »
+    window.openViaSheet = function (i) {
+      const v = AppState.vias[i];
+      if (!v) return;
+      const p = { id: v.poiId || `via_${v.lat.toFixed(5)}_${v.lon.toFixed(5)}`, lat: v.lat, lon: v.lon, cat: v.cat && POI_BY_ID[v.cat] ? v.cat : 'attraction', name: v.label.replace(/^Pause : /, ''), osmId: v.osmId, osmType: v.osmType, viaIdx: i };
+      if (v.poiId) applyOSMDetails(p);
+      collapseMobileSheet();
+      openPoiSheet(p);
+    };
+    // Photo et petit résumé : Wikipédia, Wikidata ou Wikimedia Commons (gratuits, sans clé)
+    const photoCache = new Map();
+    async function fetchPhoto(p) {
+      const key = p.id;
+      if (photoCache.has(key)) return photoCache.get(key);
+      const t = osmDetailsCache.get(p.id) || {};
+      const job = (async () => {
+        const json = async (u) => {
+          const ctrl = new AbortController();
+          const tm = setTimeout(() => ctrl.abort(), 8000);
+          try {
+            const r = await fetch(u, { signal: ctrl.signal });
+            return r.ok ? await r.json() : null;
+          } finally {
+            clearTimeout(tm);
+          }
+        };
+        const filePath = (f) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f.replace(/^File:|^Fichier:/i, ''))}?width=640`;
+        const wp = t.wikipedia || p.wikipedia;
+        if (wp && /^fr:|^[^:]+$/.test(wp)) {
+          const j = await json(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent((wp.split(':')[1] || wp).replace(/ /g, '_'))}`).catch(() => null);
+          if (j?.thumbnail?.source) return { img: j.originalimage?.width < 900 ? j.originalimage.source : j.thumbnail.source.replace(/\/\d+px-/, '/640px-'), text: j.extract || '', link: j.content_urls?.mobile?.page };
+        }
+        if (/^https?:\/\//.test(t.image || '')) return { img: t.image, text: '' };
+        if (t.wikimedia_commons && /^File:/i.test(t.wikimedia_commons)) return { img: filePath(t.wikimedia_commons), text: '' };
+        if (/^File:/i.test(t.image || '')) return { img: filePath(t.image), text: '' };
+        if (t.wikidata) {
+          const j = await json(`https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${encodeURIComponent(t.wikidata)}&property=P18&format=json&origin=*`).catch(() => null);
+          const f = j?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+          if (f) return { img: filePath(f), text: '' };
+        }
+        // Sans lien : article Wikipédia tout proche dont le titre ressemble au nom du lieu
+        if (POI_BY_ID[p.cat]?.group !== 'visit') return null;
+        const j = await json(`https://fr.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${p.lat}|${p.lon}&ggsradius=400&ggslimit=8&prop=pageimages|extracts&exintro=1&explaintext=1&exsentences=2&piprop=thumbnail&pithumbsize=640&format=json&origin=*`).catch(() => null);
+        const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ');
+        const words = norm(p.name).split(' ').filter((w) => w.length > 3 && !['chateau', 'eglise', 'saint', 'sainte', 'musee', 'abbaye'].includes(w));
+        const pages = Object.values(j?.query?.pages || {});
+        const hit = pages.find((pg) => pg.thumbnail && words.length && words.every((w) => norm(pg.title).includes(w))) || pages.find((pg) => pg.thumbnail && norm(pg.title) === norm(p.name));
+        return hit ? { img: hit.thumbnail.source, text: hit.extract || '', link: `https://fr.m.wikipedia.org/wiki/${encodeURIComponent(hit.title.replace(/ /g, '_'))}` } : null;
+      })().catch(() => null);
+      photoCache.set(key, job);
+      return job;
+    }
+    function showPhoto(p) {
+      fetchPhoto(p).then((ph) => {
+        if (!ph || poiSheetId !== p.id) return;
+        const box = document.getElementById('ps-photo');
+        if (!box) return;
+        box.innerHTML = `<img src="${escapeHtml(ph.img)}" alt="" loading="lazy" onerror="this.parentNode.remove()" />${ph.text ? `<p>${escapeHtml(ph.text.length > 230 ? ph.text.slice(0, 228).replace(/\s\S*$/, '') + '…' : ph.text)}${ph.link ? ` <a href="${escapeHtml(ph.link)}" target="_blank" rel="noopener">Wikipédia ›</a>` : ''}</p>` : ''}`;
+        box.classList.remove('hidden');
+      });
     }
     function openPoiSheet(p) {
       AppState.map.closePopup();
@@ -5710,7 +5808,9 @@ ${trkpts}
       document.getElementById('poi-sheet').classList.remove('hidden');
       document.body.classList.add('poi-open');
       pushBackStep();
-      if (p.osmId) fetchOSMDetails([p]).then(() => poiSheetId === p.id && renderPoiSheet(p));
+      const done = () => poiSheetId === p.id && (renderPoiSheet(p), showPhoto(p));
+      if (p.osmId) fetchOSMDetails([p]).then(done, done);
+      else showPhoto(p);
     }
     window.closePoiSheet = function () {
       poiSheetId = null;
@@ -5894,23 +5994,12 @@ ${trkpts}
       }
       return [...keys.values()];
     }
-    async function findVisitsAlongRoute() {
-      const route = AppState.currentRoute;
-      const listEl = document.getElementById('route-visits-list');
-      if (!route) return;
-      if (isOfflineMode()) return showToast('Recherche indisponible hors ligne.', 'warning');
+    const stopRadius = (route, group) => (group === 'visit' ? Math.min(4000, Math.max(1500, route.distance * 0.15)) : 600);
+    // Lieux à voir (bande large : un vrai détour peut valoir le coup) ou où manger (tout près du tracé)
+    async function searchStops(route, group) {
       route.cumDist = route.cumDist || computeCumDist(route.coords);
-      const group = Stops.group;
-      const btn = document.getElementById('btn-route-visits');
-      btn.disabled = true;
-      btn.textContent = 'Recherche…';
-      Stops.picked.clear();
-      updateStopsButton();
-      // Lieux à voir : bande large (un vrai détour peut valoir le coup) ; manger : tout près du tracé
-      const radius = group === 'visit' ? Math.min(4000, Math.max(1500, route.distance * 0.15)) : 600;
+      const radius = stopRadius(route, group);
       const cats = POI_CATEGORIES.filter((c) => c.group === group && c.id !== 'pharmacy' && c.id !== 'grocery').map((c) => c.id);
-      listEl.innerHTML = `<div class="bk-note">Recherche ${group === 'visit' ? 'des lieux à voir' : 'où manger'} jusqu’à ${formatDistance(radius)} du trajet…</div>`;
-      try {
         let tiles = stopTiles(route, radius);
         let raw = [];
         if (tiles.length <= 90) {
@@ -5938,7 +6027,22 @@ ${trkpts}
             });
           found = pick;
         }
-        found.sort((a, b) => a.snap.along - b.snap.along);
+        return found.sort((a, b) => a.snap.along - b.snap.along);
+    }
+    async function findVisitsAlongRoute() {
+      const route = AppState.currentRoute;
+      const listEl = document.getElementById('route-visits-list');
+      if (!route) return;
+      if (isOfflineMode()) return showToast('Recherche indisponible hors ligne.', 'warning');
+      const group = Stops.group;
+      const btn = document.getElementById('btn-route-visits');
+      btn.disabled = true;
+      btn.textContent = 'Recherche…';
+      Stops.picked.clear();
+      updateStopsButton();
+      listEl.innerHTML = `<div class="bk-note">Recherche ${group === 'visit' ? 'des lieux à voir' : 'où manger'} jusqu’à ${formatDistance(stopRadius(route, group))} du trajet…</div>`;
+      try {
+        const found = await searchStops(route, group);
         Stops.found = found;
         if (!found.length) {
           listEl.innerHTML = `<div class="bk-note">${group === 'visit' ? 'Rien de notable repéré autour du trajet.' : 'Rien pour manger repéré au bord du trajet.'}</div>`;
@@ -5982,6 +6086,56 @@ ${trkpts}
         btn.textContent = 'Chercher à nouveau';
       }
     }
+    // Trajet touriste : on choisit nous-mêmes les plus beaux lieux, dans un détour raisonnable (≈ +30 %)
+    var Tourist = { on: false, done: '' };
+    try {
+      Tourist.on = localStorage.getItem('abicyclette.tourist') === '1';
+    } catch {}
+    const odSig = () => (AppState.origin && AppState.dest ? [AppState.origin.lat, AppState.origin.lon, AppState.dest.lat, AppState.dest.lon].map((x) => x.toFixed(4)).join(',') : '');
+    async function autoTourist(manual = false) {
+      const route = AppState.currentRoute;
+      if (!route || AppState.isGuiding || isOfflineMode()) return;
+      Tourist.done = odSig();
+      const btn = document.getElementById('btn-home-tourist');
+      btn.disabled = true;
+      btn.textContent = 'Recherche des lieux à voir…';
+      try {
+        const found = (await searchStops(route, 'visit')).filter((p) => stopScore(p) > 3);
+        const max = Math.min(5, 1 + Math.floor(route.distance / 7000));
+        let budget = Math.max(2500, route.distance * 0.3);
+        const take = [];
+        found
+          .slice()
+          .sort((a, b) => stopScore(b) - stopScore(a))
+          .forEach((p) => {
+            const det = p.snap.dist * 2.4;
+            if (take.length >= max || det > budget) return;
+            if (take.some((q) => haversineDistance(q.lat, q.lon, p.lat, p.lon) < 400)) return; // pas deux fois le même site
+            take.push(p);
+            budget -= det;
+          });
+        if (!take.length) {
+          if (manual) showToast('Pas de lieu marquant repéré près de ce trajet.', 'info', 3500);
+          return;
+        }
+        take.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat, p));
+        renderVias();
+        showToast(`Trajet touriste : ${take.sort((a, b) => a.snap.along - b.snap.along).map((p) => p.name).join(' → ')}`, 'success', 5000);
+        await calculateBikeRoute({ keepView: false, tourist: true });
+      } catch {
+        if (manual) showToast('Serveur des lieux occupé, réessayez dans un instant.', 'warning');
+      } finally {
+        btn.disabled = false;
+        updateTouristButton();
+      }
+    }
+    function updateTouristButton() {
+      const b = document.getElementById('btn-home-tourist');
+      if (!b) return;
+      const named = AppState.vias.filter((v) => v.cat && POI_BY_ID[v.cat]?.group === 'visit').length;
+      b.classList.toggle('hidden', !AppState.currentRoute || AppState.isGuiding);
+      b.textContent = named ? `✦ ${named} lieu${named > 1 ? 'x' : ''} à voir sur ce trajet · modifier` : '✦ Passer par des lieux à voir';
+    }
     function updateStopsButton() {
       const b = document.getElementById('btn-add-stops');
       const n = Stops.picked.size;
@@ -5991,7 +6145,7 @@ ${trkpts}
     function addPickedStops() {
       const picks = [...Stops.picked].map((i) => Stops.found[i]).filter(Boolean);
       if (!picks.length) return;
-      picks.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat));
+      picks.forEach((p) => insertVia(p.lat, p.lon, p.name, p.cat, p));
       Stops.picked.clear();
       updateStopsButton();
       renderVias();
@@ -6851,7 +7005,17 @@ ${trkpts}
           if (pt) htmlMarkers.push(new maplibregl.Marker({ element: htmlPin(color, label, name) }).setLngLat([pt.lon, pt.lat]).addTo(m));
         };
         add(AppState.origin, '#10b981', 'D');
-        AppState.vias.forEach((v, i) => add(v, '#f59e0b', String(i + 1), viaShortName(v)));
+        AppState.vias.forEach((v, i) => {
+          add(v, '#f59e0b', String(i + 1), viaShortName(v));
+          if (viaShortName(v)) {
+            const el = htmlMarkers[htmlMarkers.length - 1].getElement();
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openViaSheet(i);
+            });
+          }
+        });
         add(AppState.dest, '#f43f5e', 'A');
         if (AppState.userLocation && !AppState.isGuiding) updateUser(AppState.userLocation.lat, AppState.userLocation.lon);
       }
@@ -8829,6 +8993,7 @@ ${trkpts}
       if (!r) return;
       document.getElementById('home-dest').textContent = shortLabel(AppState.dest?.label);
       document.getElementById('home-dist').textContent = `${formatDistance(r.distance)} · ${formatDuration(r.duration)}`;
+      updateTouristButton();
       const alts = AppState.alternatives.slice(0, 3);
       const box = document.getElementById('home-alts');
       if (alts.length < 2) {
