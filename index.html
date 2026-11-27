@@ -2643,6 +2643,9 @@
 
     function setRouteDestination(lat, lon, label) {
       AppState.dest = { lat, lon, label };
+      try {
+        Extras.addRecent(lat, lon, label);
+      } catch {}
       document.getElementById('input-dest').value = label;
       if (AppState.destMarker) AppState.map.removeLayer(AppState.destMarker);
       AppState.destMarker = L.marker([lat, lon], { icon: createPinIcon('#f43f5e', 'A') }).addTo(AppState.map);
@@ -7453,6 +7456,14 @@ ${trkpts}
         showToast(`${label} : tapez l’adresse dans la recherche puis choisissez-la.`, 'info', 5000);
         setTimeout(() => document.getElementById('global-search-input').focus(), 80);
       }
+      // Dernières destinations (les 6 plus récentes), proposées dans la recherche vide
+      const K_RECENT = 'abicyclette.recents';
+      function addRecent(lat, lon, label) {
+        if (!label || /^(Ma position GPS|Centre de la carte|Domicile|Travail|Point de départ|Point de passage)$|^Point carte|^Étape /.test(label)) return;
+        const list = getJ(K_RECENT, []).filter((r) => r.label !== label);
+        list.unshift({ lat, lon, label });
+        setJ(K_RECENT, list.slice(0, 6));
+      }
       // opt.page : liste affichée dans une page (elle reste en place) ; opt.only : 'favs' ou 'trips'
       function showFavs(box, opt = {}) {
         const favs = getJ(K_FAV, {});
@@ -7464,6 +7475,11 @@ ${trkpts}
                 const f = favs[k];
                 return `<div class="fav-row"><button data-fav="${k}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico(d)}<span class="truncate">${label}<small>${f ? escapeHtml(f.label) : 'Toucher pour choisir l’adresse'}</small></span></button>${f ? `<button class="fav-x" data-favedit="${k}" aria-label="Changer l’adresse : ${label}">✎</button>` : ''}</div>`;
               }).join('')) +
+          (opt.page
+            ? ''
+            : getJ(K_RECENT, [])
+                .map((r, i) => `<div class="fav-row"><button data-recent="${i}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left">${ico('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')}<span class="truncate">${escapeHtml(r.label)}<small>destination récente</small></span></button><button class="fav-x" data-recentdel="${i}" aria-label="Retirer de la liste">✕</button></div>`)
+                .join('')) +
           (opt.only === 'favs'
             ? ''
             : trips
@@ -7485,6 +7501,21 @@ ${trkpts}
             if (!f) return ask(b.dataset.fav);
             done();
             window.routeToPoint(f.lat, f.lon, FAVS.find((x) => x[0] === b.dataset.fav)[1]);
+          })
+        );
+        box.querySelectorAll('[data-recent]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const r = getJ(K_RECENT, [])[+b.dataset.recent];
+            done();
+            if (r) window.routeToPoint(r.lat, r.lon, r.label);
+          })
+        );
+        box.querySelectorAll('[data-recentdel]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const l = getJ(K_RECENT, []);
+            l.splice(+b.dataset.recentdel, 1);
+            setJ(K_RECENT, l);
+            showFavs(box, opt);
           })
         );
         box.querySelectorAll('[data-favedit]').forEach((b) => b.addEventListener('click', () => ask(b.dataset.favedit)));
@@ -7653,7 +7684,7 @@ ${trkpts}
         autoNightTick();
         setInterval(autoNightTick, 300000);
       }
-      return { init, showFavs, askFav, renderPages, takePending, showSummary, isNight, isPending: () => !!pending };
+      return { init, showFavs, addRecent, askFav, renderPages, takePending, showSummary, isNight, isPending: () => !!pending };
     })();
 
     // « Rentrer » : vers Domicile s'il est enregistré, sinon vers le point de départ de la sortie
