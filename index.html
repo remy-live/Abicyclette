@@ -3374,6 +3374,17 @@
 
     window.removeVia = function (idx) {
       AppState.vias.splice(idx, 1);
+      if (AppState.isGuiding) {
+        // En route : on repart de la position actuelle, sans les étapes déjà dépassées
+        const route = AppState.currentRoute, u = AppState.userLocation;
+        if (route) AppState.vias = AppState.vias.filter((v) => snapToRoute(v.lat, v.lon, route).along > (route._lastAlong || 0));
+        renderVias();
+        if (u) setRouteOrigin(u.lat, u.lon, 'Ma position GPS');
+        AppState.lastRerouteAt = Date.now();
+        showToast('Étape retirée, trajet recalculé', 'success', 3000);
+        calculateBikeRoute({ single: true, keepView: true });
+        return;
+      }
       renderVias();
       if (AppState.origin && AppState.dest) calculateBikeRoute({ keepView: true });
     };
@@ -5787,6 +5798,11 @@ ${trkpts}
     window.openViaSheet = function (i) {
       const v = AppState.vias[i];
       if (!v) return;
+      if (AppState.isGuiding) {
+        // Pendant le guidage : une simple question, pas de fiche qui cache la carte
+        if (confirm(`Retirer l’étape « ${v.label.replace(/^Pause : /, '')} » ?`)) removeVia(i);
+        return;
+      }
       const p = { id: v.poiId || `via_${v.lat.toFixed(5)}_${v.lon.toFixed(5)}`, lat: v.lat, lon: v.lon, cat: v.cat && POI_BY_ID[v.cat] ? v.cat : 'attraction', name: v.label.replace(/^Pause : /, ''), osmId: v.osmId, osmType: v.osmType, viaIdx: i };
       if (v.poiId) applyOSMDetails(p);
       collapseMobileSheet();
