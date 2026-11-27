@@ -4654,7 +4654,7 @@ ${trkpts}
     // -------------------------------------------------------------------------
     // Les pages du grand panneau (une page = un sujet)
     const plur = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-    const APP_VERSION = '54 · 27 novembre 2026';
+    const APP_VERSION = '55 · 27 novembre 2026';
     const SHEET_PAGES = { route: 'Itinéraire', tour: 'Balade visite', places: 'Mes lieux', rides: 'Mes sorties', settings: 'Réglages' };
     function switchSidebarTab(tabName) {
       if (tabName === 'gpx') tabName = 'rides';
@@ -8499,7 +8499,7 @@ ${trkpts}
         } catch {}
         if (tk !== token || !box) return;
         const hint = note || 'Les horaires se consultent avec les boutons ci-dessous.';
-        box.innerHTML = (st.length ? st.slice(0, 3).map((s) => stationRow(s)).join('') : '<div class="bk-note">Pas de gare trouvée pour l’instant (réseau lent ou aucune à moins de 25 km).</div>') + `<div class="bk-note">${hint}</div>` + links(u, home);
+        box.innerHTML = (st.length ? st.slice(0, 3).map((s) => stationRow(s)).join('') : `<div class="bk-note">Pas de gare trouvée pour l’instant (réseau lent ou aucune à moins de 25 km).<br><span style="font-size:11px;opacity:.7">${escapeHtml(nearestStations.why || '')}</span></div>`) + `<div class="bk-note">${hint}</div>` + links(u, home);
         bindStations(box);
       }
 
@@ -10466,10 +10466,34 @@ ${trkpts}
         const q = `[out:json][timeout:10];(node["railway"~"^(station|halt)$"](around:25000,${ref.lat.toFixed(5)},${ref.lon.toFixed(5)}););out 60;`;
         return need((await fetchOverpassWithFallback(q)).elements || []);
       };
+      // Liste officielle des gares de voyageurs (données ouvertes SNCF, sans clé)
+      const sncfOpen = async () => {
+        const where = encodeURIComponent(`within_distance(position_geographique, geom'POINT(${ref.lon.toFixed(4)} ${ref.lat.toFixed(4)})', 25km)`);
+        const r = await fetch(`https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/gares-de-voyageurs/records?where=${where}&limit=20`);
+        if (!r.ok) throw new Error('http ' + r.status);
+        return need(
+          ((await r.json()).results || [])
+            .map((g) => {
+              const p = g.position_geographique || g.geo_point_2d || {};
+              return { tags: { name: String(g.nom || g.nom_gare || g.libelle || '').replace(/^Gare (de |du |des |d’|d')?/i, '') }, lat: +p.lat, lon: +p.lon };
+            })
+            .filter((e) => e.tags.name && isFinite(e.lat) && isFinite(e.lon))
+        );
+      };
       let elements = [];
+      const why = [];
+      const tag = (name, p) => p.catch((e) => {
+        why.push(`${name} : ${e?.message || 'échec'}`);
+        throw e;
+      });
       try {
-        elements = await limit(Promise.any([photon(`reverse?${ll}&radius=25&limit=8`), photon(`api/?q=gare&${ll}&limit=10`), tiles(), overpass()]), 12000);
-      } catch {}
+        elements = await limit(
+          Promise.any([tag('photon', photon(`reverse?${ll}&radius=25&limit=8`)), tag('recherche', photon(`api/?q=gare&${ll}&limit=10`)), tag('sncf', sncfOpen()), tag('carte', tiles()), tag('overpass', overpass())]),
+          12000
+        );
+      } catch {
+        nearestStations.why = why.join(' · ') || 'délai dépassé';
+      }
       return elements
         .filter((e) => e.tags?.name && !/subway|light_rail|tram/.test(e.tags.station || '') && e.tags.subway !== 'yes')
         .map((e) => ({ name: e.tags.name, lat: e.lat, lon: e.lon, d: haversineDistance(ref.lat, ref.lon, e.lat, e.lon) }))
