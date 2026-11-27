@@ -6494,7 +6494,10 @@ ${trkpts}
         // Itinéraires vélo balisés (EuroVelo, véloroutes) par-dessus le fond
         if (AppState.showBikeRoutes) {
           sources.wmt = { type: 'raster', tiles: ['https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png'], tileSize: window.devicePixelRatio >= 2 ? 128 : 256, maxzoom: 18, attribution: 'Itinéraires © Waymarked Trails' };
-          layers.push({ id: 'wmt', type: 'raster', source: 'wmt', paint: { 'raster-opacity': theme === 'night' || theme === 'noir' ? 0.55 : 0.85 } });
+          // Images Waymarked : nettes jusqu'au zoom 18 de leurs tuiles ; au-delà elles seraient agrandies (V6 flou) → fondu puis masquées
+          const wOp = theme === 'night' || theme === 'noir' ? 0.55 : 0.85;
+          const wNat = window.devicePixelRatio >= 2 ? 17 : 18;
+          layers.push({ id: 'wmt', type: 'raster', source: 'wmt', maxzoom: wNat + 1, paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], wNat + 0.2, wOp, wNat + 0.9, 0] } });
         }
         layers.push(
           { id: 'alts-line', type: 'line', source: 'alts', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': theme === 'noir' ? '#bdbdbd' : theme === 'bw' ? '#000' : '#64748b', 'line-width': 6 * k, 'line-opacity': 0.7, 'line-dasharray': [0.5, 2] } },
