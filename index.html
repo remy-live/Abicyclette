@@ -423,6 +423,7 @@
     .bk-note { padding: 8px; font-size: 13px; font-weight: 600; color: #64748b; }
     .bk-inl { font-weight: 800; color: #0369a1; text-decoration: underline; }
     .bk-links { display: flex; flex-direction: column; gap: 6px; padding: 6px 4px 2px; }
+    .bk-two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .bk-link { display: flex; align-items: center; justify-content: center; height: 44px; border-radius: 14px; background: #f1f5f9; color: #0f172a; font-size: 14px; font-weight: 800; }
     body.night-mode #back-sheet { background: #0d1117; color: #e6edf3; }
     body.night-mode .bk-ico, body.night-mode .bk-link, body.night-mode .bk-head button { background: #161b22; color: #e6edf3; }
@@ -7752,7 +7753,7 @@ ${trkpts}
         const maps = home
           ? `<a class="bk-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&origin=${u.lat.toFixed(5)},${u.lon.toFixed(5)}&destination=${home.lat.toFixed(5)},${home.lon.toFixed(5)}&travelmode=transit">Itinéraire en transports (Google Maps)</a>`
           : '';
-        return `<div class="bk-links">${maps}<a class="bk-link" target="_blank" rel="noopener" href="https://www.sncf-connect.com/">Billets et vélo à bord (SNCF Connect)</a></div>`;
+        return `<div class="bk-links">${maps}<div class="bk-two"><a class="bk-link" target="_blank" rel="noopener" href="https://www.sncf-connect.com/">SNCF Connect</a><a class="bk-link" target="_blank" rel="noopener" href="https://www.thetrainline.com/fr">Trainline</a></div></div>`;
       }
       const gare = (n) => (/^gare/i.test(n) ? n : (/^[aeiouyhéèêàâ]/i.test(n) ? 'Gare d’' : 'Gare de ') + n);
       const stationRow = (s, extra = '') =>
