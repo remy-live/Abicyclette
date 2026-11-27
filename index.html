@@ -775,6 +775,7 @@
     <div id="nearby-sheet" class="hidden glass-panel"></div>
     <div id="hud-side" class="fixed right-3 bottom-[104px] md:right-4 z-40 flex flex-col items-end gap-2">
       <button id="btn-hud-3d" aria-label="Vue 2D ou 3D" class="hidden">3D</button>
+      <button id="btn-hud-north" aria-label="Sens de la marche ou nord en haut" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg id="icon-north" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 4.5l3 7.5h-6z" fill="#e11d48" stroke="#e11d48"/><path d="M12 19.5l-3-7.5h6z"/></svg></button>
       <button id="btn-hud-display" aria-label="Affichage : style de carte, contraste, 2D ou 3D" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
       <button id="btn-hud-home" aria-label="Rentrer" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6"/></svg></button>
       <button id="btn-hud-photo" aria-label="Prendre une photo" class="glass-panel w-14 h-14 rounded-2xl flex items-center justify-center text-slate-800"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
@@ -911,6 +912,16 @@
         <label class="dp-row">
           <span>Voix</span>
           <input id="dp-voice" type="checkbox" class="dp-switch" checked />
+        </label>
+        <div class="dp-line"><span>Voix<small style="display:block;font-size:12px;font-weight:600;color:#64748b">discrète : seulement les virages, une fois</small></span>
+          <div class="dp-seg"><button data-vmode="full" class="vmode seg sm">Complète</button><button data-vmode="quiet" class="vmode seg sm">Discrète</button></div>
+        </div>
+        <div class="dp-line"><span>Carte en guidage</span>
+          <div class="dp-seg"><button data-north="0" class="northm seg sm">Sens de la marche</button><button data-north="1" class="northm seg sm">Nord en haut</button></div>
+        </div>
+        <label class="dp-row">
+          <span>Écran verrouillé<small>prochaine indication et heure d’arrivée ; met en pause la musique d’une autre appli</small></span>
+          <input id="dp-lockinfo" type="checkbox" class="dp-switch" />
         </label>
         <label class="dp-row">
           <span>Annoncer les étapes<small>« Château de X dans 300 mètres, à gauche »</small></span>
@@ -3679,8 +3690,11 @@
     // -------------------------------------------------------------------------
     // 9. MODE GUIDAGE EN DIRECT & SYNTHÈSE VOCALE FRANÇAISE
     // -------------------------------------------------------------------------
-    function speakFrench(text) {
+    // kind 'info' : annonce secondaire (eau, lieu à voir…) — tue en voix discrète
+    const voiceQuiet = () => localStorage.getItem('abicyclette.voiceMode') === 'quiet';
+    function speakFrench(text, kind) {
       if (!AppState.voiceEnabled || !('speechSynthesis' in window)) return;
+      if (kind === 'info' && voiceQuiet()) return;
       try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
@@ -3815,6 +3829,7 @@
 
       startGeoWatch();
       Live.start();
+      LockInfo.start();
       if (!AppState.tripStart || !AppState.wasGuiding) AppState.tripStart = AppState.userLocation ? { lat: AppState.userLocation.lat, lon: AppState.userLocation.lon } : AppState.origin && { lat: AppState.origin.lat, lon: AppState.origin.lon };
       AppState.wasGuiding = true;
       loadCompanion(AppState.currentRoute);
@@ -3846,6 +3861,7 @@
       const doneRide = Rides.isAuto() ? Rides.stop() : null;
       if (!Rides.isRecording()) releaseWakeLock();
       Live.stop();
+      LockInfo.stop();
       if (doneRide) Extras.showSummary(doneRide);
 
       document.getElementById('guidance-hud').classList.add('hidden');
@@ -3894,6 +3910,57 @@
         return prev;
       });
     }
+
+    // Écran verrouillé : la prochaine indication s'affiche comme un morceau en cours de lecture
+    // (un son silencieux en boucle ouvre le lecteur du téléphone ; mise à jour toutes les 5 s au plus)
+    const LockInfo = (() => {
+      let audio = null, last = 0, lastTxt = '';
+      const on = () => localStorage.getItem('abicyclette.lockInfo') === '1' && 'mediaSession' in navigator;
+      function silence() {
+        const n = 8000, b = new Uint8Array(44 + n);
+        const v = new DataView(b.buffer);
+        const w = (o, t) => [...t].forEach((c, i) => (b[o + i] = c.charCodeAt(0)));
+        w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+        v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+        b.fill(128, 44);
+        return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+      }
+      function start() {
+        if (!on() || audio) return;
+        try {
+          audio = new Audio(silence());
+          audio.loop = true;
+          audio.play().catch(() => {});
+          ['play', 'pause', 'stop', 'previoustrack', 'nexttrack'].forEach((a) => {
+            try {
+              navigator.mediaSession.setActionHandler(a, () => audio?.play().catch(() => {}));
+            } catch {}
+          });
+        } catch {}
+      }
+      function update(instr, stepDist, remDist, remSec) {
+        if (!audio || !('mediaSession' in navigator)) return;
+        const eta = new Date(Date.now() + remSec * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const title = `${formatDistance(stepDist)} · ${instr}`;
+        if (title === lastTxt && Date.now() - last < 30000) return;
+        if (Date.now() - last < 5000 && stepDist > 60) return;
+        last = Date.now();
+        lastTxt = title;
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({ title, artist: `Arrivée ${eta} · reste ${formatDistance(remDist)}`, album: 'À bicyclette', artwork: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }] });
+        } catch {}
+      }
+      function stop() {
+        if (!audio) return;
+        audio.pause();
+        URL.revokeObjectURL(audio.src);
+        audio = null;
+        try {
+          navigator.mediaSession.metadata = null;
+        } catch {}
+      }
+      return { start, update, stop };
+    })();
 
     // Annonce des étapes nommées : à ~300 m (avec le côté), puis à l'arrivée ; propose la pause
     function stopAnnounceTick(route, snap) {
@@ -3945,7 +4012,7 @@
         b.textContent = '⏸ Pause';
         b.classList.replace('bg-emerald-600', 'bg-amber-500');
         showPauseButton(false);
-        speakFrench('C’est reparti.');
+        speakFrench('C’est reparti.', 'info');
       }
     }
     // Pendant le guidage, toucher le bandeau du bas : vue d'ensemble + liste des étapes
@@ -3991,7 +4058,7 @@
       if (AppState.offRouteCount >= 3 && !isOfflineMode() && Date.now() - AppState.lastRerouteAt > 25000) {
         AppState.lastRerouteAt = Date.now();
         AppState.offRouteCount = 0;
-        speakFrench('Itinéraire recalculé.');
+        speakFrench(voiceQuiet() ? 'Recalcul.' : 'Itinéraire recalculé.');
         showToast('Vous avez quitté le tracé : recalcul…', 'warning', 2500);
         // On retire les étapes déjà dépassées le long de l'ancien tracé
         AppState.vias = AppState.vias.filter((v) => snapToRoute(v.lat, v.lon, route).along > snap.along);
@@ -4026,8 +4093,9 @@
       if (now - AppState.lastGuidanceRenderAt >= throttle || stepDist < 60) {
         AppState.lastGuidanceRenderAt = now;
         updateGuidanceHUD(nextStep.instruction, stepDist, remDist, estSeconds, speedKmh, nextStep.turnType);
-        followCamera(lat, lon, route, snap);
+        followCamera(lat, lon, route, snap, speedMs, stepDist);
         companionTick(route, snap, stepDist);
+        LockInfo.update(nextStep.instruction, stepDist, remDist, estSeconds);
       }
 
       // Arrivée
@@ -4041,15 +4109,32 @@
         return;
       }
 
-      // Annonces vocales à ~200 m puis juste avant la manœuvre
-      if (stepDist <= 40 && (AppState.lastSpokenStepIndex !== idx || AppState.lastSpokenThreshold !== 'now')) {
-        AppState.lastSpokenStepIndex = idx;
-        AppState.lastSpokenThreshold = 'now';
-        speakFrench(nextStep.instruction);
-      } else if (stepDist > 40 && stepDist <= 200 && AppState.lastSpokenStepIndex !== idx) {
-        AppState.lastSpokenStepIndex = idx;
-        AppState.lastSpokenThreshold = '200m';
-        speakFrench(`Dans ${Math.round(stepDist / 10) * 10} mètres, ${nextStep.instruction}`);
+      // Annonces vocales, calées sur la vitesse : ~20 s avant puis ~5 s avant la manœuvre
+      const v = Math.max(3, speedMs || 4.5);
+      const tt = nextStep.turnType || 'straight';
+      const isTurn = /left|right/.test(tt) && !/slight/.test(tt);
+      if (voiceQuiet()) {
+        // Discrète : une seule phrase courte par virage, rien pour « tout droit »
+        const at = Math.min(150, Math.max(40, v * 10));
+        if (isTurn && stepDist <= at && AppState.lastSpokenStepIndex !== idx) {
+          AppState.lastSpokenStepIndex = idx;
+          AppState.lastSpokenThreshold = 'quiet';
+          const short = (tt.includes('sharp') ? 'Fortement ' : '') + (tt.includes('left') ? 'à gauche' : 'à droite');
+          const txt = short.charAt(0).toUpperCase() + short.slice(1);
+          speakFrench(stepDist > 60 ? `${txt} dans ${Math.round(stepDist / 10) * 10} mètres.` : `${txt}.`);
+        }
+      } else {
+        const early = Math.min(300, Math.max(90, v * 22));
+        const now = Math.min(45, Math.max(15, v * 5));
+        if (stepDist <= now && (AppState.lastSpokenStepIndex !== idx || AppState.lastSpokenThreshold !== 'now')) {
+          AppState.lastSpokenStepIndex = idx;
+          AppState.lastSpokenThreshold = 'now';
+          speakFrench(nextStep.instruction);
+        } else if (stepDist > now && stepDist <= early && AppState.lastSpokenStepIndex !== idx) {
+          AppState.lastSpokenStepIndex = idx;
+          AppState.lastSpokenThreshold = 'early';
+          speakFrench(`Dans ${Math.round(stepDist / 10) * 10} mètres, ${nextStep.instruction}`);
+        }
       }
     }
 
@@ -4084,13 +4169,15 @@
       if (AppState.isGuiding && u && AppState.currentRoute) followCamera(u.lat, u.lon, AppState.currentRoute, AppState.lastSnap || null);
     }
 
-    function followCamera(lat, lon, route, snap) {
-      if (AppState.followPaused) return;
+    function followCamera(lat, lon, route, snap, speedMs, stepDist) {
       AppState.lastSnap = snap;
+      // Sur le tracé (GPS à moins de 20 m) : la flèche est posée sur la ligne, elle ne flotte pas à côté
+      if (snap && snap.dist < 20) [lat, lon] = pointAlong(route, snap.along);
+      const bearing = snap && snap.dist < 30 ? routeBearingAhead(route, snap) : AppState.lastHeading ?? routeBearingAhead(route, snap);
       if (AppState.glOn && AppState.map3dReady) {
-        const bearing = AppState.lastHeading ?? routeBearingAhead(route, snap);
-        Map3D.follow(lat, lon, bearing);
-      } else {
+        if (AppState.followPaused) return Map3D.moveUser(lat, lon, bearing); // carte libre : seule la flèche avance
+        Map3D.follow(lat, lon, bearing, speedMs, stepDist);
+      } else if (!AppState.followPaused) {
         AppState.map.setView([lat, lon], Math.max(AppState.map.getZoom(), 16), { animate: true, duration: 0.8, easeLinearity: 1 });
       }
     }
@@ -5121,6 +5208,36 @@ ${trkpts}
       document.getElementById('btn-route-visits').addEventListener('click', findVisitsAlongRoute);
       document.getElementById('btn-add-stops').addEventListener('click', addPickedStops);
       document.getElementById('btn-undo').addEventListener('click', undoLast);
+      // Voix complète ou discrète, carte dans le sens de la marche ou nord en haut, écran verrouillé
+      const vm = () => document.querySelectorAll('.vmode').forEach((b) => b.classList.toggle('on', b.dataset.vmode === (voiceQuiet() ? 'quiet' : 'full')));
+      document.querySelectorAll('.vmode').forEach((b) =>
+        b.addEventListener('click', () => {
+          localStorage.setItem('abicyclette.voiceMode', b.dataset.vmode);
+          vm();
+        })
+      );
+      vm();
+      AppState.northUp = localStorage.getItem('abicyclette.northUp') === '1';
+      const nm = () => {
+        document.querySelectorAll('.northm').forEach((b) => b.classList.toggle('on', (b.dataset.north === '1') === AppState.northUp));
+        document.getElementById('btn-hud-north').setAttribute('aria-pressed', String(AppState.northUp));
+        document.getElementById('icon-north').style.transform = AppState.northUp ? '' : 'rotate(-35deg)';
+      };
+      const setNorth = (v) => {
+        AppState.northUp = v;
+        localStorage.setItem('abicyclette.northUp', v ? '1' : '0');
+        nm();
+        showToast(v ? 'Nord en haut' : 'Carte dans le sens de la marche', 'info', 1500);
+      };
+      document.querySelectorAll('.northm').forEach((b) => b.addEventListener('click', () => setNorth(b.dataset.north === '1')));
+      document.getElementById('btn-hud-north').addEventListener('click', () => setNorth(!AppState.northUp));
+      nm();
+      const li = document.getElementById('dp-lockinfo');
+      li.checked = localStorage.getItem('abicyclette.lockInfo') === '1';
+      li.addEventListener('change', () => {
+        localStorage.setItem('abicyclette.lockInfo', li.checked ? '1' : '0');
+        if (AppState.isGuiding) li.checked ? LockInfo.start() : LockInfo.stop();
+      });
       document.getElementById('btn-home-loop').addEventListener('click', makeLoop);
       document.getElementById('btn-hud-pause').addEventListener('click', togglePause);
       const as = document.getElementById('dp-announce-stops');
@@ -7470,6 +7587,8 @@ ${trkpts}
       function updateUser(lat, lon) {
         const m = AppState.map3d;
         if (!m || !window.maplibregl) return;
+        if (userMarker && userMarker._arrow && !AppState.isGuiding) ensureArrow(false);
+        if (userMarker && !userMarker._map) userMarker.setLngLat([lon, lat]).addTo(m);
         if (!userMarker) {
           const el = document.createElement('div');
           el.innerHTML = `<div style="width:22px;height:22px;border-radius:9999px;background:#0ea5e9;border:4px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,.3)"></div>`;
@@ -7584,9 +7703,34 @@ ${trkpts}
       let lastFollowAt = 0;
       let smoothBearing = null;
       let markerAnim = null;
-      function follow(lat, lon, bearing) {
+      // Flèche en guidage (elle tourne avec la direction), point bleu sinon
+      function ensureArrow(on) {
+        const m = AppState.map3d;
+        if (!m || !window.maplibregl || (userMarker && !!userMarker._arrow === on)) return;
+        const pos = userMarker?.getLngLat();
+        userMarker?.remove();
+        userMarker = null;
+        const el = document.createElement('div');
+        el.className = on ? 'user-arrow' : '';
+        el.innerHTML = on
+          ? `<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#fff" fill-opacity=".92" stroke="rgba(14,165,233,.35)" stroke-width="2"/><path d="M24 8 L36 37 L24 30 L12 37 Z" fill="#0ea5e9" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>`
+          : `<div style="width:22px;height:22px;border-radius:9999px;background:#0ea5e9;border:4px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,.3)"></div>`;
+        userMarker = new maplibregl.Marker({ element: el, rotationAlignment: on ? 'map' : 'auto', pitchAlignment: 'viewport' });
+        userMarker._arrow = on;
+        if (pos) userMarker.setLngLat(pos).addTo(m);
+      }
+      function moveUser(lat, lon, bearing) {
+        ensureArrow(true);
+        if (!userMarker.getLngLat?.() || !userMarker._map) userMarker.setLngLat([lon, lat]).addTo(AppState.map3d);
+        userMarker.setRotation(bearing);
+        animateUser(lat, lon, 900);
+      }
+      let lastZoom = null;
+      function follow(lat, lon, bearing, speedMs, stepDist) {
         const m = AppState.map3d;
         if (!m) return;
+        ensureArrow(true);
+        if (!userMarker._map) userMarker.setLngLat([lon, lat]).addTo(m);
         const now = performance.now();
         // Durée = temps écoulé depuis la position précédente : la carte glisse en continu jusqu'à la suivante
         const dt = lastFollowAt ? Math.min(2500, Math.max(300, now - lastFollowAt)) : 600;
@@ -7598,13 +7742,22 @@ ${trkpts}
           if (Math.abs(d) < 6) d = 0;
           smoothBearing = (smoothBearing + d * 0.5 + 360) % 360;
         }
+        userMarker.setRotation(smoothBearing);
         animateUser(lat, lon, dt);
+        // Zoom selon la vitesse : serré à vélo lent ou avant un virage, plus large en ligne droite rapide
+        const v = speedMs || 0;
+        let z = v < 3 ? 17.6 : v < 5.5 ? 17 : 16.4;
+        if (stepDist != null && stepDist < 150) z = Math.max(z, 17.4);
+        if (AppState.view3D) z += 0.3;
+        if (lastZoom === null || Math.abs(z - lastZoom) >= 0.4) lastZoom = z; // pas de « pompage »
+        const h = m.getContainer().clientHeight;
         m.easeTo({
-          center: [lon, lat], bearing: smoothBearing,
+          center: [lon, lat], bearing: AppState.northUp ? 0 : smoothBearing,
           pitch: AppState.view3D ? 62 : 0,
-          zoom: AppState.view3D ? 17 : 16.5,
+          zoom: lastZoom,
           duration: dt, easing: (t) => t,
-          padding: { top: 220, bottom: 40, left: 0, right: 0 },
+          // La flèche reste au tiers bas de l'écran : on voit loin devant
+          padding: { top: Math.round(h * (AppState.view3D ? 0.72 : 0.38)), bottom: 40, left: 0, right: 0 },
           essential: true,
         });
       }
@@ -7626,6 +7779,8 @@ ${trkpts}
       function resetCamera() {
         smoothBearing = null;
         lastFollowAt = 0;
+        lastZoom = null;
+        ensureArrow(false);
         AppState.map3d?.easeTo({ pitch: AppState.view3D ? 55 : 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 600 });
       }
 
@@ -7655,7 +7810,7 @@ ${trkpts}
       }
 
       return {
-        storeGlyphs, show, hide, applyStyle, set3D, openPoi, refreshOverlays, follow, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
+        storeGlyphs, show, hide, applyStyle, set3D, openPoi, refreshOverlays, follow, moveUser, updateUser, resetCamera, closePopups, fitBounds, setRide, updateButtons,
         enable: () => set3D(true),
         disable: () => set3D(false),
         toggle: () => set3D(!AppState.view3D),
@@ -9829,21 +9984,21 @@ ${trkpts}
         const gap = gapEnd - next.along;
         if (AppState.announceWater && gap > 15000 && next.along - snap.along < 400 && !comp.warned.has(next.along)) {
           comp.warned.add(next.along);
-          speakFrench(`Dernier point d'eau avant ${Math.round(gap / 1000)} kilomètres. Pensez à remplir vos bidons.`);
+          speakFrench(`Dernier point d'eau avant ${Math.round(gap / 1000)} kilomètres. Pensez à remplir vos bidons.`, 'info');
           showToast(`Dernier point d'eau avant ${Math.round(gap / 1000)} km`, 'warning', 5000);
         }
       } else if (remaining > 15000) {
         txt = '💧 Plus d’eau repérée sur le trajet';
         if (AppState.announceWater && !comp.warned.has('none')) {
           comp.warned.add('none');
-          speakFrench(`Aucun point d'eau repéré sur les ${Math.round(remaining / 1000)} prochains kilomètres.`);
+          speakFrench(`Aucun point d'eau repéré sur les ${Math.round(remaining / 1000)} prochains kilomètres.`, 'info');
         }
       }
       // Lieux à voir annoncés au passage
       const v = AppState.announceVisits && comp.visits.find((x) => !comp.announced.has(x.id) && Math.abs(x.along - snap.along) < 120);
       if (v) {
         comp.announced.add(v.id);
-        if (stepDist > 80) speakFrench(`À voir : ${v.name}`);
+        if (stepDist > 80) speakFrench(`À voir : ${v.name}`, 'info');
         showToast(`À voir : ${v.name}`, 'info', 5000);
       }
       // Côtes à venir
